@@ -1,0 +1,233 @@
+<!DOCTYPE HTML>
+<html><head>
+<meta http-equiv="Content-Type" content="text/html;charset=UTF-8">
+<link rel="shortcut icon" href="" type="image/x-icon" />
+<link rel="icon" href="" type="image/x-icon" />
+<link rel='stylesheet' type='text/css' href='index.css' />
+<link rel='stylesheet' type='text/css' href='frax.css' />
+<title></title>
+
+<script type="text/javascript" >
+/***
+Receive Game Data
+***/
+
+/***
+Check for a variable to be set
+Needed to allow the async loading of scripts to catch up to the page
+***/
+function check ()
+{
+  var LookingForVar = window.colonies
+  if( typeof(LookingForVar) !== 'undefined' ) // this is set
+    return true;
+  setTimeout( check, 100 )
+}
+
+/***
+new AJAX()
+- sets up an object that can perform asyncronous HTTP queries
+
+get( url )
+- performs a GET operation to the URL argument.
+- returns true on success
+- returns false if no AJAX code can be found (i.e. older browser)
+
+fetch()
+- Event called when the document is loaded
+- argument is the text contents of the document
+
+error()
+- Event called when there is an error with the document fetch
+- argument is the error object
+***/
+
+function AJAX ()
+{
+  this._xmlhttp = null; // holds the browser-specific ajax object
+
+  if( window.XMLHttpRequest )		// code for Mozilla, etc.
+    this._xmlhttp = new XMLHttpRequest();
+  else if( window.ActiveXObject )	// code for IE
+    this._xmlhttp = new ActiveXObject( "Microsoft.XMLHTTP" );
+}
+
+AJAX.prototype.get = function ( url )
+{
+  if( ! this._xmlhttp )
+    return false; // no can do requests
+  var obj = this;
+  this._xmlhttp.responseType = "text";
+  
+  this._xmlhttp.onreadystatechange = function ()
+  {
+    if( this.readyState == 4 )	// if document loaded
+      if( this.status == 200 )	// if "OK"
+        obj.fetch( this.responseText );
+      else
+        obj.error( this );
+  }
+
+  this._xmlhttp.open( "GET", url, true );
+  this._xmlhttp.send( null );
+  return true;
+}
+
+AJAX.prototype.fetch = function (e) { return null; }
+AJAX.prototype.error = function (e) { return null; }
+
+/***
+# Loads up the JSON data file
+###
+# PARAMS: 
+#       (STRING) - the file to fetch
+# RETURN: None
+***/
+function fetchData ( url )
+{
+  if( url === void(0) || url === null )
+  {
+    console.log( "Unable to load data file. Missing filename." );
+    return false;
+  }
+
+  var scriptTag = document.createElement('script');
+  scriptTag.type = "text/javascript";
+  scriptTag.language = "javascript";
+  scriptTag.src = url+"?d="+Date.now();
+/*
+  var synchro = new AJAX();
+  synchro.get( url );
+  synchro.fetch = function(e)
+  {
+    scriptTag.innerHTML = e; // fill a script-tag with the retrieved data
+  };
+*/
+
+  document.head.appendChild( scriptTag );
+};
+var params = (new URL(document.location)).searchParams;
+var dataVal = params.get('data'); // is the filename of the data file
+fetchData( "../files/"+dataVal+".js" ); // get the datafile
+
+</script>
+
+</head><body>
+
+<div class='main'>
+
+<div class='one'>
+<h3 id='empireName'></h3>
+<table>
+<tr><td>Game Turn</td><td><span class='button'><a href='#' id='PrevDoc'><</a></span> <span id='gameTurn'></span> <span class='button'><a href='#' id='NextDoc'>></a></span></td></tr>
+<tr><td>Game Month</td><td id='gameMonth'></td></tr>
+<tr><td><a title='Aggressiveness'>Agg</a> / <a title='Integrity'>Int</a> / <a title='Xenophobia'>Xen</a></td><td id='AIX'></td></tr>
+</table>
+
+<span class='button'><a href='../rules.html' target='_BLANK'>Campaign Rules</a></span>
+<span class='button'><a href='#' id='UnitListDoc' target='_BLANK'>List of Units</a></span>
+
+
+<h3>Total Domestic Product</h3>
+<table>
+<tr><td>Previous Point Pool</td><td id='previousEPs'></td></tr>
+<tr><td>Planetary Income</td><td id='planetaryIncome'></td></tr>
+<tr><td>Commerce Income</td><td id='commerceIncome'></td></tr>
+<tr><td>Misc Income</td><td id='miscIncome'></td></tr>
+<tr><td>Maintenance Expense</td><td id='maintTotal'></td></tr>
+<tr><td>Misc Expense</td><td id='miscExpense'></td></tr>
+<tr><td class='summation'>Total Available Points</td><td class='summation' id='totalIncome'></td></tr>
+</table>
+
+<h3>Tech Investment</h3>
+<table>
+<tr><td>Current Tech Year</td><td id='techYear'></td></tr>
+<tr><td>Tech Investments<br>Made This Year</td><td id='researchInvested'></td></tr>
+<tr><td>Preliminary <br>Investment Needed</td><td id='researchNeeded'></td></tr>
+</table>
+
+</div>
+
+<div class='article'>
+<h3>Turn Orders</h3>
+<form accept-charset='UTF-8' action='' id='' method='post' target='_SELF'>
+
+<span id='ordersArea'></span>
+
+<p><input type='submit' value='Save Orders'>
+</form>
+</div>
+
+</div> <!-- end container -->
+
+<div id='mapImg' class='map'></div>
+
+
+<div class='main'>
+
+<div class='three'>
+<h3>Maintenance</h3>
+<table id='maintData'>
+</table>
+<h3>Purchases</h3>
+<table id='purchaseData'>
+</table>
+
+<h3>Construction Status</h3>
+<table id='constructionData'>
+<tr style='font-weight:bolder'><td>Location</td><td>Unit</td></tr>
+</table>
+</div>
+
+
+<div class='article' id='fleetData'>
+<h3>Fleet Assets</h3>
+
+</div>
+
+</div> <!-- end container -->
+
+<div class='main'>
+
+<div class='one' id='eventArea'>
+<h3>Events</h3>
+
+</div>
+
+<div class='article'>
+<h3>System Assets</h3>
+<table style='margin:auto;'><thead>
+<tr><th>System Name</td><th>Census</th><th>Morale</th><th>Raw</th><th>Productivity</th><th>Capacity</th><th>Output</th><th>Intel<br>Points</th><th>Special Notes</th><th>Fixed Units</th></tr>
+</thead><tbody id='systemData'>
+</tbody></table>
+
+</div>
+
+</div> <!-- end container -->
+
+
+<div class='main'>
+
+<div class='three' id='treatyArea'>
+<h3>Treaties</h3>
+</div>
+
+<div class='article'>
+<h3>Intelligence Actions</h3>
+<table style='margin:auto;' id='IntelArea'>
+<tr><th>Mission Type</th><th>Target</th><th>Location</th><th>Intel Pts<br>Assigned</th><th>Notes</th></tr>
+</table>
+</div>
+
+</div> <!-- end container -->
+
+<div class='footer'>
+<br>Copyright &copy; 2017 Matthew Potter
+</div>
+
+<!--<script src="https://d3js.org/d3-hexbin.v0.2.min.js"></script>-->
+<script src="./d3.v7.min.js"></script>
+<script type="text/javascript" src='indexLib.js'></script>
+<script type="text/javascript" src='./maps.js' defer></script>
+<script type="text/javascript" src='./indexBuild.js' defer></script>
+</body></html>

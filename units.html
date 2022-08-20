@@ -1,0 +1,297 @@
+<html><head>
+<meta http-equiv="content-type" content="text/html; charset=windows-1252">
+
+<script type="text/javascript">
+function nextElementSibling( el ) {
+    do { el = el.nextSibling } while ( el && el.nodeType !== 1 );
+    return el;
+}
+function flip( clicked_obj )
+{
+  obj = nextElementSibling( clicked_obj );
+
+  if( obj.style.display != 'block' )
+  {
+    if( obj.style.setProperty )
+      obj.style.setProperty('display', 'block', '');
+    else
+      obj.style.display == 'block';
+  }
+  else
+  {
+    if( obj.style.setProperty )
+      obj.style.setProperty('display', 'none', '');
+    else
+      obj.style.display == 'none';
+  }
+}
+</script>
+<style>
+TD{ vertical-align:top; }
+.bigdark { background-color:#000000; color:#FFFFFF; font-weight:bolder; font-size:larger; }
+.darkhead { background-color:#000000; color:#FFFFFF; font-weight:bolder; }
+.lighthead { border-width:2px; border-color:#000000; border-style:solid; font-weight:bolder; }
+.zebra tr:nth-child(even) { background-color:#BFBFBF; }
+.highlightCell { background-color:#BFBFBF; }
+.tableBorder TD+TD { border-left:2px solid #000000; }
+.horizBorder TR+TR { border-top:2px solid #000000; }
+.borderRight { border-right-style:solid; border-right-width:2px; }
+.borderBottom { border-bottom-style:solid; border-bottom-width:2px; }
+.hide{ display:none; }
+.visually-hidden:not(:focus):not(:active) {
+  clip: rect(0 0 0 0); 
+  clip-path: inset(50%);
+  height: 1px;
+  overflow: hidden;
+  position: absolute;
+  white-space: nowrap; 
+  width: 1px;
+}
+</style>
+<script type="text/javascript">
+function flip( clicked_obj )
+{
+  var toggleStyle = "visually-hidden"; // the class-name of CSS class to flip
+  var obj = clicked_obj.nextElementSibling;
+
+  obj.classList.toggle( toggleStyle ); // toggle the class of the selected element
+  return false;
+}
+</script>
+</head><body>
+<a name='orion'></a>
+</p><h3 class='darkhead' onclick='flip(this)'>ORION</h3>
+<table class='visually-hidden zebra'>
+<thead>
+<tr><th>Unit<br>Name</th><th>Service<br>Date</th><th>Design</th><th>Cost</th><th>Maint</th><th>Anti-Ship<br>Rate</th><th>Anti-Ftr<br>Rate</th><th>Defense<br>Value</th><th>Cmd<br>Rate</th><th>Cmd<br>Cost</th><th>Basing</th><th>Special</th></tr>
+</thead>
+<tbody>
+<tr><td>WCA</td><td>71</td><td>CA</td><td>8</td><td>3/3</td><td>6</td><td>8</td><td>8</td><td>8</td><td>1</td><td>0</td><td>Slow</td></tr>
+<tr><td>WFF</td><td>71</td><td>FF</td><td>4</td><td>2/6</td><td>3</td><td>5</td><td>5</td><td>3</td><td>1</td><td>0</td><td>Slow</td></tr>
+<tr><td>WDD</td><td>73</td><td>DD</td><td>5</td><td>3/6</td><td>4</td><td>6</td><td>6</td><td>4</td><td>1</td><td>0</td><td>Slow</td></tr>
+<tr><td>WDG</td><td>75</td><td>DD</td><td>5</td><td>3/6</td><td>4</td><td>6</td><td>6</td><td>4</td><td>1</td><td>0</td><td>Assault, Slow</td></tr>
+<tr><td>WCL</td><td>77</td><td>CL</td><td>6</td><td>3/4</td><td>4</td><td>6</td><td>6</td><td>6</td><td>1</td><td>0</td><td>Slow</td></tr>
+<tr><td>WCG</td><td>87</td><td>CL</td><td>6</td><td>3/4</td><td>4</td><td>6</td><td>6</td><td>6</td><td>1</td><td>0</td><td>Assault, Slow</td></tr>
+<tr><td>WDN</td><td>90</td><td>DN</td><td>11</td><td>3/2</td><td>9</td><td>11</td><td>11</td><td>10</td><td>1</td><td>0</td><td>Slow</td></tr>
+<tr><td>YCA</td><td>110</td><td>CA</td><td>8</td><td>3/3</td><td>6</td><td>8</td><td>8</td><td>8</td><td>1</td><td>0</td><td>Slow</td></tr>
+<tr><td>YLR</td><td>113</td><td>FF</td><td>4</td><td>2/6</td><td>3</td><td>5</td><td>5</td><td>3</td><td>1</td><td>0</td><td>Slow</td></tr>
+<tr><td>YCR</td><td>114</td><td>CL</td><td>6</td><td>3/4</td><td>4</td><td>6</td><td>6</td><td>6</td><td>1</td><td>0</td><td>Slow</td></tr>
+<tr><td>YSL</td><td>115</td><td>POL</td><td>3</td><td>2/8</td><td>2</td><td>4</td><td>4</td><td>3</td><td>1</td><td>0</td><td>Slow</td></tr>
+<tr><td>YVK</td><td>117</td><td>POL</td><td>3</td><td>2/8</td><td>2</td><td>4</td><td>4</td><td>3</td><td>1</td><td>0</td><td>Assault, Slow</td></tr>
+<tr><td>DD</td><td>125</td><td>POL</td><td>2</td><td>1/8</td><td>4</td><td>4</td><td>4</td><td>5</td><td>1</td><td>0</td><td></td></tr>
+<tr><td>CR</td><td>127</td><td>CL</td><td>5</td><td>2/4</td><td>6</td><td>6</td><td>6</td><td>6</td><td>1</td><td>0</td><td></td></tr>
+<tr><td>LR</td><td>129</td><td>FF</td><td>3</td><td>1/6</td><td>4</td><td>4</td><td>4</td><td>3</td><td>1</td><td>0</td><td></td></tr>
+<tr><td>SLV</td><td>129</td><td>POL</td><td>2</td><td>1/8</td><td>2</td><td>2</td><td>4</td><td>3</td><td>1</td><td>0</td><td></td></tr>
+<tr><td>VIK</td><td>129</td><td>POL</td><td>3</td><td>2/8</td><td>1</td><td>1</td><td>4</td><td>3</td><td>1</td><td>0</td><td>Assault</td></tr>
+<tr><td>CA</td><td>132</td><td>CA</td><td>7</td><td>2/3</td><td>8</td><td>8</td><td>8</td><td>8</td><td>1</td><td>0</td><td></td></tr>
+<tr><td>SAL</td><td>150</td><td>CL</td><td>5</td><td>2/4</td><td>6</td><td>6</td><td>8</td><td>6</td><td>1</td><td>0</td><td></td></tr>
+<tr><td>LRS</td><td>150</td><td>FF</td><td>4</td><td>2/6</td><td>1</td><td>1</td><td>4</td><td>3</td><td>1</td><td>0</td><td>Scout(1)</td></tr>
+<tr><td>FLG</td><td>150</td><td>POL</td><td>3</td><td>2/8</td><td>2</td><td>2</td><td>4</td><td>6</td><td>1</td><td>0</td><td>Assault, Scout(1)</td></tr>
+<tr><td>OK6</td><td>165</td><td>CL</td><td>5</td><td>2/4</td><td>6</td><td>6</td><td>6</td><td>8</td><td>1</td><td>0</td><td></td></tr>
+<tr><td>HR</td><td>165</td><td>CW</td><td>7</td><td>2/3</td><td>7</td><td>7</td><td>7</td><td>6</td><td>1</td><td>0</td><td></td></tr>
+<tr><td>AR</td><td>166</td><td>CW</td><td>7</td><td>2/3</td><td>7</td><td>7</td><td>7</td><td>6</td><td>1</td><td>0</td><td></td></tr>
+<tr><td>MR</td><td>168</td><td>CL</td><td>5</td><td>2/4</td><td>6</td><td>6</td><td>6</td><td>6</td><td>1</td><td>0</td><td></td></tr>
+<tr><td>BR</td><td>168</td><td>CW</td><td>7</td><td>2/3</td><td>7</td><td>7</td><td>7</td><td>6</td><td>1</td><td>0</td><td></td></tr>
+<tr><td>DBP</td><td>168</td><td>DW</td><td>4</td><td>2/6</td><td>6</td><td>6</td><td>6</td><td>6</td><td>1</td><td>0</td><td></td></tr>
+<tr><td>DBR</td><td>168</td><td>DW</td><td>4</td><td>2/6</td><td>6</td><td>6</td><td>6</td><td>6</td><td>1</td><td>0</td><td></td></tr>
+<tr><td>DV</td><td>168</td><td>POL</td><td>3</td><td>2/8</td><td>4</td><td>4</td><td>4</td><td>5</td><td>1</td><td>6</td><td>Carrier</td></tr>
+<tr><td>CVL</td><td>170</td><td>CL</td><td>6</td><td>3/4</td><td>6</td><td>6</td><td>8</td><td>6</td><td>1</td><td>8</td><td>Carrier</td></tr>
+<tr><td>LVS</td><td>170</td><td>CL</td><td>6</td><td>3/4</td><td>6</td><td>6</td><td>8</td><td>6</td><td>1</td><td>12</td><td>Carrier</td></tr>
+<tr><td>CVS</td><td>171</td><td>CW</td><td>8</td><td>3/3</td><td>6</td><td>6</td><td>7</td><td>6</td><td>1</td><td>12</td><td>Carrier</td></tr>
+<tr><td>SVL</td><td>171</td><td>POL</td><td>3</td><td>2/8</td><td>1</td><td>1</td><td>4</td><td>3</td><td>1</td><td>12</td><td>Carrier</td></tr>
+<tr><td>DCR</td><td>172</td><td>CW</td><td>7</td><td>2/3</td><td>9</td><td>9</td><td>9</td><td>8</td><td>1</td><td>0</td><td></td></tr>
+<tr><td>BRC</td><td>173</td><td>CW</td><td>8</td><td>3/3</td><td>7</td><td>7</td><td>7</td><td>6</td><td>1</td><td>0</td><td>Assault</td></tr>
+<tr><td>FCR</td><td>173</td><td>FF</td><td>4</td><td>2/6</td><td>3</td><td>3</td><td>4</td><td>3</td><td>1</td><td>0</td><td>Guardian</td></tr>
+<tr><td>DW</td><td>174</td><td>DW</td><td>4</td><td>2/6</td><td>5</td><td>5</td><td>5</td><td>5</td><td>1</td><td>0</td><td></td></tr>
+<tr><td>BC</td><td>175</td><td>BC</td><td>8</td><td>3/3</td><td>9</td><td>9</td><td>9</td><td>9</td><td>1</td><td>0</td><td></td></tr>
+<tr><td>CV</td><td>175</td><td>CA</td><td>8</td><td>3/3</td><td>8</td><td>8</td><td>8</td><td>8</td><td>1</td><td>12</td><td>Carrier</td></tr>
+<tr><td>CVD</td><td>175</td><td>CA</td><td>8</td><td>3/3</td><td>3</td><td>3</td><td>8</td><td>8</td><td>1</td><td>24</td><td>Carrier</td></tr>
+<tr><td>CSV</td><td>175</td><td>CL</td><td>6</td><td>3/4</td><td>3</td><td>3</td><td>8</td><td>6</td><td>1</td><td>6H</td><td>Carrier, Scout(2)</td></tr>
+<tr><td>BRH</td><td>175</td><td>NCA</td><td>7</td><td>2/3</td><td>8</td><td>8</td><td>8</td><td>8</td><td>1</td><td>0</td><td></td></tr>
+<tr><td>BHV</td><td>175</td><td>NCA</td><td>8</td><td>3/3</td><td>8</td><td>8</td><td>8</td><td>8</td><td>1</td><td>12</td><td>Carrier</td></tr>
+<tr><td>CVP</td><td>175</td><td>CW</td><td>8</td><td>3/3</td><td>3</td><td>3</td><td>7</td><td>6</td><td>1</td><td>18</td><td>Carrier</td></tr>
+<tr><td>DWS</td><td>175</td><td>DW</td><td>5</td><td>3/6</td><td>2</td><td>2</td><td>5</td><td>5</td><td>1</td><td>0</td><td>Scout(2)</td></tr>
+<tr><td>DWV</td><td>177</td><td>DW</td><td>5</td><td>3/6</td><td>5</td><td>5</td><td>5</td><td>5</td><td>1</td><td>8</td><td>Carrier</td></tr>
+<tr><td>DWP</td><td>178</td><td>DW</td><td>4</td><td>2/6</td><td>6</td><td>6</td><td>6</td><td>5</td><td>1</td><td>0</td><td></td></tr>
+<tr><td>BCH</td><td>180</td><td>BCH</td><td>8</td><td>2/2</td><td>10</td><td>10</td><td>10</td><td>10</td><td>1</td><td>0</td><td></td></tr>
+<tr><td>BCV</td><td>180</td><td>BCH</td><td>9</td><td>3/2</td><td>10</td><td>10</td><td>10</td><td>10</td><td>1</td><td>12</td><td>Carrier</td></tr>
+<tr><td>PFT</td><td>180</td><td>CL</td><td>6</td><td>3/4</td><td>4</td><td>4</td><td>8</td><td>6</td><td>1</td><td>0</td><td>Scout(2)</td></tr>
+<tr><td>SGS</td><td>180</td><td>CL</td><td>6</td><td>3/4</td><td>6</td><td>6</td><td>8</td><td>7</td><td>1</td><td>12</td><td>Carrier, Scout(2)</td></tr>
+<tr><td>BHP</td><td>180</td><td>NCA</td><td>8</td><td>3/3</td><td>4</td><td>4</td><td>8</td><td>8</td><td>1</td><td>0</td><td>Scout(2)</td></tr>
+<tr><td>BRP</td><td>180</td><td>CW</td><td>8</td><td>3/3</td><td>4</td><td>4</td><td>7</td><td>6</td><td>1</td><td>0</td><td>Scout(2)</td></tr>
+<tr><td>BCS</td><td>181</td><td>BCH</td><td>9</td><td>3/2</td><td>10</td><td>10</td><td>10</td><td>10</td><td>1</td><td>6</td><td>Carrier</td></tr>
+<tr><td>CRX</td><td>182</td><td>CL</td><td>6</td><td>3/4</td><td>10</td><td>10</td><td>10</td><td>7</td><td>1</td><td>0</td><td>Fast Ship</td></tr>
+<tr><td>HDW</td><td>182</td><td>HDW</td><td>5</td><td>2/4</td><td>6</td><td>6</td><td>7</td><td>5</td><td>1</td><td>2</td><td></td></tr>
+<tr><td>LX</td><td>182</td><td>FF</td><td>4</td><td>2/6</td><td>7</td><td>7</td><td>7</td><td>4</td><td>1</td><td>0</td><td>Fast Ship</td></tr>
+<tr><td>CX</td><td>183</td><td>CA</td><td>8</td><td>3/3</td><td>14</td><td>14</td><td>14</td><td>9</td><td>1</td><td>0</td><td>Cloak, Fast Ship</td></tr>
+<tr><td>SLX</td><td>183</td><td>POL</td><td>3</td><td>2/8</td><td>4</td><td>4</td><td>4</td><td>4</td><td>1</td><td>0</td><td>Fast Ship</td></tr>
+<tr><td>SAX</td><td>184</td><td>CL</td><td>6</td><td>3/4</td><td>10</td><td>10</td><td>10</td><td>7</td><td>1</td><td>0</td><td>Fast Ship</td></tr>
+<tr><td>PFX</td><td>186</td><td>CL</td><td>6</td><td>3/4</td><td>6</td><td>6</td><td>6</td><td>7</td><td>1</td><td>0</td><td>Cloak, Fast Ship</td></tr>
+<tr><td>PFX</td><td>186</td><td>CL</td><td>6</td><td>3/4</td><td>6</td><td>6</td><td>6</td><td>7</td><td>1</td><td>0</td><td>Fast Ship</td></tr>
+<tr><td>BRX</td><td>186</td><td>CW</td><td>8</td><td>3/3</td><td>7</td><td>7</td><td>7</td><td>7</td><td>1</td><td>0</td><td>Fast Ship</td></tr>
+<tr><td>BRX</td><td>186</td><td>CW</td><td>8</td><td>3/3</td><td>7</td><td>7</td><td>7</td><td>7</td><td>1</td><td>0</td><td>Cloak, Fast Ship</td></tr>
+<tr><td>DBRX</td><td>186</td><td>DW</td><td>5</td><td>3/6</td><td>6</td><td>6</td><td>6</td><td>6</td><td>1</td><td>0</td><td>Fast Ship</td></tr>
+<tr><td>DBRX</td><td>186</td><td>DW</td><td>5</td><td>3/6</td><td>6</td><td>6</td><td>6</td><td>6</td><td>1</td><td>0</td><td>Cloak, Fast Ship</td></tr>
+<tr><td>DWX</td><td>186</td><td>DW</td><td>5</td><td>3/6</td><td>6</td><td>6</td><td>6</td><td>6</td><td>1</td><td>0</td><td>Cloak, Fast Ship</td></tr>
+<tr><td>DWX</td><td>186</td><td>DW</td><td>5</td><td>3/6</td><td>6</td><td>6</td><td>6</td><td>6</td><td>1</td><td>0</td><td>Fast Ship</td></tr>
+<tr><td>HDWXc</td><td>187</td><td>HDW</td><td>6</td><td>3/4</td><td></td><td></td><td>1</td><td>6</td><td>1</td><td>2</td><td>Cloak, Fast Ship</td></tr>
+<tr><td>HDWX</td><td>187</td><td>HDW</td><td>6</td><td>3/4</td><td></td><td></td><td>1</td><td>6</td><td>1</td><td>2</td><td>Fast Ship</td></tr>
+<tr><td>StarBase</td><td>140</td><td>SB</td><td>36</td><td>4/1</td><td>36</td><td>36</td><td>36</td><td>10</td><td>1</td><td>24</td><td>Carrier, Command Post, Scout(6), Supply Depot</td></tr>
+<tr><td>Battle Station</td><td>130</td><td>BATS</td><td>24</td><td>3/1</td><td>12</td><td>12</td><td>12</td><td>9</td><td>1</td><td>12</td><td>Carrier, Scout(4), Supply Depot</td></tr>
+<tr><td>Base Station</td><td>120</td><td>BS</td><td>16</td><td>2/1</td><td>10</td><td>10</td><td>10</td><td>8</td><td>1</td><td>12</td><td>Carrier, Scout(2), Supply Depot</td></tr>
+<tr><td>Early Base Station</td><td>65</td><td>BS</td><td>16</td><td>2/1</td><td>8</td><td>10</td><td>10</td><td>8</td><td>1</td><td>0</td><td>Supply Depot</td></tr>
+<tr><td>Mobile Base</td><td>140</td><td>MB</td><td>9</td><td>1/1</td><td>8</td><td>8</td><td>8</td><td>6</td><td>1</td><td>6</td><td>Carrier, Scout(1), Supply Depot</td></tr>
+<tr><td>Defense Satellite</td><td>120</td><td>DEFSAT</td><td>2</td><td>1/12</td><td>1</td><td>1</td><td>1</td><td>0</td><td>0</td><td>0</td><td></td></tr>
+<tr><td>Trade Fleet</td><td>65</td><td></td><td>15</td><td>1/1</td><td>0</td><td>0</td><td>0</td><td>0</td><td>1</td><td>0</td><td>Trade(0)</td></tr>
+<tr><td>Transport Fleet</td><td>65</td><td></td><td>20</td><td>1/1</td><td>0</td><td>0</td><td>0</td><td>0</td><td>1</td><td>0</td><td>Supply(10)</td></tr>
+<tr><td>Colony Fleet</td><td>65</td><td></td><td>30</td><td>1/1</td><td>0</td><td>0</td><td>0</td><td>0</td><td>1</td><td>0</td><td>Supply(10)</td></tr>
+<tr><td>Orbital Shipyard</td><td>65</td><td></td><td>20</td><td>2/1</td><td>0</td><td>0</td><td>0</td><td>0</td><td>1</td><td>0</td><td></td></tr>
+<tr><td>Light Infantry</td><td>65</td><td>Ground Unit</td><td>1</td><td>1/3</td><td>N/A</td><td>N/A</td><td>1</td><td>N/A</td><td>N/A</td><td>N/A</td><td></td></tr>
+<tr><td>Heavy Infantry</td><td>65</td><td>Ground Unit</td><td>2</td><td>1/2</td><td>N/A</td><td>N/A</td><td>2</td><td>N/A</td><td>N/A</td><td>N/A</td><td></td></tr>
+<tr><td>Light Armor</td><td>65</td><td>Ground Unit</td><td>3</td><td>2/3</td><td>N/A</td><td>N/A</td><td>3</td><td>N/A</td><td>N/A</td><td>N/A</td><td></td></tr>
+<tr><td>Heavy Armor</td><td>65</td><td>Ground Unit</td><td>6</td><td>2/2</td><td>N/A</td><td>N/A</td><td>6</td><td>N/A</td><td>N/A</td><td>N/A</td><td></td></tr>
+</tbody><tfoot>
+<tr><th>Unit<br>Name</th><th>Service<br>Date</th><th>Design</th><th>Cost</th><th>Maint</th><th>Anti-Ship<br>Rate</th><th>Anti-Ftr<br>Rate</th><th>Defense<br>Value</th><th>Cmd<br>Rate</th><th>Cmd<br>Cost</th><th>Basing</th><th>Special</th></tr>
+</tfoot>
+</table>
+<!-- ************************************************************************** -->
+<a name='frax'></a>
+</p><h3 class='darkhead' onclick='flip(this)'>FRAX</h3>
+<table class='visually-hidden zebra'>
+<thead>
+<tr><th>Unit<br>Name</th><th>Service<br>Date</th><th>Design</th><th>Cost</th><th>Maint</th><th>Anti-Ship<br>Rate</th><th>Anti-Ftr<br>Rate</th><th>Defense<br>Value</th><th>Cmd<br>Rate</th><th>Cmd<br>Cost</th><th>Basing</th><th>Special</th></tr>
+</thead>
+<tbody>
+<tr><td>FF</td><td>121</td><td>FF</td><td>3</td><td>1/6</td><td>5</td><td>5</td><td>5</td><td>3</td><td>1</td><td>0</td><td></td></tr>
+<tr><td>SFF</td><td>121</td><td>FF</td><td>4</td><td>2/6</td><td>5</td><td>5</td><td>5</td><td>3</td><td>1</td><td>0</td><td>Cloak</td></tr>
+<tr><td>CA</td><td>122</td><td>CA</td><td>7</td><td>2/3</td><td>8</td><td>8</td><td>8</td><td>8</td><td>1</td><td>0</td><td></td></tr>
+<tr><td>TUG</td><td>124</td><td>TUG</td><td>8</td><td>3/3</td><td>2</td><td>2</td><td>8</td><td>8</td><td>1</td><td>0</td><td>Supply(10), Towing(1)</td></tr>
+<tr><td>DW</td><td>135</td><td>DW</td><td>4</td><td>2/6</td><td>6</td><td>6</td><td>6</td><td>4</td><td>1</td><td>0</td><td></td></tr>
+<tr><td>SDD</td><td>135</td><td>DD</td><td>5</td><td>3/6</td><td>6</td><td>6</td><td>6</td><td>4</td><td>1</td><td>0</td><td>Cloak</td></tr>
+<tr><td>POL</td><td>135</td><td>FF</td><td>3</td><td>1/6</td><td>5</td><td>5</td><td>5</td><td>3</td><td>1</td><td>0</td><td></td></tr>
+<tr><td>DWD</td><td>137</td><td>DW</td><td>4</td><td>2/6</td><td>6</td><td>6</td><td>6</td><td>4</td><td>1</td><td>0</td><td>Ballistic, Gunship</td></tr>
+<tr><td>FFD</td><td>137</td><td>FF</td><td>3</td><td>1/6</td><td>5</td><td>5</td><td>5</td><td>3</td><td>1</td><td>0</td><td>Ballistic, Gunship</td></tr>
+<tr><td>DWS</td><td>138</td><td>DW</td><td>5</td><td>3/6</td><td>6</td><td>6</td><td>6</td><td>4</td><td>1</td><td>0</td><td>Scout(1)</td></tr>
+<tr><td>CC</td><td>143</td><td>CA</td><td>7</td><td>2/3</td><td>8</td><td>8</td><td>8</td><td>9</td><td>1</td><td>0</td><td></td></tr>
+<tr><td>DWL</td><td>143</td><td>DW</td><td>4</td><td>2/6</td><td>6</td><td>6</td><td>6</td><td>5</td><td>1</td><td>0</td><td></td></tr>
+<tr><td>FFL</td><td>143</td><td>FF</td><td>3</td><td>1/6</td><td>5</td><td>5</td><td>5</td><td>4</td><td>1</td><td>0</td><td></td></tr>
+<tr><td>DWG</td><td>155</td><td>DW</td><td>5</td><td>3/6</td><td>6</td><td>6</td><td>6</td><td>4</td><td>1</td><td>0</td><td>Assault</td></tr>
+<tr><td>DNL</td><td>158</td><td>DNL</td><td>11</td><td>3/2</td><td>10</td><td>10</td><td>10</td><td>9</td><td>1</td><td>0</td><td>Fast Ship</td></tr>
+<tr><td>CF</td><td>158</td><td>CA</td><td>8</td><td>3/3</td><td>8</td><td>8</td><td>8</td><td>8</td><td>1</td><td>0</td><td>Fast Ship</td></tr>
+<tr><td>SR</td><td>160</td><td>CA</td><td>8</td><td>3/3</td><td>8</td><td>8</td><td>8</td><td>8</td><td>1</td><td>0</td><td>Scout(2)</td></tr>
+<tr><td>DN</td><td>167</td><td>DN</td><td>10</td><td>2/2</td><td>11</td><td>11</td><td>11</td><td>10</td><td>1</td><td>0</td><td></td></tr>
+<tr><td>CV</td><td>167</td><td>CA</td><td>8</td><td>3/3</td><td>8</td><td>8</td><td>8</td><td>8</td><td>1</td><td>24</td><td>Carrier</td></tr>
+<tr><td>DWV</td><td>167</td><td>DW</td><td>5</td><td>3/6</td><td>6</td><td>6</td><td>6</td><td>4</td><td>1</td><td>8</td><td>Carrier</td></tr>
+<tr><td>DWE</td><td>167</td><td>DW</td><td>5</td><td>3/6</td><td>6</td><td>6</td><td>6</td><td>4</td><td>1</td><td>0</td><td>Guardian</td></tr>
+<tr><td>SCL</td><td>168</td><td>CL</td><td>6</td><td>3/4</td><td>6</td><td>6</td><td>6</td><td>6</td><td>1</td><td>0</td><td>Cloak</td></tr>
+<tr><td>CW</td><td>168</td><td>CW</td><td>7</td><td>2/3</td><td>7</td><td>7</td><td>7</td><td>6</td><td>1</td><td>0</td><td></td></tr>
+<tr><td>SCW</td><td>168</td><td>CW</td><td>8</td><td>3/3</td><td>7</td><td>7</td><td>7</td><td>6</td><td>1</td><td>0</td><td>Cloak</td></tr>
+<tr><td>DWM</td><td>168</td><td>DW</td><td>4</td><td>2/6</td><td>6</td><td>6</td><td>6</td><td>4</td><td>1</td><td>0</td><td></td></tr>
+<tr><td>FCR</td><td>168</td><td>FF</td><td>4</td><td>2/6</td><td>5</td><td>5</td><td>5</td><td>3</td><td>1</td><td>0</td><td>Guardian</td></tr>
+<tr><td>CWL</td><td>169</td><td>CW</td><td>7</td><td>2/3</td><td>7</td><td>7</td><td>7</td><td>7</td><td>1</td><td>0</td><td></td></tr>
+<tr><td>ACW</td><td>169</td><td>CW</td><td>7</td><td>2/3</td><td>7</td><td>7</td><td>7</td><td>6</td><td>1</td><td>0</td><td></td></tr>
+<tr><td>CWS</td><td>169</td><td>CW</td><td>8</td><td>3/3</td><td>7</td><td>7</td><td>7</td><td>6</td><td>1</td><td>0</td><td>Scout(2)</td></tr>
+<tr><td>SCG</td><td>170</td><td>CA</td><td>8</td><td>3/3</td><td>8</td><td>8</td><td>8</td><td>8</td><td>1</td><td>0</td><td>Ballistic, Gunship, Cloak</td></tr>
+<tr><td>CWG</td><td>170</td><td>CW</td><td>8</td><td>3/3</td><td>7</td><td>7</td><td>7</td><td>6</td><td>1</td><td>0</td><td>Assault</td></tr>
+<tr><td>CWE</td><td>170</td><td>CW</td><td>8</td><td>3/3</td><td>7</td><td>7</td><td>7</td><td>6</td><td>1</td><td>0</td><td>Guardian</td></tr>
+<tr><td>CWD</td><td>170</td><td>CW</td><td>7</td><td>2/3</td><td>7</td><td>7</td><td>7</td><td>6</td><td>1</td><td>0</td><td>Ballistic, Gunship</td></tr>
+<tr><td>CWM</td><td>170</td><td>CW</td><td>7</td><td>2/3</td><td>7</td><td>7</td><td>7</td><td>6</td><td>1</td><td>0</td><td></td></tr>
+<tr><td>CWV</td><td>170</td><td>CW</td><td>8</td><td>3/3</td><td>7</td><td>7</td><td>7</td><td>6</td><td>1</td><td>12</td><td>Carrier</td></tr>
+<tr><td>LTT</td><td>170</td><td>CW</td><td>8</td><td>3/3</td><td>7</td><td>7</td><td>7</td><td>6</td><td>1</td><td>0</td><td>Supply(6), Towing(1)</td></tr>
+<tr><td>MCW</td><td>170</td><td>CW</td><td>7</td><td>2/3</td><td>7</td><td>7</td><td>7</td><td>6</td><td>1</td><td>0</td><td></td></tr>
+<tr><td>MDW</td><td>170</td><td>DW</td><td>4</td><td>2/6</td><td>6</td><td>6</td><td>6</td><td>4</td><td>1</td><td>0</td><td></td></tr>
+<tr><td>FFE</td><td>170</td><td>FF</td><td>4</td><td>2/6</td><td>5</td><td>5</td><td>5</td><td>3</td><td>1</td><td>0</td><td>Guardian</td></tr>
+<tr><td>CVA</td><td>174</td><td>DN</td><td>11</td><td>3/2</td><td>11</td><td>11</td><td>11</td><td>10</td><td>1</td><td>24</td><td>Carrier</td></tr>
+<tr><td>CWA</td><td>175</td><td>CW</td><td>8</td><td>3/3</td><td>7</td><td>7</td><td>7</td><td>6</td><td>1</td><td>0</td><td>Guardian</td></tr>
+<tr><td>DWA</td><td>175</td><td>DW</td><td>5</td><td>3/6</td><td>6</td><td>6</td><td>6</td><td>4</td><td>1</td><td>0</td><td>Guardian</td></tr>
+<tr><td>FFA</td><td>175</td><td>FF</td><td>4</td><td>2/6</td><td>5</td><td>5</td><td>5</td><td>3</td><td>1</td><td>0</td><td>Guardian</td></tr>
+<tr><td>CWU</td><td>177</td><td>CW</td><td>8</td><td>3/3</td><td>7</td><td>7</td><td>7</td><td>6</td><td>1</td><td>18</td><td>Carrier</td></tr>
+<tr><td>DNH</td><td>178</td><td>DNH</td><td>10</td><td>3/2</td><td>14</td><td>14</td><td>14</td><td>10</td><td>1</td><td>0</td><td></td></tr>
+<tr><td>BCH</td><td>178</td><td>BCH</td><td>8</td><td>2/2</td><td>11</td><td>11</td><td>11</td><td>10</td><td>1</td><td>0</td><td></td></tr>
+<tr><td>SCS</td><td>179</td><td>DN</td><td>11</td><td>3/2</td><td>11</td><td>11</td><td>11</td><td>10</td><td>1</td><td>12</td><td>Carrier</td></tr>
+<tr><td>BCV</td><td>179</td><td>BCH</td><td>9</td><td>3/2</td><td>11</td><td>11</td><td>11</td><td>10</td><td>1</td><td>12</td><td>Carrier</td></tr>
+<tr><td>PFT</td><td>179</td><td>CW</td><td>7</td><td>2/3</td><td>7</td><td>7</td><td>7</td><td>6</td><td>1</td><td>0</td><td></td></tr>
+<tr><td>BCS</td><td>180</td><td>BCH</td><td>9</td><td>3/2</td><td>11</td><td>11</td><td>11</td><td>10</td><td>1</td><td>6</td><td>Carrier</td></tr>
+<tr><td>CCX</td><td>181</td><td>CA</td><td>8</td><td>3/3</td><td>8</td><td>8</td><td>8</td><td>10</td><td>1</td><td>0</td><td>Fast Ship</td></tr>
+<tr><td>SWX</td><td>181</td><td>CA</td><td>8</td><td>3/3</td><td>8</td><td>8</td><td>8</td><td>6</td><td>1</td><td>0</td><td>Cloak, Fast Ship</td></tr>
+<tr><td>DWX</td><td>181</td><td>DW</td><td>5</td><td>3/6</td><td>6</td><td>6</td><td>6</td><td>4</td><td>1</td><td>0</td><td>Fast Ship</td></tr>
+<tr><td>DSX</td><td>181</td><td>DW</td><td>5</td><td>3/6</td><td>6</td><td>6</td><td>6</td><td>4</td><td>1</td><td>0</td><td>Fast Ship, Scout(2)</td></tr>
+<tr><td>StarBase</td><td>140</td><td>SB</td><td>36</td><td>4/1</td><td>36</td><td>36</td><td>36</td><td>10</td><td>1</td><td>24</td><td>Carrier, Command Post, Scout(6), Supply Depot</td></tr>
+<tr><td>Battle Station</td><td>130</td><td>BATS</td><td>24</td><td>3/1</td><td>12</td><td>12</td><td>12</td><td>9</td><td>1</td><td>12</td><td>Carrier, Scout(4), Supply Depot</td></tr>
+<tr><td>Base Station</td><td>120</td><td>BS</td><td>16</td><td>2/1</td><td>10</td><td>10</td><td>10</td><td>8</td><td>1</td><td>12</td><td>Carrier, Scout(2), Supply Depot</td></tr>
+<tr><td>Early Base Station</td><td>65</td><td>BS</td><td>16</td><td>2/1</td><td>8</td><td>10</td><td>10</td><td>8</td><td>1</td><td>0</td><td>Supply Depot</td></tr>
+<tr><td>Mobile Base</td><td>140</td><td>MB</td><td>9</td><td>1/1</td><td>8</td><td>8</td><td>8</td><td>6</td><td>1</td><td>6</td><td>Carrier, Scout(1), Supply Depot</td></tr>
+<tr><td>Defense Satellite</td><td>120</td><td>DEFSAT</td><td>2</td><td>1/12</td><td>1</td><td>1</td><td>1</td><td>0</td><td>0</td><td>0</td><td></td></tr>
+<tr><td>Trade Fleet</td><td>65</td><td></td><td>15</td><td>1/1</td><td>0</td><td>0</td><td>0</td><td>0</td><td>1</td><td>0</td><td>Trade(0)</td></tr>
+<tr><td>Transport Fleet</td><td>65</td><td></td><td>20</td><td>1/1</td><td>0</td><td>0</td><td>0</td><td>0</td><td>1</td><td>0</td><td>Supply(10)</td></tr>
+<tr><td>Colony Fleet</td><td>65</td><td></td><td>30</td><td>1/1</td><td>0</td><td>0</td><td>0</td><td>0</td><td>1</td><td>0</td><td>Supply(10)</td></tr>
+<tr><td>Orbital Shipyard</td><td>65</td><td></td><td>20</td><td>2/1</td><td>0</td><td>0</td><td>0</td><td>0</td><td>1</td><td>0</td><td></td></tr>
+<tr><td>Demon-1</td><td>168</td><td>LF</td><td>1/2</td><td>1/12</td><td>1</td><td>1</td><td>1</td><td>N/A</td><td>N/A</td><td>N/A</td><td></td></tr>
+<tr><td>Demon-2</td><td>173</td><td>LF</td><td>1/2</td><td>1/12</td><td>1</td><td>1</td><td>1</td><td>N/A</td><td>N/A</td><td>N/A</td><td></td></tr>
+<tr><td>Demon-3</td><td>177</td><td>LF</td><td>1/2</td><td>1/12</td><td>1</td><td>1</td><td>1</td><td>N/A</td><td>N/A</td><td>N/A</td><td></td></tr>
+<tr><td>Demon-4</td><td>180</td><td>LF</td><td>1/2</td><td>1/12</td><td>1</td><td>1</td><td>1</td><td>N/A</td><td>N/A</td><td>N/A</td><td></td></tr>
+<tr><td>Demon-H</td><td>176</td><td>HF</td><td>1/3</td><td>1/8</td><td>2</td><td>2</td><td>2</td><td>N/A</td><td>N/A</td><td>N/A</td><td></td></tr>
+<tr><td>Light Infantry</td><td>65</td><td>Ground Unit</td><td>1</td><td>1/3</td><td>N/A</td><td>N/A</td><td>1</td><td>N/A</td><td>N/A</td><td>N/A</td><td></td></tr>
+<tr><td>Heavy Infantry</td><td>65</td><td>Ground Unit</td><td>2</td><td>1/2</td><td>N/A</td><td>N/A</td><td>2</td><td>N/A</td><td>N/A</td><td>N/A</td><td></td></tr>
+<tr><td>Light Armor</td><td>65</td><td>Ground Unit</td><td>3</td><td>2/3</td><td>N/A</td><td>N/A</td><td>3</td><td>N/A</td><td>N/A</td><td>N/A</td><td></td></tr>
+<tr><td>Heavy Armor</td><td>65</td><td>Ground Unit</td><td>6</td><td>2/2</td><td>N/A</td><td>N/A</td><td>6</td><td>N/A</td><td>N/A</td><td>N/A</td><td></td></tr>
+</tbody><tfoot>
+<tr><th>Unit<br>Name</th><th>Service<br>Date</th><th>Design</th><th>Cost</th><th>Maint</th><th>Anti-Ship<br>Rate</th><th>Anti-Ftr<br>Rate</th><th>Defense<br>Value</th><th>Cmd<br>Rate</th><th>Cmd<br>Cost</th><th>Basing</th><th>Special</th></tr>
+</tfoot>
+</table>
+<!-- ************************************************************************** -->
+<a name='quari'></a>
+</p><h3 class='darkhead' onclick='flip(this)'>QUARI</h3>
+<table class='visually-hidden zebra'>
+<thead>
+<tr><th>Unit<br>Name</th><th>Service<br>Date</th><th>Design</th><th>Cost</th><th>Maint</th><th>Anti-Ship<br>Rate</th><th>Anti-Ftr<br>Rate</th><th>Defense<br>Value</th><th>Cmd<br>Rate</th><th>Cmd<br>Cost</th><th>Basing</th><th>Special</th></tr>
+</thead>
+<tbody>
+<tr><td>T90</td><td>165</td><td>BCH</td><td>8</td><td>2/2</td><td>11</td><td>11</td><td>11</td><td>10</td><td>1</td><td>0</td><td></td></tr>
+<tr><td>T80</td><td>165</td><td>CA</td><td>7</td><td>2/3</td><td>8</td><td>8</td><td>8</td><td>9</td><td>1</td><td>0</td><td></td></tr>
+<tr><td>T64</td><td>165</td><td>CA</td><td>7</td><td>2/3</td><td>8</td><td>8</td><td>8</td><td>8</td><td>1</td><td>0</td><td></td></tr>
+<tr><td>T83</td><td>165</td><td>CA</td><td>7</td><td>2/3</td><td>8</td><td>8</td><td>8</td><td>9</td><td>1</td><td>0</td><td></td></tr>
+<tr><td>T55</td><td>165</td><td>CL</td><td>5</td><td>2/4</td><td>6</td><td>6</td><td>6</td><td>6</td><td>1</td><td>0</td><td></td></tr>
+<tr><td>T73</td><td>165</td><td>CW</td><td>7</td><td>2/3</td><td>7</td><td>7</td><td>7</td><td>6</td><td>1</td><td>0</td><td></td></tr>
+<tr><td>T72</td><td>165</td><td>CW</td><td>7</td><td>2/3</td><td>7</td><td>7</td><td>7</td><td>6</td><td>1</td><td>0</td><td></td></tr>
+<tr><td>T70</td><td>165</td><td>CW</td><td>7</td><td>2/3</td><td>7</td><td>7</td><td>7</td><td>6</td><td>1</td><td>0</td><td></td></tr>
+<tr><td>BM3</td><td>165</td><td>DW</td><td>4</td><td>2/6</td><td>6</td><td>6</td><td>6</td><td>4</td><td>1</td><td>0</td><td></td></tr>
+<tr><td>BMS</td><td>165</td><td>DW</td><td>4</td><td>2/6</td><td>6</td><td>6</td><td>6</td><td>4</td><td>1</td><td>0</td><td></td></tr>
+<tr><td>BM1</td><td>165</td><td>DD</td><td>4</td><td>2/6</td><td>6</td><td>6</td><td>6</td><td>4</td><td>1</td><td>0</td><td></td></tr>
+<tr><td>BMD</td><td>165</td><td>DD</td><td>4</td><td>2/6</td><td>6</td><td>6</td><td>6</td><td>4</td><td>1</td><td>0</td><td></td></tr>
+<tr><td>BM2</td><td>165</td><td>DD</td><td>4</td><td>2/6</td><td>6</td><td>6</td><td>6</td><td>5</td><td>1</td><td>0</td><td></td></tr>
+<tr><td>BR8</td><td>165</td><td>FF</td><td>3</td><td>1/6</td><td>5</td><td>5</td><td>5</td><td>4</td><td>1</td><td>0</td><td></td></tr>
+<tr><td>BR6</td><td>165</td><td>FF</td><td>3</td><td>1/6</td><td>5</td><td>5</td><td>5</td><td>4</td><td>1</td><td>0</td><td></td></tr>
+<tr><td>BR7</td><td>165</td><td>FF</td><td>3</td><td>1/6</td><td>5</td><td>5</td><td>5</td><td>4</td><td>1</td><td>0</td><td></td></tr>
+<tr><td>T10</td><td>169</td><td>DN</td><td>10</td><td>2/2</td><td>11</td><td>11</td><td>11</td><td>10</td><td>1</td><td>0</td><td></td></tr>
+<tr><td>T87</td><td>170</td><td>CA</td><td>8</td><td>3/3</td><td>8</td><td>8</td><td>8</td><td>9</td><td>1</td><td>12</td><td>Carrier</td></tr>
+<tr><td>T78</td><td>170</td><td>CW</td><td>8</td><td>3/3</td><td>7</td><td>7</td><td>7</td><td>6</td><td>1</td><td>0</td><td>Guardian</td></tr>
+<tr><td>BME</td><td>170</td><td>DW</td><td>5</td><td>3/6</td><td>6</td><td>6</td><td>6</td><td>4</td><td>1</td><td>0</td><td>Guardian</td></tr>
+<tr><td>T78A</td><td>175</td><td>CW</td><td>8</td><td>3/3</td><td>7</td><td>7</td><td>7</td><td>6</td><td>1</td><td>0</td><td>Guardian</td></tr>
+<tr><td>BMA</td><td>175</td><td>DW</td><td>5</td><td>3/6</td><td>6</td><td>6</td><td>6</td><td>4</td><td>1</td><td>0</td><td>Guardian</td></tr>
+<tr><td>T79</td><td>179</td><td>CW</td><td>7</td><td>2/3</td><td>7</td><td>7</td><td>7</td><td>6</td><td>1</td><td>0</td><td></td></tr>
+<tr><td>StarBase</td><td>140</td><td>SB</td><td>36</td><td>4/1</td><td>36</td><td>36</td><td>36</td><td>10</td><td>1</td><td>24</td><td>Carrier, Command Post, Scout(6), Supply Depot</td></tr>
+<tr><td>Battle Station</td><td>130</td><td>BATS</td><td>24</td><td>3/1</td><td>12</td><td>12</td><td>12</td><td>9</td><td>1</td><td>12</td><td>Carrier, Scout(4), Supply Depot</td></tr>
+<tr><td>Base Station</td><td>120</td><td>BS</td><td>16</td><td>2/1</td><td>10</td><td>10</td><td>10</td><td>8</td><td>1</td><td>12</td><td>Carrier, Scout(2), Supply Depot</td></tr>
+<tr><td>Early Base Station</td><td>65</td><td>BS</td><td>16</td><td>2/1</td><td>8</td><td>10</td><td>10</td><td>8</td><td>1</td><td>0</td><td>Supply Depot</td></tr>
+<tr><td>Mobile Base</td><td>140</td><td>MB</td><td>9</td><td>1/1</td><td>8</td><td>8</td><td>8</td><td>6</td><td>1</td><td>6</td><td>Carrier, Scout(1), Supply Depot</td></tr>
+<tr><td>Defense Satellite</td><td>120</td><td>DEFSAT</td><td>2</td><td>1/12</td><td>1</td><td>1</td><td>1</td><td>0</td><td>0</td><td>0</td><td></td></tr>
+<tr><td>Trade Fleet</td><td>65</td><td></td><td>15</td><td>1/1</td><td>0</td><td>0</td><td>0</td><td>0</td><td>1</td><td>0</td><td>Trade(0)</td></tr>
+<tr><td>Transport Fleet</td><td>65</td><td></td><td>20</td><td>1/1</td><td>0</td><td>0</td><td>0</td><td>0</td><td>1</td><td>0</td><td>Supply(10)</td></tr>
+<tr><td>Colony Fleet</td><td>65</td><td></td><td>30</td><td>1/1</td><td>0</td><td>0</td><td>0</td><td>0</td><td>1</td><td>0</td><td>Supply(10)</td></tr>
+<tr><td>Orbital Shipyard</td><td>65</td><td></td><td>20</td><td>2/1</td><td>0</td><td>0</td><td>0</td><td>0</td><td>1</td><td>0</td><td></td></tr>
+<tr><td>MiG-21</td><td>168</td><td>LF</td><td>1/2</td><td>1/12</td><td>1</td><td>1</td><td>1</td><td>N/A</td><td>N/A</td><td>N/A</td><td></td></tr>
+<tr><td>MiG-23</td><td>177</td><td>LF</td><td>1/2</td><td>1/12</td><td>1</td><td>1</td><td>1</td><td>N/A</td><td>N/A</td><td>N/A</td><td></td></tr>
+<tr><td>MiG-29</td><td>177</td><td>LF</td><td>1/2</td><td>1/12</td><td>1</td><td>1</td><td>1</td><td>N/A</td><td>N/A</td><td>N/A</td><td></td></tr>
+<tr><td>Su-18</td><td>168</td><td>HF</td><td>1/3</td><td>1/8</td><td>2</td><td>2</td><td>2</td><td>N/A</td><td>N/A</td><td>N/A</td><td></td></tr>
+<tr><td>Su-24</td><td>177</td><td>HF</td><td>1/3</td><td>1/8</td><td>2</td><td>2</td><td>2</td><td>N/A</td><td>N/A</td><td>N/A</td><td></td></tr>
+<tr><td>Light Infantry</td><td>65</td><td>Ground Unit</td><td>1</td><td>1/3</td><td>N/A</td><td>N/A</td><td>1</td><td>N/A</td><td>N/A</td><td>N/A</td><td></td></tr>
+<tr><td>Heavy Infantry</td><td>65</td><td>Ground Unit</td><td>2</td><td>1/2</td><td>N/A</td><td>N/A</td><td>2</td><td>N/A</td><td>N/A</td><td>N/A</td><td></td></tr>
+<tr><td>Light Armor</td><td>65</td><td>Ground Unit</td><td>3</td><td>2/3</td><td>N/A</td><td>N/A</td><td>3</td><td>N/A</td><td>N/A</td><td>N/A</td><td></td></tr>
+<tr><td>Heavy Armor</td><td>65</td><td>Ground Unit</td><td>6</td><td>2/2</td><td>N/A</td><td>N/A</td><td>6</td><td>N/A</td><td>N/A</td><td>N/A</td><td></td></tr>
+</tbody><tfoot>
+<tr><th>Unit<br>Name</th><th>Service<br>Date</th><th>Design</th><th>Cost</th><th>Maint</th><th>Anti-Ship<br>Rate</th><th>Anti-Ftr<br>Rate</th><th>Defense<br>Value</th><th>Cmd<br>Rate</th><th>Cmd<br>Cost</th><th>Basing</th><th>Special</th></tr>
+</tfoot>
+</table>
+<!-- ************************************************************************** -->
+</body></html>

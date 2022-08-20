@@ -1,0 +1,82 @@
+body {
+  background: #222222;
+}
+th {
+  border-top: 1px solid #9AF;
+  background: #000000;
+  background: -webkit-gradient(linear, left top, left bottom, from(#57C), to(#9AF));
+  background: -webkit-linear-gradient(top, #57C, #9AF);
+  background: -moz-linear-gradient(top, #57C, #9AF);
+  background: -ms-linear-gradient(top, #57C, #9AF);
+  background: -o-linear-gradient(top, #57C, #9AF);
+  -webkit-box-shadow: rgba(0,0,0,1) 0 1px 0;
+  -moz-box-shadow: rgba(0,0,0,1) 0 1px 0;
+  box-shadow: rgba(0,0,0,1) 0 1px 0;
+  text-shadow: rgba(0,0,0,.4) 0 1px 0;
+  color: white;
+}
+
+img.banner {
+  border: 1px solid #55bbee;
+  background: #666666;
+}
+img.map {
+  border: 1px solid #55bbee;
+  background: #666666;
+  max-width:100%;
+}
+.footer {
+  border: 1px solid #55bbee;
+  background: #666666;
+  color: #FFFFFF;
+}
+ 
+.main > .article {
+  border: 1px solid #eebb55;
+  background: #DDDDFF;
+}
+  
+.main > .one {
+  border: 1px solid #eebb55;
+  background: #AAE;
+}
+  
+.main > .three {
+  border: 1px solid #eebb55;
+  background: #AAE;
+}
+
+.centralBox {
+  border: 1px solid #eebb55;
+  background: #AAE;
+}
+
+.summation {
+  border-top: 1px solid #89C;
+  background: #000000;
+  background: -webkit-gradient(linear, left top, left bottom, from(#313181), to(#8181c0));
+  background: -webkit-linear-gradient(top, #313181, #8181c0);
+  background: -moz-linear-gradient(top, #313181, #8181c0);
+  background: -ms-linear-gradient(top, #313181, #8181c0);
+  background: -o-linear-gradient(top, #313181, #8181c0);
+  -webkit-box-shadow: rgba(0,0,0,1) 0 1px 0;
+  -moz-box-shadow: rgba(0,0,0,1) 0 1px 0;
+  box-shadow: rgba(0,0,0,1) 0 1px 0;
+  text-shadow: rgba(0,0,0,.4) 0 1px 0;
+  color: white;
+}
+.button > a
+{
+  border-top: 1px solid #9AF;
+  background: #000000;
+  background: -webkit-gradient(linear, left top, left bottom, from(#57C), to(#9AF));
+  background: -webkit-linear-gradient(top, #57C, #9AF);
+  background: -moz-linear-gradient(top, #57C, #9AF);
+  background: -ms-linear-gradient(top, #57C, #9AF);
+  background: -o-linear-gradient(top, #57C, #9AF);
+  -webkit-box-shadow: rgba(0,0,0,1) 0 1px 0;
+  -moz-box-shadow: rgba(0,0,0,1) 0 1px 0;
+  box-shadow: rgba(0,0,0,1) 0 1px 0;
+  text-shadow: rgba(0,0,0,.4) 0 1px 0;
+  color: white;
+}
