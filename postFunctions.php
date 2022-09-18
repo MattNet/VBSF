@@ -28,7 +28,7 @@
 ###
 
 ###
-# Finds all of the orders of the specified type
+# Reads the data variable from a JSON file
 ###
 # Args:
 # - (string) Name of file to load
