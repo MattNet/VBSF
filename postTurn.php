@@ -46,6 +46,10 @@ if( $inputData === false ) // leave if there was an error loading the file
 ###
 # Modify and write the previous-turn data file
 ###
+// make all of the orders section into non-drop-down menus
+foreach( array_keys( $inputData["orders"] ) as $key )
+  $inputData["orders"][$key]["perm"] = 1;
+
 // clear the drop-downs in the orders section
 $inputData["game"]["blankOrders"] = 0;
 

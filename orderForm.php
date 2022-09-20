@@ -35,7 +35,7 @@
 ###
 # Configuration
 ###
-$EXIT_PAGE = "sheet/index.html"; // the page to show when the script is finished
+$EXIT_PAGE = "sfb.local/vbsf/sheet/index.html"; // the page to show when the script is finished
 $dataFileDir = "files/"; // location of the data files
 
 ###
@@ -65,8 +65,6 @@ Array
     [OrderEntry3B] => Colony Fleet
     [OrderEntry3C] => Fraxee
     [OrderEntry3D] => Colony-1
-    [OrderEntry3E_x] => 15 <-- Delete button hit
-    [OrderEntry3E_y] => 9
 // drop-down entries below
     [OrderEntry4A] => productivity
     [OrderEntry4B] => Fraxee
@@ -83,20 +81,20 @@ Array
 Always gives OrderEntryxD (the text-entry)
 "finished" entries gives all four entries
 unassigned orders are given "<-- No Order -->" for the A entry
-Delete buttons give an <name>_x and <name>_y
 
 "Order \""+orders[i].reciever+"\" to do \""+orders[i].type+"\" to \""+orders[i].target+"\" with \""+orders[i].note+"\"";
 
 var orders = [
-   {"type":"move","reciever":"Exploration Alpha","target":"Fraxee Dir A","note":"","perm":1},
-   {"type":"move","reciever":"Exploration Beta","target":"Fraxee Dir F","note":"","perm":1},
+   {"type":"move","reciever":"Exploration Alpha","target":"Fraxee Dir A","note":"","perm":0},
+   {"type":"move","reciever":"Exploration Beta","target":"Fraxee Dir F","note":"","perm":0},
    {"type":"invest","reciever":"","target":"","note":"13","perm":1},
-   {"type":"build","reciever":"Colony Fleet","target":"Fraxee","note":"Colony-1","perm":1}
+   {"type":"build","reciever":"Colony Fleet","target":"Fraxee","note":"Colony-1","perm":0}
 ];
 */
 
-print_r( $_REQUEST );
+//print_r( $_REQUEST );
 //print_r( $_SERVER );
+
 
 // find the data-file name
 $dataFileRoot = $_REQUEST["dataFile"];
@@ -105,18 +103,13 @@ $dataFileName = $dataFileDir.$dataFileRoot.".js";
 // get the data file
 $fileContents = extractJSON( $dataFileName );
 
-// get the size of the orders array
-// used as an offset for the $orderNum from the drop-down menus
-$ordersOffset = count( $fileContents["orders"] );
+$flagDelete = -1; // set to an order number to be deleted
 
-// find deleted items
-// find drop-down items (which are orders that are addded)
+// Iterate through the order array
+// If an order if "<-- No Order -->" then try to delete the entry from the data file
+// otherwise add to the data file
 foreach( array_keys($_REQUEST) as $key )
 {
-  // skip if not an order-entry item
-  if( str_starts_with( $key, "OrderEntry" ) !== true )
-    continue;
-
   // get the order to affect with this $key
   $orderNum = intval( substr( $key, 10, 1 ) );
   $orderPos = strtolower( substr( $key, 11, 1 ) );
@@ -125,60 +118,48 @@ foreach( array_keys($_REQUEST) as $key )
   if( $orderNum === false || $orderPos === false )
     continue;
 
-  // remove the deleted item
-  if( str_ends_with( $key, "_x" ) === true )
+  if( $_REQUEST[ $key ] == "<-- No Order -->" || $flagDelete == $orderNum )
   {
-    unset( $fileContents["orders"][$orderNum] );
-    continue; // skip the below for this one request-entry
+    $flagDelete = $orderNum;
+    if( isset($fileContents["orders"][$orderNum]) )
+      unset( $fileContents["orders"][$orderNum] ); // remove the deleted item
+    else
+      continue; // empty order
   }
-  if( str_ends_with( $key, "_y" ) === true )
-    continue; // skip the below for this one request-entry
 
-/*
-###
-## the below assumed the drop-downs appended to the orders array
-## $key iterates through every order, with no distinction between drop-down and not
-###
+  // set everything else. They might have changed
 
-  $out = array(); // track where this item goes in the orders arrays
+  // set up the entry to the orders array if not already
+  if( ! isset( $fileContents["orders"][$orderNum]) )
+    $fileContents["orders"][$orderNum] = array();
 
-### add the drop-down items
-  
   // create a segment of an order with this $key entry
   switch($orderPos)
   {
   case "a":
-    $out["type"] = $_REQUEST[$key];
+    $fileContents["orders"][$orderNum]["type"] = $_REQUEST[$key];
     break;
   case "b":
-    $out["reciever"] = $_REQUEST[$key];
+    $fileContents["orders"][$orderNum]["reciever"] = $_REQUEST[$key];
     break;
   case "c":
-    $out["target"] = $_REQUEST[$key];
+    $fileContents["orders"][$orderNum]["target"] = $_REQUEST[$key];
     break;
   case "d":
-    $out["note"] = $_REQUEST[$key];
-    $out["perm"] = 1; // make it not a drop-down, if we are noting the last item of the order
+    $fileContents["orders"][$orderNum]["note"] = $_REQUEST[$key];
     break;
   }
-
-  // set up the entry to the orders array if not already
-  if( ! isset( $fileContents["orders"][$ordersOffset+$orderNum]) )
-    $fileContents["orders"][$ordersOffset+$orderNum] = array();
-  // add in the above order segment to the whole order entry
-  array_merge( $fileContents["orders"][$ordersOffset+$orderNum], $out );
-*/
-
 }
 
 // re-index the orders array
 $fileContents["orders"] = array_values( $fileContents["orders"] );
 
-print_r($fileContents);
 // write the (edited) file
-//writeJSON( $fileContents, $dataFileName );
+writeJSON( $fileContents, $dataFileName );
 
+//var_dump("location: http://".$EXIT_PAGE."?data=".$_REQUEST["dataFile"]);
 // go back to the player-page
-//header( "location: http://".$EXIT_PAGE."?data=".$dataFileRoot );
+header( "location: http://".$EXIT_PAGE."?data=".$_REQUEST["dataFile"] );
+
 exit;
 ?>
