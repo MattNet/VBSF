@@ -286,6 +286,7 @@ if( isset($orderKeys[0]) ) // if there are none of these orders, then skip
         break; // skip to the end, since we found the location
       }
     }
+    $inputData["unknownMovementPlaces"] = array_values( $inputData["unknownMovementPlaces"] );
   } // end of movement-order handling
 
 ###
