@@ -123,8 +123,7 @@ foreach( array_keys($_REQUEST) as $key )
     $flagDelete = $orderNum;
     if( isset($fileContents["orders"][$orderNum]) )
       unset( $fileContents["orders"][$orderNum] ); // remove the deleted item
-    else
-      continue; // empty order
+    continue; // order is empty
   }
 
   // set everything else. They might have changed
