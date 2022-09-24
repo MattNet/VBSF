@@ -380,6 +380,11 @@ foreach( $raidPlaces as $place )
   }
 }
 
+// make all of the orders section into non-drop-down menus
+foreach( array_keys( $inputData["orders"] ) as $key )
+  $inputData["orders"][$key]["perm"] = 1;
+// Note: Leaving $inputData["game"]["blankOrders"] alone. The next segment of the turn needs these drop-downs.
+
 if( $MAKE_CHECKLIST )
 {
   // Fill events with a checklist

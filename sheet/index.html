@@ -150,7 +150,8 @@ fetchData( "../files/"+dataVal+".js" ); // get the datafile
 
 <div class='article'>
 <h3>Turn Orders</h3>
-<form accept-charset='UTF-8' action='' id='' method='post' target='_SELF'>
+<form accept-charset='UTF-8' action='../orderForm.php' id='' method='post' target='_SELF'>
+<input type='hidden' name='dataFile' value=''>
 
 <span id='ordersArea'></span>
 
@@ -230,4 +231,8 @@ fetchData( "../files/"+dataVal+".js" ); // get the datafile
 <script type="text/javascript" src='indexLib.js'></script>
 <script type="text/javascript" src='./maps.js' defer></script>
 <script type="text/javascript" src='./indexBuild.js' defer></script>
+<script>
+// set the value of certain hidden input to the name of the data file
+document.getElementsByName("dataFile")[0].value = dataVal;
+</script>
 </body></html>
