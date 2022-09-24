@@ -156,7 +156,6 @@ $fileContents["orders"] = array_values( $fileContents["orders"] );
 // write the (edited) file
 writeJSON( $fileContents, $dataFileName );
 
-//var_dump("location: http://".$EXIT_PAGE."?data=".$_REQUEST["dataFile"]);
 // go back to the player-page
 header( "location: http://".$EXIT_PAGE."?data=".$_REQUEST["dataFile"] );
 
