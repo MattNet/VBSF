@@ -150,6 +150,19 @@ foreach( array_keys($_REQUEST) as $key )
   }
 }
 
+// create any otherwise-empty order fields
+foreach( array_keys($fileContents["orders"]) as $orderNum )
+{
+  if( ! isset($fileContents["orders"][$orderNum]["type"]) )
+    $fileContents["orders"][$orderNum]["type"] = "";
+  if( ! isset($fileContents["orders"][$orderNum]["reciever"]) )
+    $fileContents["orders"][$orderNum]["reciever"] = "";
+  if( ! isset($fileContents["orders"][$orderNum]["target"]) )
+    $fileContents["orders"][$orderNum]["target"] = "";
+  if( ! isset($fileContents["orders"][$orderNum]["note"]) )
+    $fileContents["orders"][$orderNum]["note"] = "";
+}
+
 // re-index the orders array
 $fileContents["orders"] = array_values( $fileContents["orders"] );
 
