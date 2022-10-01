@@ -16,7 +16,7 @@ if( ! isset($argv[1]) )
 {
   echo "\nCreates a data file for a player position\n\n";
   echo "Called by:\n";
-  echo "  ".$argv[0]." OLD_TURN_DATA_FILE [NEW_FILE_NAME]\n";
+  echo "  ".$argv[0]." OLD_TURN_DATA_FILE [NEW_FILE_NAME]\n\n";
   exit(1);
 }
 
@@ -43,6 +43,24 @@ $inputData = extractJSON( $argv[1] );
 if( $inputData === false ) // leave if there was an error loading the file
   exit(1);
 
+$outputData = $inputData; // Copy the input data to use as output data
+
+// pull out the next-file name for writing the new data
+if( empty($newFileName) )
+{
+  if( ! empty($outputData["game"]["nextDoc"]) )
+  {
+  // Filename is defined in the data file and is not assigned when the script was called
+    $newFileName = $outputData["game"]["nextDoc"].".js";
+  }
+  else
+  {
+  // Filename is not defined in the data file and also is not defined in script arguments
+    echo "Filename for new data file not given in data and not given in script-arguments.\n\n";
+    exit(0);
+  } 
+}
+
 ###
 # Modify and write the previous-turn data file
 ###
@@ -53,10 +71,15 @@ foreach( array_keys( $inputData["orders"] ) as $key )
 // clear the drop-downs in the orders section
 $inputData["game"]["blankOrders"] = 0;
 
+// add the next-doc link
+// Overwrite previous value, since it might have been re-defined by the CLI
+// remove the last 3 chars. They should be ".js"
+$inputData["game"]["nextDoc"] = substr( $newFileName, 0, -3 );
+
 $results = writeJSON( $inputData, $argv[1] );
 if( $results === false )
 {
-  echo "Error writing '".$argv[1]."'.";
+  echo "Error writing '".$argv[1]."'.\n\n";
   exit(0);
 }
 else
@@ -67,12 +90,7 @@ else
 ###
 # Make the end-of-turn modifications
 ###
-  $outputData = $inputData; // preserve the input PHP variable
-
-  // pull out the next file, if defined and if not overridden when the script was called
-  if( ! empty($outputData["game"]["nextDoc"]) && empty($newFileName) )
-    $newFileName = $outputData["game"]["nextDoc"].".js";
-
+  
   // set the prev file
   $outputData["game"]["previousDoc"] = str_replace( $fileRepoDir, "", $argv[1] );
   $outputData["game"]["previousDoc"] = str_replace( ".js", "", $outputData["game"]["previousDoc"] );

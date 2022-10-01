@@ -323,6 +323,13 @@ function UKSortFunc( $a, $b )
 function writeJSON( $dataArray, $writeFile )
 {
   $output = "";
+
+  if( empty($writeFile) )
+  {
+    echo "writeJSON() given no file to write.\n";
+    return false;
+  }
+
   ksort( $dataArray ); // sort the keys of the incoming array
   uksort( $dataArray, "UKSortFunc" );
   foreach( $dataArray as $key => $line )
