@@ -77,6 +77,9 @@ else
   $outputData["game"]["previousDoc"] = str_replace( $fileRepoDir, "", $argv[1] );
   $outputData["game"]["previousDoc"] = str_replace( ".js", "", $outputData["game"]["previousDoc"] );
 
+  // remove the next file
+  $outputData["game"]["nextDoc"] = "";
+
   // Advance the turn
   $outputData["game"]["turn"] += 1;
 

@@ -23,12 +23,13 @@ if( ! isset($argv[1]) )
 ###
 # Configuration
 ###
+$AUTO_ROLL_EMPTY_SYSTEMS = true; // if true, calls $SYSTEM_ROLLER for any new explorations
 $MAKE_CHECKLIST = true; // if true, adds a turn checklist to the events
-$SHOW_ALL_RAIDS = true; // if true, shows failed raids as events
-$AUTO_ROLL_EMPTY_SYSTEMS = true; // if true, calls "system_data.php" for any new explorations
 $mapX = 30; // mapPoints increment for the x-coord
 $mapY = 35; // mapPoints increment for the y-coord
-
+$SHOW_ALL_RAIDS = true; // if true, shows failed raids as events
+$SYSTEM_ROLLER = "./system_data.php"; // script to generate each system
+$SYSTEM_ROLLER_SEPERATOR = "&bull;"; // HTML entity that prepends the output of $SYSTEM_ROLLER
 
 ###
 # Initialization
@@ -219,8 +220,21 @@ if( isset($orderKeys[0]) ) // if there are none of these orders, then skip
         // roll for newly-explored systems, if set to do so
         if( $AUTO_ROLL_EMPTY_SYSTEMS )
         {
-          echo "\nRolling for system at '".$fleetLocation."'.\n";
-          shell_exec("../system_data.php");
+          // check for availability of system_data.php
+          if( is_executable($SYSTEM_ROLLER) )
+          {
+            echo "\nRolling for system at '".$fleetLocation."'.\n";
+            $output = rtrim( shell_exec( $SYSTEM_ROLLER ) ); // get the output from the $SYSTEM_ROLLER command
+
+            // print the result of $SYSTEM_ROLLER with $SYSTEM_ROLLER_SEPERATOR prepended to each line
+            echo html_entity_decode($SYSTEM_ROLLER_SEPERATOR);
+            echo str_replace( "\n", "\n".html_entity_decode($SYSTEM_ROLLER_SEPERATOR)." ", $output );
+            echo "\n\n";
+          }
+          else
+          {
+            echo "\nCannot auto-roll for systems. '$SYSTEM_ROLLER' is missing or cannot be executed.\n";
+          }
         }
       }
 
@@ -230,7 +244,7 @@ if( isset($orderKeys[0]) ) // if there are none of these orders, then skip
       // format is [ y , x, color, name ]
 
       // Make a copy of the map so we can add to the array without iterating over the new entries
-      $mapCopy = $inputData["MapPoints"];
+      $mapCopy = $inputData["mapPoints"];
       foreach( $mapCopy as $key=>$value )
       {
         // case insensative;
@@ -258,7 +272,7 @@ if( isset($orderKeys[0]) ) // if there are none of these orders, then skip
         }
         // find and remove neighbors in MapPoints
         // what remains is not in MapPoints
-        foreach( $inputData["MapPoints"] as $neighborFind )
+        foreach( $inputData["mapPoints"] as $neighborFind )
         {
           if( isset($neighbors["A"]) && $neighborFind[0] == $neighbors["A"][0] && $neighborFind[1] == $neighbors["A"][1] )
             unset( $neighbors["A"] );
