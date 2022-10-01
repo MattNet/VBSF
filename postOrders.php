@@ -291,7 +291,7 @@ if( isset($orderKeys[0]) ) // if there are none of these orders, then skip
         // add the new entry
         foreach( $neighbors as $newKey=>$newValue )
         {
-          $inputData["MapPoints"][] = array( $newValue[0], $newValue[1], "", $value[3].$newKey );
+          $inputData["mapPoints"][] = array( $newValue[0], $newValue[1], "", $value[3].$newKey );
 
           // Add this entry to unknownMovementPlaces
           $inputData["unknownMovementPlaces"][] = $value[3].$newKey;

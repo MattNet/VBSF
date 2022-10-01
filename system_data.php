@@ -19,7 +19,7 @@ if( ! isset($argv[1]) )
 
 $systemTable = array( 2=>0, 3=>0, 4=>0, 5=>0, 6=>1, 7=>1, 8=>1, 9=>1, 10=>1, 
                       11=>1, 12=>1
-                    ); // do we generate a system here?
+                    ); // do we generate a system here? values are true/false
 $systemImportance = array( 2=>'minor outpost', 3=>'minor outpost', 4=>'outpost', 
                            5=>'outpost', 6=>'minor colony', 7=>'minor colony', 
                            8=>'minor colony', 9=>'colony', 10=>'colony', 
@@ -52,7 +52,19 @@ $NPEexploration = array( array( 0,0,0,0,0 ), // INT-0 has no exploration chances
                          array( 100,100,100,75,50 ), // INT-6 exploration chances
                        ); // pre-contact exploration
 $NPEcolonyCount = array( 0, 1, 2, 4, 6, 10, 15 ); // num of colonies, + 1/3 explored sites (round down)
-
+$terrainChance = 25; // percentage chance of finding any special terrain
+$terrainChart = array(
+// SFB terrains
+                       1=>'Asteroid Field (P3.1)', 2=>'Asteroid Field (P3.1)', 3=>'Nebula (P6.0)',
+                       4=>'Heat Zone (P10.0)', 5=>'Dust Cloud (P13.0)', 6=>'Dust Cloud (P13.0)',
+                       7=>'Intense Dust Cloud (P13.5)', 8=>'Radiation Zone (P15.0)',
+                       9=>'Gas Giant (P2.22)', 10=>'Gas Giant (P2.22)'
+/* // Cannonical Terrain Chart (CC pg 40)
+                       1=>'Asteroid Field', 2=>'Asteroid Field', 3=>'Dense Asteroid Field', 
+                       4=>'Nebula', 5=>'Nebula', 6=>'Nebula', 7=>'Dark Matter Nebula', 
+                       8=>'Maser Nebula', 9=>'Dust Cloud', 10=>'Dust Cloud'
+*/
+                     ); // Choose a terrain type
 ###
 # Program
 ###
@@ -89,10 +101,22 @@ echo " Productivity: ".$systemTraits[ $importance ]['productivity'];
 echo " Capacity: ".$systemTraits[ $importance ]['capacity']."\n";
 
 // Determine special traits
-//$result = twoSix() + $systemSpecialMod[$importance];
-//$text = $systemSpecials[ $result ];
 $text = rerollSpecials( $systemSpecialMod[$importance] );
 echo "- System special traits: \n".$text."\n";
+
+// Determine terrain
+$result = hundred();
+echo "Terrain generation chance is ".$terrainChance."%. Rolled [".$result."] ";
+if( $terrainChance < $result )
+{
+  echo "nothing special: Class-M planet.\n\n";
+}
+else
+{
+  echo "and [";
+  $result = oneTen();
+  echo $result."] ".$terrainChart[ $result ].".\n\n";
+}
 
 // determine NPE activation
 $result = hundred();
@@ -177,6 +201,10 @@ exit(0);
 function twoSix ()
 {
   return mt_rand(1,6)+mt_rand(1,6);
+}
+function oneTen ()
+{
+  return mt_rand(1,10);
 }
 function twoTen ()
 {
