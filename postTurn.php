@@ -90,13 +90,16 @@ else
 ###
 # Make the end-of-turn modifications
 ###
-  
+
   // set the prev file
   $outputData["game"]["previousDoc"] = str_replace( $fileRepoDir, "", $argv[1] );
   $outputData["game"]["previousDoc"] = str_replace( ".js", "", $outputData["game"]["previousDoc"] );
 
   // remove the next file
   $outputData["game"]["nextDoc"] = "";
+
+  // remove the previous-turn events
+  $outputData["events"] = array();
 
   // Advance the turn
   $outputData["game"]["turn"] += 1;
