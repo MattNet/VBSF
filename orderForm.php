@@ -92,13 +92,22 @@ var orders = [
 ];
 */
 
-//print_r( $_REQUEST );
-//print_r( $_SERVER );
-
-
 // find the data-file name
 $dataFileRoot = $_REQUEST["dataFile"];
 $dataFileName = $dataFileDir.$dataFileRoot.".js";
+
+// error-catching for inability to read or write to $dataFileName
+if( ! is_readable($dataFileName) )
+{
+  echo "Cannot write to '$dataFileName'\n\n";
+  exit(0);
+}
+if( ! is_writeable($dataFileName) )
+{
+  echo "Cannot write to '$dataFileName'\n\n";
+  exit(0);
+}
+
 
 // get the data file
 $fileContents = extractJSON( $dataFileName );
