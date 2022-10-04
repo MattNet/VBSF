@@ -61,13 +61,14 @@ $inputData["purchases"] = array(); // empty the purchases array
 $inputData["underConstruction"] = array(); // empty the construction array
 
 // get the orders for things that are purchased
-$orderKeys = array_merge( findOrder( $inputData, "build" ), findOrder( $inputData, "invest" ), findOrder( $inputData, "convert" ) );
+$orderKeys = array_merge( findOrder( $inputData, "build_unit" ), findOrder( $inputData, "research" ), findOrder( $inputData, "convert" ) );
+
 if( isset($orderKeys[0]) ) // if there are none of these orders, then skip
 {
   foreach( $orderKeys as $key )
   {
     // research investment
-    if( strtolower($inputData["orders"][ $key ]["type"]) == "invest" )
+    if( strtolower($inputData["orders"][ $key ]["type"]) == "research" )
     {
       $inputData["purchases"][] = array( "name"=>"Research","cost"=>intval($inputData["orders"][ $key ]["note"]) );
     }
@@ -117,7 +118,6 @@ if( isset($orderKeys[0]) ) // if there are none of these orders, then skip
           $unitCost = $hull["cost"];
           break; // quit the loop. We found our unit.
         }
-
       $inputData["purchases"][] = array( "name"=>$inputData["orders"][ $key ]["reciever"],"cost"=>$unitCost );
       $inputData["underConstruction"][] = array( "location"=>$inputData["orders"][ $key ]["target"],"unit"=>$inputData["orders"][ $key ]["reciever"] );
     }
