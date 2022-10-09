@@ -107,11 +107,14 @@ $outputData["capacity"] = $systemTraits[ $importance ]['capacity'];
 // Determine special traits
 $text = exploreRerollSpecials( $systemSpecialMod[$importance], $systemSpecials );
 $outputString .= "- System special traits: \n".$text."\n";
-if( strpos( $text, "RAW+" ) === 0 )
-  $outputData["raw"] += intval( substr( $text, 4 ) );
-if( strpos( $text, "capacity+" ) === 0 )
-  $outputData["capacity"] += intval( substr( $text, 9 ) );
-
+if( strpos( $text, "RAW+" ) !== false )
+{
+  $outputData["raw"] += intval( substr( $text, -2 ) );
+}
+if( strpos( $text, "Capacity+" ) !== false )
+{
+  $outputData["capacity"] += intval( substr( $text, -2 ) );
+}
 
 // Determine terrain
 $result = hundred();
