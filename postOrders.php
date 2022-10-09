@@ -340,6 +340,9 @@ if( isset($orderKeys[0]) ) // if there are none of these orders, then skip
 // Re-order Colonies, based on name
 usort( $inputData["colonies"], "colonyNameSort" );
 
+// Re-order mapPoints, based on location
+usort( $inputData["mapPoints"], "mapLocSort" );
+
 ###
 # Add raids
 # Note: This is post-movement
@@ -465,5 +468,21 @@ exit(0); // all done
 function colonyNameSort( $a, $b )
 {
   return strcmp($a["name"], $b["name"]);
+}
+
+###
+# Sorting function to be used on the colonies data structure
+###
+function mapLocSort( $a, $b )
+{
+  if( intval($a[0]) == intval($b[0]) )
+  {
+    if( intval($a[1]) == intval($b[1]) )
+      return 0;
+    else
+      return ( intval($a[1]) > intval($b[1])) ? +1 : -1;
+  }
+  else
+    return ( intval($a[0]) > intval($b[0])) ? +1 : -1;
 }
 
