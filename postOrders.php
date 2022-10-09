@@ -337,6 +337,9 @@ if( isset($orderKeys[0]) ) // if there are none of these orders, then skip
     $inputData["unknownMovementPlaces"] = array_values( $inputData["unknownMovementPlaces"] );
   } // end of movement-order handling
 
+// Re-order Colonies, based on name
+usort( $inputData["colonies"], "colonyNameSort" );
+
 ###
 # Add raids
 # Note: This is post-movement
@@ -456,4 +459,11 @@ foreach( $checklist as $entry )
 writeJSON( $inputData, $newFileName );
 exit(0); // all done
 
+###
+# Sorting function to be used on the colonies data structure
+###
+function colonyNameSort( $a, $b )
+{
+  return strcmp($a["name"], $b["name"]);
+}
 
