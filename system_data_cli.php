@@ -1,11 +1,18 @@
+#!/usr/bin/php -q
 <?php
 ###
-# Generates the system data
-# PHP interface
+# Generates the system data.
+# Command Line interface
 ###
-
-function VBAMExploration ()
+/*
+if( ! isset($argv[1]) )
 {
+  echo "\nGenerates system data randomly\n\n";
+  echo "Called by:\n";
+  echo "  ".$argv[0]."\n\n";
+  exit(1);
+}
+*/
 
 ###
 # Initialization
@@ -28,7 +35,7 @@ $systemTraits = array( 'minor outpost'=>array( 'census'=>1, 'morale'=>1,'raw'=>1
                      ); // system stats
 $systemSpecials = array( 0=>'', 1=>'', 2=>'', 3=>'RAW+1', 4=>'RAW+1', 5=>'RAW+1',
                        6=>'', 7=>'RAW+2', 8=>'', 9=>'', 10=>'Capacity+2', 
-                       11=>'Capacity+2', 12=>'reroll', 13=>'reroll', 14=>'reroll'
+                       11=>'Capacity+2', 12=>'reroll', 13=>'reroll', 14=>'reroll',
                      ); // How to modify the system
 $systemSpecialMod = array( 'minor outpost'=>-2, 'outpost'=>-1, 'minor colony' =>0, 
                            'colony' =>1, 'major colony' =>2, 'homeworld' => 0
@@ -68,74 +75,57 @@ $explorationRing = '';
 $exploredCount = 0;
 $techDieRoll = 0;
 $NPEtechLevel = 0;
-$outputString = "";
-$outputData = array("name"=>"", "census"=>0, "owner"=>"General",
-                    "morale"=>0, "raw"=>0,"prod"=>0, "capacity"=>0, 
-                    "intel"=>0, "fixed"=>array(), "notes"=>""
-                   );
 
 // is there a system in this sector?
 $result = twoSix();
-$outputString .= "Sector Generation:\n- System in sector? [".$result."] ";
+echo "Sector Generation:\n- System in sector? [".$result."] ";
 if( ! $systemTable[ $result ] )
 {
-  $outputString .= "No system\n\n";
-  $outputData["owner"] = "";
-  $outputData["notes"] = "Empty System";
-  array_unshift( $outputData, $outputString );
-  return( $outputData );
+  echo "No system\n\n";
+  exit(0);
 }
 else
-  $outputString .= "System present\n\n";
+  echo "System present\n\n";
 
 // Determine system importance
 $result = twoSix();
 $importance = $systemImportance[ $result ];
-$outputString .= "System Generation:\n- System importance: [".$result."] ";
+echo "System Generation:\n- System importance: [".$result."] ";
 $text = ucfirst($importance);
-$outputString .= $text."\n";
+echo $text."\n";
 
 // Determine system stats
-$outputString .= "- Census: ".$systemTraits[ $importance ]['census'];
-$outputString .= " Morale: ".$systemTraits[ $importance ]['morale'];
-$outputString .= " RAW: ".$systemTraits[ $importance ]['raw'];
-$outputString .= " Productivity: ".$systemTraits[ $importance ]['productivity'];
-$outputString .= " Capacity: ".$systemTraits[ $importance ]['capacity']."\n";
-$outputData["raw"] = $systemTraits[ $importance ]['raw'];
-$outputData["capacity"] = $systemTraits[ $importance ]['capacity'];
+echo "- Census: ".$systemTraits[ $importance ]['census'];
+echo " Morale: ".$systemTraits[ $importance ]['morale'];
+echo " RAW: ".$systemTraits[ $importance ]['raw'];
+echo " Productivity: ".$systemTraits[ $importance ]['productivity'];
+echo " Capacity: ".$systemTraits[ $importance ]['capacity']."\n";
 
 // Determine special traits
-$text = exploreRerollSpecials( $systemSpecialMod[$importance], $systemSpecials );
-$outputString .= "- System special traits: \n".$text."\n";
-if( strpos( $text, "RAW+" ) === 0 )
-  $outputData["raw"] += intval( substr( $text, 4 ) );
-if( strpos( $text, "capacity+" ) === 0 )
-  $outputData["capacity"] += intval( substr( $text, 9 ) );
-
+$text = rerollSpecials( $systemSpecialMod[$importance] );
+echo "- System special traits: \n".$text."\n";
 
 // Determine terrain
 $result = hundred();
-$outputString .= "Terrain generation chance is ".$terrainChance."%. Rolled [".$result."] ";
+echo "Terrain generation chance is ".$terrainChance."%. Rolled [".$result."] ";
 if( $terrainChance < $result )
 {
-  $outputString .= "nothing special: Class-M planet.\n\n";
+  echo "nothing special: Class-M planet.\n\n";
 }
 else
 {
-  $outputString .= "and [";
+  echo "and [";
   $result = oneTen();
-  $outputString .= $result."] ".$terrainChart[ $result ].".\n\n";
-  $outputData["notes"] = $terrainChart[ $result ];
+  echo $result."] ".$terrainChart[ $result ].".\n\n";
 }
 
 // determine NPE activation
 $result = hundred();
-$outputString .= "NPE generation chance is ".$NPEchance."%. Rolled [";
+echo "NPE generation chance is ".$NPEchance."%. Rolled [";
 if( $NPEchance < $result )
 {
-  $outputString .= $result."] No NPE\n\n";
-  array_unshift( $outputData, $outputString );
-  return( $outputData );
+  echo $result."] No NPE\n\n";
+  exit(0);
 }
 else
 {
@@ -147,74 +137,70 @@ $techDieRoll = twoTen();
 $NPEtechLevel = $NPEtech[ $techDieRoll ];
 if( $NPEtechLevel == 0 )
 {
-  $outputString .= "NPE Tech Level: [".$techDieRoll."] Too low for meaningful opponent\n\n";
-  array_unshift( $outputData, $outputString );
-  return( $outputData );
+  echo "NPE Tech Level: [".$techDieRoll."] Too low for meaningful opponent\n\n";
+  exit(0);
 }
-$outputData["owner"] = "NPE";
 
 // Determine NPE stats
 $result = round((hundred()+hundred())/2);
-$outputString .= "- Aggressiveness (AG): [".$result."]\n";
+echo "- Aggressiveness (AG): [".$result."]\n";
 $result = round((hundred()+hundred())/2);
-$outputString .= "- Integrity (IN): [".$result."]\n";
+echo "- Integrity (IN): [".$result."]\n";
 $result = round((hundred()+hundred())/2);
-$outputString .= "- Xenophobia (XE): [".$result."]\n";
+echo "- Xenophobia (XE): [".$result."]\n";
 
 // Apply NPE tech level
-$outputString .= "NPE Tech Level: [".$techDieRoll."] INT-".$NPEtechLevel."\n";
+echo "NPE Tech Level: [".$techDieRoll."] INT-".$NPEtechLevel."\n";
 
 // explain starting state
-$outputString .= "- Starting Points: ".($NPEtechLevel+1)."x Total Domestic Product\n";
-$outputString .= "- Pre-contact exploration: ".$NPEexploration[$NPEtechLevel][0]."/";
-$outputString .= $NPEexploration[$NPEtechLevel][1]."/".$NPEexploration[$NPEtechLevel][2]."/";
-$outputString .= $NPEexploration[$NPEtechLevel][3]."/".$NPEexploration[$NPEtechLevel][4]."\n";
+echo "- Starting Points: ".($NPEtechLevel+1)."x Total Domestic Product\n";
+echo "- Pre-contact exploration: ".$NPEexploration[$NPEtechLevel][0]."/";
+echo $NPEexploration[$NPEtechLevel][1]."/".$NPEexploration[$NPEtechLevel][2]."/";
+echo $NPEexploration[$NPEtechLevel][3]."/".$NPEexploration[$NPEtechLevel][4]."\n";
 
 // determine NPE exploration state
-$explorationRing = exploreCalcExploration( $NPEexploration[$NPEtechLevel][0], 6 );
-$outputString .= "- 1st ring: ".$explorationRing[0]." systems explored.\n";
+$explorationRing = calcExploration( $NPEexploration[$NPEtechLevel][0], 6 );
+echo "- 1st ring: ".$explorationRing[0]." systems explored.\n";
 $exploredCount += array_shift($explorationRing);
-$outputString .= "[".implode( "], [", $explorationRing )."]\n";
+echo "[".implode( "], [", $explorationRing )."]\n";
 if( $NPEexploration[$NPEtechLevel][1] > 0 )
 {
-  $explorationRing = exploreCalcExploration( $NPEexploration[$NPEtechLevel][1], 12 );
-  $outputString .= "- 2nd ring: ".$explorationRing[0]." systems explored.\n";
+  $explorationRing = calcExploration( $NPEexploration[$NPEtechLevel][1], 12 );
+  echo "- 2nd ring: ".$explorationRing[0]." systems explored.\n";
   $exploredCount += array_shift($explorationRing);
-  $outputString .= "[".implode( "], [", $explorationRing )."]\n";
+  echo "[".implode( "], [", $explorationRing )."]\n";
 }
 if( $NPEexploration[$NPEtechLevel][2] > 0 )
 {
-  $explorationRing = exploreCalcExploration( $NPEexploration[$NPEtechLevel][2], 18 );
-  $outputString .= "- 3rd ring: ".$explorationRing[0]." systems explored.\n";
+  $explorationRing = calcExploration( $NPEexploration[$NPEtechLevel][2], 18 );
+  echo "- 3rd ring: ".$explorationRing[0]." systems explored.\n";
   $exploredCount += array_shift($explorationRing);
-  $outputString .= "[".implode( "], [", $explorationRing )."]\n";
+  echo "[".implode( "], [", $explorationRing )."]\n";
 }
 if( $NPEexploration[$NPEtechLevel][3] > 0 )
 {
-  $explorationRing = exploreCalcExploration( $NPEexploration[$NPEtechLevel][3], 24 );
-  $outputString .= "- 4th ring: ".$explorationRing[0]." systems explored.\n";
+  $explorationRing = calcExploration( $NPEexploration[$NPEtechLevel][3], 24 );
+  echo "- 4th ring: ".$explorationRing[0]." systems explored.\n";
   $exploredCount += array_shift($explorationRing);
-  $outputString .= "[".implode( "], [", $explorationRing )."]\n";
+  echo "[".implode( "], [", $explorationRing )."]\n";
 }
 if( $NPEexploration[$NPEtechLevel][4] > 0 )
 {
-  $explorationRing = exploreCalcExploration( $NPEexploration[$NPEtechLevel][4], 30 );
-  $outputString .= "- 5th ring: ".$explorationRing[0]." systems explored.\n";
+  $explorationRing = calcExploration( $NPEexploration[$NPEtechLevel][4], 30 );
+  echo "- 5th ring: ".$explorationRing[0]." systems explored.\n";
   $exploredCount += array_shift($explorationRing);
-  $outputString .= "[".implode( "], [", $explorationRing )."]\n";
+  echo "[".implode( "], [", $explorationRing )."]\n";
 }
 
 // Determine number of colonized systems
-$outputString .= "# of colonized planets: ".(floor($exploredCount/3)+$NPEcolonyCount[$NPEtechLevel]);
-$outputString .= " (".$NPEcolonyCount[$NPEtechLevel]." + one third of ".$exploredCount.")\n";
+echo "# of colonized planets: ".(floor($exploredCount/3)+$NPEcolonyCount[$NPEtechLevel]);
+echo " (".$NPEcolonyCount[$NPEtechLevel]." + one third of ".$exploredCount.")\n";
 
 // determine location of homeworld
-$outputString .= "NPE homeworld is ".$NPEtechLevel." sectors from initial contact\n";
-$outputString .= "NPE worlds have ".$NPEtechLevel." more productivity than indicated on the system generation tables.\n\n";
+echo "NPE homeworld is ".$NPEtechLevel." sectors from initial contact\n";
+echo "NPE worlds have ".$NPEtechLevel." more productivity than indicated on the system generation tables.\n\n";
 
-array_unshift( $outputData, $outputString );
-return( $outputData );
-}
+exit(0);
 
 function twoSix ()
 {
@@ -232,26 +218,27 @@ function hundred ()
 {
   return mt_rand(1,100);
 }
-function exploreRerollSpecials( $specialMod, $specialsArray )
+function rerollSpecials( $specialMod )
 {
+  global $systemSpecials;
   $output = '';
   $DieRoll = twoSix() + $specialMod;
   if( $DieRoll < 0 )
     $DieRoll = 0;
 
-  if( $specialsArray[$DieRoll] == 'reroll' )
+  if( $systemSpecials[$DieRoll] == 'reroll' )
   {
-    $output .= exploreRerollSpecials( $specialMod, $specialsArray );
-    $output .= exploreRerollSpecials( $specialMod, $specialsArray );
+    $output .= rerollSpecials( $specialMod );
+    $output .= rerollSpecials( $specialMod );
   }
-  else if( $specialsArray[$DieRoll] == '' )
+  else if( $systemSpecials[$DieRoll] == '' )
     $output .= "     ".$DieRoll.": No Special\n";
   else
-    $output .= "     ".$DieRoll.": ".$specialsArray[$DieRoll]."\n";
+    $output .= "     ".$DieRoll.": ".$systemSpecials[$DieRoll]."\n";
 
   return $output;
 }
-function exploreCalcExploration( $chance, $numSectors )
+function calcExploration( $chance, $numSectors )
 {
   $output = array( 0 ); // 0th element is system count
   for( $i=1; $i<=$numSectors; $i++ )

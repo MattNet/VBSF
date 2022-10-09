@@ -25,6 +25,8 @@ if( ! isset($argv[1]) )
 ###
 $AUTO_ROLL_EMPTY_SYSTEMS = true; // if true, calls $SYSTEM_ROLLER for any new explorations
 $MAKE_CHECKLIST = true; // if true, adds a turn checklist to the events
+$MAPPOINTS_NAME = 3; // Index in mapPoints array of datafile for the location name
+$MAPPOINTS_OWNER = 2; // Index in mapPoints array of datafile for the owning position (empire type)
 $mapX = 30; // mapPoints increment for the x-coord
 $mapY = 35; // mapPoints increment for the y-coord
 $SHOW_ALL_RAIDS = true; // if true, shows failed raids as events
@@ -44,6 +46,7 @@ else if( strrpos( $argv[1], "/" ) !== false )
   $newFileName = substr( $argv[1], strrpos( $argv[1], "/" )+1 );
 
 include( "./postFunctions.php" );
+include( $SYSTEM_ROLLER );
 
 ###
 # Generate Input
@@ -208,34 +211,53 @@ if( isset($orderKeys[0]) ) // if there are none of these orders, then skip
       // if the location is not in colonies, add it
       if( ! $flag )
       {
+        // roll for newly-explored systems, if set to do so
+        if( $AUTO_ROLL_EMPTY_SYSTEMS )
+        {
+          echo "\nRolling for system at '".$fleetLocation."'.\n";
+          $outputData = VBAMExploration(); // get the output from the $SYSTEM_ROLLER command
+          $output = array_shift( $outputData ); // the text output was the first entry
+          // print the result of $SYSTEM_ROLLER with $SYSTEM_ROLLER_SEPERATOR prepended to each line
+          echo html_entity_decode( $SYSTEM_ROLLER_SEPERATOR );
+          echo str_replace( "\n", "\n".html_entity_decode($SYSTEM_ROLLER_SEPERATOR)." ", rtrim($output) );
+          echo "\n\n";
+
+          // Ask if we modify the system per the above script
+          echo "Use this entry in the data file? (Y/N) ";
+          $answer = rtrim( fgets( STDIN ) );
+
+          if( strtolower( $answer ) == "y" )
+          {
+            $outputData["name"] = $fleetLocation;
+            $inputData["colonies"][] = $outputData;
+          }
+          else
+          {
+            echo "Need to create the stats for the system at '".$fleetLocation."'\n";
+            $inputData["events"][] = array(
+                        "event"=>"Need to create the stats for the system at '".$fleetLocation,
+                        "time"=>"Turn ".$inputData["game"]["turn"],
+                        "text"=>""
+                        );
+            $inputData["colonies"][] = array("name"=>$fleetLocation, "census"=>0, 
+                      "owner"=>"", "morale"=>0, "raw"=>0,"prod"=>0, "capacity"=>0, 
+                      "intel"=>0, "fixed"=>array(), "notes"=>""
+                      );
+          }
+        }
+      }
+      if( ! $AUTO_ROLL_EMPTY_SYSTEMS )
+      {
         echo "Need to create the stats for the system at '".$fleetLocation."'\n";
         $inputData["events"][] = array(
                     "event"=>"Need to create the stats for the system at '".$fleetLocation,
                     "time"=>"Turn ".$inputData["game"]["turn"],
-                    "text"=>"");
+                    "text"=>""
+                    );
         $inputData["colonies"][] = array("name"=>$fleetLocation, "census"=>0, 
                     "owner"=>"", "morale"=>0, "raw"=>0,"prod"=>0, "capacity"=>0, 
                     "intel"=>0, "fixed"=>array(), "notes"=>""
-                                         );
-        // roll for newly-explored systems, if set to do so
-        if( $AUTO_ROLL_EMPTY_SYSTEMS )
-        {
-          // check for availability of system_data.php
-          if( is_executable($SYSTEM_ROLLER) )
-          {
-            echo "\nRolling for system at '".$fleetLocation."'.\n";
-            $output = rtrim( shell_exec( $SYSTEM_ROLLER ) ); // get the output from the $SYSTEM_ROLLER command
-
-            // print the result of $SYSTEM_ROLLER with $SYSTEM_ROLLER_SEPERATOR prepended to each line
-            echo html_entity_decode($SYSTEM_ROLLER_SEPERATOR);
-            echo str_replace( "\n", "\n".html_entity_decode($SYSTEM_ROLLER_SEPERATOR)." ", $output );
-            echo "\n\n";
-          }
-          else
-          {
-            echo "\nCannot auto-roll for systems. '$SYSTEM_ROLLER' is missing or cannot be executed.\n";
-          }
-        }
+                    );
       }
 
       $flag = false; // reset the flag
@@ -247,10 +269,22 @@ if( isset($orderKeys[0]) ) // if there are none of these orders, then skip
       $mapCopy = $inputData["mapPoints"];
       foreach( $mapCopy as $key=>$value )
       {
-        // case insensative;
+        // Skip if this value of mapPoints is not the location of interest
+        // case insensative
         if( $value[3] != $fleetLocation )
           continue;
 
+        // update the owner of this location, with the 'colonies' array being the standard
+        foreach( $inputData["colonies"] as $colonyData )
+        {
+          // skip of this colony is not this location
+          if( $colonyData["name"] != $inputData["mapPoints"][$key][$MAPPOINTS_NAME] )
+            continue;
+          if( $colonyData["owner"] != $inputData["mapPoints"][$key][$MAPPOINTS_OWNER] )
+            $inputData["mapPoints"][$key][2] = $colonyData["owner"];
+        }
+
+        // find the neighbor X/Y values of this location
         $neighbors = array(); // list of neighbor coords
         $neighbors["A"] = array( ($value[0]-$mapY), $value[1] ); // previous Y, same X
         $neighbors["D"] = array( ($value[0]+$mapY), $value[1] ); // next Y, same X

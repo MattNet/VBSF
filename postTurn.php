@@ -76,6 +76,12 @@ $inputData["game"]["blankOrders"] = 0;
 // remove the last 3 chars. They should be ".js"
 $inputData["game"]["nextDoc"] = substr( $newFileName, 0, -3 );
 
+// remove any location info from nextdoc but allow the written file name to keep it
+// This means the display will point only at files in the same location,
+// but the scriopt will write to where the user wants
+if( strrpos( $inputData["game"]["nextDoc"], "/" ) !== false )
+  $inputData["game"]["nextDoc"] = substr( $inputData["game"]["nextDoc"], strrpos( $inputData["game"]["nextDoc"], "/" )+1 );
+
 $results = writeJSON( $inputData, $argv[1] );
 if( $results === false )
 {

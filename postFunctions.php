@@ -47,7 +47,7 @@ function extractJSON( $inputFile )
   $inFileContents = file_get_contents( $inputFile );
   if( $inFileContents === false )
   {
-    echo "Could not read file '".$argv[1]."'\n";
+    echo "Could not read file '".$inputFile."'\n";
     exit(1);
   }
 
