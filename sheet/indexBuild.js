@@ -95,7 +95,7 @@ var allTreatyTypes = ['Declaration of War', 'Declaration of Hostilities', 'Non-A
 
 var orderTable = [];
 orderTable['break'] = [ [], [], '', 'Break a treaty' ];
-orderTable['build_unit'] = [ allBuildableUnits, colonyNames, '', 'Build unit' ];
+orderTable['build_unit'] = [ allBuildableUnits, colonyNames, 'New fleet name', 'Build unit' ];
 orderTable['build_intel'] = [ colonyNames, [], 'Amount of Intel Points', 'Build intel points' ];
 orderTable['colonize'] = [ otherSystems, [], '', 'Colonize system' ];
 orderTable['convert'] = [ currentUnits, buildableShips, '', 'Convert Unit' ];

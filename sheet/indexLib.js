@@ -116,7 +116,6 @@ function JsonConcatArrays( arA, arB, arC, arD )
 ***/
 function changeMenu( el, indexFirst, indexSecond, indexThird, indexNote )
 {
-  var fillArray = orderTable; // Multidimensional array of data to fill the drop-downs with
   var orderIndexArray = orders; // the array of objects holding the user's orders
 
   var firstSiblingMenu = el.nextElementSibling || nextElementSibling(el);
@@ -135,28 +134,28 @@ function changeMenu( el, indexFirst, indexSecond, indexThird, indexNote )
   if( el.selectedIndex == 0 && isNaN(indexFirst) )
       return;
   // fill the first sibling menu
-  for( var i = 0; i < fillArray[el.value][0].length; i++ )
+  for( var i = 0; i < orderTable[el.value][0].length; i++ )
   {
     var o = document.createElement("option");
-    o.text = fillArray[el.value][0][i];
-    if( ! isNaN(indexSecond) && orderIndexArray[indexSecond].reciever == fillArray[el.value][0][i] )
+    o.text = orderTable[el.value][0][i];
+    if( ! isNaN(indexSecond) && orderIndexArray[indexSecond].reciever == orderTable[el.value][0][i] )
       o.selected = true;
 
     firstSiblingMenu.appendChild(o);
   }
   // fill the second sibling menu
-  for( var i = 0; i < fillArray[el.value][1].length; i++ )
+  for( var i = 0; i < orderTable[el.value][1].length; i++ )
   {
     var o = document.createElement("option");
-    o.text = fillArray[el.value][1][i];
-    if( ! isNaN(indexThird) && orderIndexArray[indexThird].target == fillArray[el.value][1][i] )
+    o.text = orderTable[el.value][1][i];
+    if( ! isNaN(indexThird) && orderIndexArray[indexThird].target == orderTable[el.value][1][i] )
       o.selected = true;
 
     secondSiblingMenu.appendChild(o);
   }
   // fill the placeholder text of the text menu
-  textMenu.placeholder = fillArray[el.value][2];
-  if( ! isNaN(indexNote) && orderIndexArray[indexNote].target == fillArray[el.value][1][i] )
+  textMenu.placeholder = orderTable[el.value][2];
+  if( ! isNaN(indexNote) && orderIndexArray[indexNote].target == orderTable[el.value][1][i] )
     textMenu.textContent = orderIndexArray[indexNote].note;
 }
 
@@ -186,8 +185,7 @@ function changeMenu( el, indexFirst, indexSecond, indexThird, indexNote )
 function OrderOutput( orderNum, index )
 {
   var orderIndexArray = orders; // the array of objects holding the user's orders
-  var orderData = orderTable; // the table with all of the basic order information
-  var fillArray = Object.keys( orderData ); // The array with the initial order types
+  var fillArray = Object.keys( orderTable ); // The array with the initial order types
   var orderRecieversArray = []; // The array with the order recievers
   var orderTargetsArray = []; // The array with the order targets
   var namePrefix = 'OrderEntry';
@@ -209,11 +207,11 @@ function OrderOutput( orderNum, index )
       output += "SELECTED ";
 
       // populate the key lookups for the dropdowns following the initial order
-      orderRecieversArray = orderData[ fillArray[i] ][0]; // The array with the order recievers
-      orderTargetsArray = orderData[ fillArray[i] ][1]; // The array with the order targets
+      orderRecieversArray = orderTable[ fillArray[i] ][0]; // The array with the order recievers
+      orderTargetsArray = orderTable[ fillArray[i] ][1]; // The array with the order targets
     }
 
-    output += "value='"+fillArray[i]+"'>"+orderData[ fillArray[i] ][3]+"</option>";
+    output += "value='"+fillArray[i]+"'>"+orderTable[ fillArray[i] ][3]+"</option>";
   }
   output += "</select><select name='"+namePrefix+orderNum+"B'>";
   if( ! isNaN(index) )

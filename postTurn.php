@@ -180,7 +180,7 @@ else
   }
 
   // find the build orders and create the fleets
-  $orderKeys = findOrder( $inputData, "build" );
+  $orderKeys = findOrder( $inputData, "build_unit" );
   if( isset($orderKeys[0]) )
   {
     foreach( $orderKeys as $key )
@@ -194,6 +194,10 @@ else
     }
   }
 
+////
+// TODO: Combine fleets that share the same name and the same location into one fleet
+////
+
   // Empty the orders
   unset( $outputData["orders"] );
   $outputData["orders"] = array();
@@ -201,6 +205,10 @@ else
   // Empty the construction list
   unset( $outputData["underConstruction"] );
   $outputData["underConstruction"] = array();
+
+  // Empty the purchases list
+  unset( $outputData["purchases"] );
+  $outputData["purchases"] = array();
 
   // Fill events with a checklist
   if( $MAKE_CHECKLIST )
