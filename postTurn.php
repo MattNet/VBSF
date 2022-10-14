@@ -183,20 +183,32 @@ else
   $orderKeys = findOrder( $inputData, "build_unit" );
   if( isset($orderKeys[0]) )
   {
-    foreach( $orderKeys as $key )
+    foreach( $orderKeys as $orderKey )
     {
-      $item = array( "name" => $outputData["orders"][$key]["note"], 
-                     "location" => $outputData["orders"][$key]["target"], 
-                     "units" => array( $outputData["orders"][$key]["reciever"] ), 
-                   );
-
-      $outputData["fleets"][] = $item;
+      $fleetFlag = false; // flag to mark if the built goes into an existing fleet
+      // find fleets with this name
+      foreach( $outputData["fleets"] as $fleetKey=>$fleetData )
+      {
+        // skip if the name of the fleet does not match the name on the orders
+        // and if the named fleet is not where the build occured
+        if( $fleetData["name"] != $outputData["orders"][$orderKey]["note"] || 
+            $fleetData["location"] != $outputData["orders"][$orderKey]["target"]
+          )
+          continue;
+        $fleetFlag = true;
+        // this unit should be built into this fleet
+        $outputData["fleets"][$fleetKey]["units"][] = $outputData["orders"][$orderKey]["reciever"];
+      }
+      if( ! $fleetFlag )
+      {
+        // if no fleets with this name, then create a new one
+        $outputData["fleets"][] = array( "name" => $outputData["orders"][$orderKey]["note"], 
+                       "location" => $outputData["orders"][$orderKey]["target"], 
+                       "units" => array( $outputData["orders"][$orderKey]["reciever"] ), 
+                     );
+      }
     }
   }
-
-////
-// TODO: Combine fleets that share the same name and the same location into one fleet
-////
 
   // Empty the orders
   unset( $outputData["orders"] );
