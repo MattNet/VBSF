@@ -11,8 +11,12 @@ RETURN: None
 */
 function onLoadStartUp( startupFunc )
 {
-  if( window.addEventListener ){
-    window.addEventListener("load",startupFunc,false);
+  if( document.addEventListener ){
+    document.addEventListener('readystatechange', event => {
+      if(document.readyState == "complete")
+        startupFunc();
+      });
+//  window.addEventListener("load",startupFunc,false);
   } else if( window.attachEvent ){
     window.attachEvent("onload",startupFunc);
   } else {
