@@ -7,6 +7,7 @@ var filePath = document.location.origin+document.location.pathname+"?data=";
 /***
 Build Game Data
 ***/
+// extractions from data file
 var colonyNames = [];
 var currentFleets = [];
 var currentUnits = [];
@@ -17,6 +18,19 @@ var buildableFlights = [];
 var otherSystems = [];
 var unitsWithBasing = [];
 var unitsWithCarry = [];
+// groups of data collections
+var allBasablePlaces = [];
+var allBuildableUnits = [];
+var allIntelProjects = [];
+var allLoadableUnits = [];
+var allMovablePlaces = [];
+var allTreatyTypes = [];
+var orderTable = [];
+
+/***
+Emit Game Data
+***/
+onLoadStartUp( function () {
 
 // Iterate through the list of colonies
 for( var i=0; i<colonies.length; i++ )
@@ -85,15 +99,15 @@ for( var i=0; i<unitList.length; i++ )
     buildableShips.push( unitList[i].ship );
 }
 
-var allBuildableUnits = JsonConcatArrays(buildableShips, buildableGround, buildableFlights);
-var allLoadableUnits = JsonConcatArrays(buildableGround, ['Census']);
-var allMovablePlaces = JsonConcatArrays(colonyNames, otherSystems, unknownMovementPlaces);
-var allKnownPlaces = JsonConcatArrays(colonyNames, otherSystems);
-var allBasablePlaces = JsonConcatArrays(unitsWithBasing, colonyNames);
-var allIntelProjects = ['System Espionage', 'Fleet Espionage', 'Intel Espionage', 'Tech Espionage', 'Trade Espionage', 'Troop Espionage', 'Raider Espionage', 'Industrial Sabotage', 'Counter-Intelligence', 'Starship Sabotage', 'Installation Sabotage', 'Population Sabotage', 'Insurgency', 'Counter-Insurgency', 'Reduce Raiding', 'NPE Diplomatic Shift', 'NPE Treaty Acceptance'];
-var allTreatyTypes = ['Declaration of War', 'Declaration of Hostilities', 'Non-Aggression Treaty', 'Peace Treaty', 'Trade Treaty', 'Mutual-Defense Treaty', 'Unification Treaty'];
+ allBuildableUnits = JsonConcatArrays(buildableShips, buildableGround, buildableFlights);
+ allLoadableUnits = JsonConcatArrays(buildableGround, ['Census']);
+ allMovablePlaces = JsonConcatArrays(colonyNames, otherSystems, unknownMovementPlaces);
+ allKnownPlaces = JsonConcatArrays(colonyNames, otherSystems);
+ allBasablePlaces = JsonConcatArrays(unitsWithBasing, colonyNames);
+ allIntelProjects = ['System Espionage', 'Fleet Espionage', 'Intel Espionage', 'Tech Espionage', 'Trade Espionage', 'Troop Espionage', 'Raider Espionage', 'Industrial Sabotage', 'Counter-Intelligence', 'Starship Sabotage', 'Installation Sabotage', 'Population Sabotage', 'Insurgency', 'Counter-Insurgency', 'Reduce Raiding', 'NPE Diplomatic Shift', 'NPE Treaty Acceptance'];
+ allTreatyTypes = ['Declaration of War', 'Declaration of Hostilities', 'Non-Aggression Treaty', 'Peace Treaty', 'Trade Treaty', 'Mutual-Defense Treaty', 'Unification Treaty'];
 
-var orderTable = [];
+ orderTable = [];
 orderTable['break'] = [ [], [], '', 'Break a treaty' ];
 orderTable['build_unit'] = [ allBuildableUnits, colonyNames, 'New fleet name', 'Build unit' ];
 orderTable['build_intel'] = [ colonyNames, [], 'Amount of Intel Points', 'Build intel points' ];
@@ -116,11 +130,6 @@ orderTable['sign'] = [ offeredTreaties, otherEmpires, '', 'Sign a treaty' ];
 orderTable['trade_route'] = [ currentFleets, allKnownPlaces, '', 'Set a trade route' ];
 orderTable['unload'] = [ unitsWithCarry, [], 'Amount to unload', 'Unload units' ];
 orderTable['unmothball'] = [ unitsInMothballs, [], '', 'Unmothball a unit' ];
-
-/***
-Emit Game Data
-***/
-onLoadStartUp( function () {
 
   // Assemble the AIX line
   var AIXOut = "<a title='";

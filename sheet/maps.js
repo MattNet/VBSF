@@ -74,6 +74,8 @@ var tooltip = d3.select("#mapImg")
       .style("stroke", "grey");
   }
 
+onLoadStartUp( function () {
+
 // create the hexagons
 const hexbin = d3.hexbin();
 hexbin.radius(HexRadius);
@@ -103,4 +105,5 @@ elemEnter.append("text")
     .attr("stroke", function(d){ return EmpireTextColors( String(d).split(',')[2] ) })
     .style("font-size", function(d){ return HexRadius+"px" });
 
+});
 
