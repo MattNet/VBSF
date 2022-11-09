@@ -353,8 +353,10 @@ $raidPlaces = array();
 // Mark locations owned by this player
 foreach( $inputData["colonies"] as $item )
 {
-  if( $item["owner"] = $inputData["empire"]["empire"] )
+  if( $item["owner"] == $inputData["empire"]["empire"] )
+  {
     $ownedPlaces[] = array( "name"=>$item["name"], "navalCost"=>0 );
+  }
 }
 
 // look through the fleets for colony and trade fleets
@@ -366,18 +368,23 @@ if( isset($inputData["fleets"]) ) // make sure the input exists
     // Note naval value at each owned location
     foreach( $ownedPlaces as &$place )
     {
-      if( $item["location"] = $place["name"] )
+      if( $item["location"] == $place["name"] )
         $place["navalCost"] += getFleetValue( $inputData, $item["units"], true );
     }
-
-    // Note locations of trade, transport, and colony fleets
-    if( in_array("Colony Fleet",$item["units"]) ||
-        in_array("Trade Fleet", $item["units"]) ||
-        in_array("Transport Fleet", $item["units"])
-      )
+    // Count the trade, transport, and colony fleets at the fleet location
+    $civCount = 0;
+    foreach( $item["units"] as $unit )
     {
-      $raidPlaces[] = array( "location"=>$item["location"], "naval"=>getFleetValue( $inputData, $item["units"], true ) );
+      if( $unit == "Colony Fleet" )
+        $civCount++;
+      else if( $unit == "Trade Fleet" )
+        $civCount++;
+      else if( $unit == "Transport Fleet" )
+        $civCount++;
     }
+    // Note locations and count of trade, transport, and colony fleets
+    if( $civCount > 0 )
+      $raidPlaces[] = array( "civCount" => $civCount, "location"=>$item["location"], "naval"=>getFleetValue( $inputData, $item["units"], true ) );
   }
 }
 
@@ -385,15 +392,20 @@ if( isset($inputData["fleets"]) ) // make sure the input exists
 foreach( $ownedPlaces as $place )
 {
   if( $place["navalCost"] == 0 )
-    $raidPlaces[] = array( "location"=>$place["name"], "naval"=>0 );
+    $raidPlaces[] = array( "civCount" => 0, "location"=>$place["name"], "naval"=>0 );
 }
 
 // Calculate the raids
 foreach( $raidPlaces as $place )
 {
   $chance = 20; // base chance to get a raid
-  $rand = mt_rand(1,100);
-  
+  $rand = mt_rand(1,100); // determination of raid occurance
+
+  // If there is more than one civilian fleet, increase the chance of a raid by 20% per additional
+  // The first civilian fleet allows the chance of a raid
+  if( $place["civCount"] > 1 )
+    $chance += ($place["civCount"]-1) * 20;
+
   if( $place["naval"] < 0 )
     $chance -= 5; // 5% off for more than 0 construction value
   if( $place["naval"] < 8 )
@@ -418,19 +430,12 @@ foreach( $raidPlaces as $place )
   if( $rand <= $chance )
   {
     $raidAmt = mt_rand(1,3) * mt_rand(1,6);
-    $text = "A raid struck '".$place["location"]."'. There was a $chance% chance and a $rand was rolled. This chance may be increased by 20% if there are more than 1 civilian fleet present. If there is a civilian fleet present, that is the target of the raid. Otherwise, it is the fixed installation that are raided. It is raided with $raidAmt construction value of raiders.";
+    $text = "A raid struck '".$place["location"]."'. There was a $chance% chance and a $rand was rolled. If there is a civilian fleet present, that is the target of the raid. Otherwise, it is the fixed installation that are raided. It is raided with $raidAmt construction value of raiders.";
     $inputData["events"][] = array("event"=>"A raid in '".$place["location"]."' happened.","time"=>"Turn ".$inputData["game"]["turn"],"text"=>$text);
-  }
-  else if( $rand <= ($chance+20) )
-  {
-    $raidAmt = mt_rand(1,3) * mt_rand(1,6);
-    $numCivilians = floor( ($rand-$chance)/20 ); 
-    $text = "A raid failed in '".$place["location"]."' but may still happen. There was a $chance% chance and a $rand was rolled. This raid may be still ocur if there are more than 1 civilian fleet present. The civilian fleet(s) are the target of the raid. It is raided with $raidAmt construction value of raiders.";
-    $inputData["events"][] = array("event"=>"A raid may happen in '".$place["location"]."'.","time"=>"Turn ".$inputData["game"]["turn"],"text"=>$text);
   }
   else
   {
-    $text = "There was no raid in '".$place["location"]."'. There was a $chance% chance and a $rand was rolled. This chance may be increased by 20% if there are more than 1 civilian fleet present.";
+    $text = "There was no raid in '".$place["location"]."'. There was a $chance% chance and a $rand was rolled.";
     $inputData["events"][] = array("event"=>"A raid failed in '".$place["location"]."'.","time"=>"Turn ".$inputData["game"]["turn"],"text"=>$text);
   }
 }
