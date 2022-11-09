@@ -424,6 +424,7 @@ foreach( $raidPlaces as $place )
   else if( $rand <= ($chance+20) )
   {
     $raidAmt = mt_rand(1,3) * mt_rand(1,6);
+    $numCivilians = floor( ($rand-$chance)/20 ); 
     $text = "A raid failed in '".$place["location"]."' but may still happen. There was a $chance% chance and a $rand was rolled. This raid may be still ocur if there are more than 1 civilian fleet present. The civilian fleet(s) are the target of the raid. It is raided with $raidAmt construction value of raiders.";
     $inputData["events"][] = array("event"=>"A raid may happen in '".$place["location"]."'.","time"=>"Turn ".$inputData["game"]["turn"],"text"=>$text);
   }

@@ -45,7 +45,7 @@ for( var i=0; i<colonies.length; i++ )
       for( var c=0; c<unitList[i].length; c++ )
         if( unitList[c].ship == colonies[i].fixed[b] )
           if( unitList[c].notes.indexOf('Flight') !== -1 )
-            currentFlights.ppopitupEventush( unitList[c].ship+" w/ "+colonies[i].name );
+            currentFlights.push( unitList[c].ship+" w/ "+colonies[i].name );
   }
   else
   {
@@ -289,7 +289,20 @@ orderTable['unmothball'] = [ unitsInMothballs, [], '', 'Unmothball a unit' ];
   // Assemble the Events area
   var eventOut = '';
   for( var i=0; i<events.length; i++)
-    eventOut += "<br><a onclick='popitupEvent(&quot;"+events[i].text+"&quot;)'>"+events[i].time+": "+events[i].event+"</a>";
+  {
+  console.log(events[i].text.length);
+    if( events[i].text.length > 300 )
+    {
+      eventOut += "<br><a onclick='popitupEvent(&quot;";
+      eventOut += events[i].text.replace(/'/g, '&apos;');
+      eventOut += "&quot;)'>";
+    }
+    else
+    {
+      eventOut += "<br><a title='"+events[i].text.replace(/'/g, '&apos;')+"'>";
+    }
+    eventOut += events[i].time+": "+events[i].event+"</a>";
+  }
   eventOut += "<p style='font-size:smaller;'>Click on event for description</p>";
   ElementFind('eventArea').innerHTML = ElementFind('eventArea').innerHTML + eventOut;
 
