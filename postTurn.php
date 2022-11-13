@@ -117,7 +117,7 @@ else
   $outputData["empire"]["previousEP"] = getLeftover( $inputData );
 
   // invest research
-  $orderKeys = findOrder( $inputData, "invest" );
+  $orderKeys = findOrder( $inputData, "research" );
   if( isset($orderKeys[0]) )
     $outputData["empire"]["researchInvested"] += intval($outputData["orders"][$orderKeys[0]]["note"]);
 

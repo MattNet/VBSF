@@ -107,7 +107,8 @@ for( var i=0; i<unitList.length; i++ )
  allIntelProjects = ['System Espionage', 'Fleet Espionage', 'Intel Espionage', 'Tech Espionage', 'Trade Espionage', 'Troop Espionage', 'Raider Espionage', 'Industrial Sabotage', 'Counter-Intelligence', 'Starship Sabotage', 'Installation Sabotage', 'Population Sabotage', 'Insurgency', 'Counter-Insurgency', 'Reduce Raiding', 'NPE Diplomatic Shift', 'NPE Treaty Acceptance'];
  allTreatyTypes = ['Declaration of War', 'Declaration of Hostilities', 'Non-Aggression Treaty', 'Peace Treaty', 'Trade Treaty', 'Mutual-Defense Treaty', 'Unification Treaty'];
 
- orderTable = [];
+// Format is orderTable['internal "type" keyword'] = [ [auto-populated "reciever"], [auto-populated "target"], 'auto-populated "note"', 'external "type" phrase' ]
+orderTable = [];
 orderTable['break'] = [ [], [], '', 'Break a treaty' ];
 orderTable['build_unit'] = [ allBuildableUnits, colonyNames, 'New fleet name', 'Build unit' ];
 orderTable['build_intel'] = [ colonyNames, [], 'Amount of Intel Points', 'Build intel points' ];
@@ -290,7 +291,6 @@ orderTable['unmothball'] = [ unitsInMothballs, [], '', 'Unmothball a unit' ];
   var eventOut = '';
   for( var i=0; i<events.length; i++)
   {
-  console.log(events[i].text.length);
     if( events[i].text.length > 300 )
     {
       eventOut += "<br><a onclick='popitupEvent(&quot;";
@@ -381,6 +381,9 @@ orderTable['unmothball'] = [ unitsInMothballs, [], '', 'Unmothball a unit' ];
 
   ElementFind('ordersArea').innerHTML = ordersOut;
 
+// emit any errors given in the URL
+  if( errorVal )
+    ElementFind('errorArea').innerHTML = errorVal;
 
 });
 

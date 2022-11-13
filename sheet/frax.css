@@ -65,6 +65,7 @@ img.map {
   text-shadow: rgba(0,0,0,.4) 0 1px 0;
   color: white;
 }
+
 .button > a
 {
   border-top: 1px solid #9AF;
@@ -78,5 +79,9 @@ img.map {
   -moz-box-shadow: rgba(0,0,0,1) 0 1px 0;
   box-shadow: rgba(0,0,0,1) 0 1px 0;
   text-shadow: rgba(0,0,0,.4) 0 1px 0;
+  color: white;
+}
+
+.errorArea {
   color: white;
 }

@@ -108,11 +108,14 @@ function fetchData ( url )
 };
 var params = (new URL(document.location)).searchParams;
 var dataVal = params.get('data'); // is the filename of the data file
+var errorVal = params.get('e'); // is the error string
 fetchData( "../files/"+dataVal+".js" ); // get the datafile
 
 </script>
 
 </head><body>
+
+<span id='errorArea' class='errorArea'></span>
 
 <div class='main'>
 

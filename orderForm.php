@@ -41,8 +41,34 @@ $dataFileDir = "files/"; // location of the data files
 ###
 # Initialization
 ###
-
 include( "./postFunctions.php" );
+
+$errorStrings = ""; // ongoing litany of errors to send to the UI
+
+// Format is $orderTable['internal "type" keyword'] = [ require "reciever", require "target", require "note", 'external "type" phrase' ]
+$orderTable = array();
+$orderTable['break'] 		= [ false, false, false, 'Break a treaty' ];
+$orderTable['build_unit'] 	= [ true, true, true, 'Build unit' ];
+$orderTable['build_intel'] 	= [ true, false, true, 'Build intel points' ];
+$orderTable['colonize'] 	= [ true, false, false, 'Colonize system' ];
+$orderTable['convert'] 		= [ true, true, false, 'Convert Unit' ];
+$orderTable['cripple'] 		= [ true, false, false, 'Cripple unit' ];
+$orderTable['destroy'] 		= [ true, false, false, 'Destroy unit' ];
+$orderTable['flight'] 		= [ true, true, false, 'Assign flights' ];
+$orderTable['intel'] 		= [ true, true, true, 'Perform an intel action' ];
+$orderTable['load'] 		= [ true, true, true, 'Load units' ];
+$orderTable['mothball'] 	= [ true, false, false, 'Mothball a unit' ];
+$orderTable['move'] 		= [ true, true, false, 'Move fleet' ];
+$orderTable['move_unit'] 	= [ true, true, true, 'Move unit' ];
+$orderTable['name'] 		= [ true, false, false, '(Re) name a place' ];
+$orderTable['offer'] 		= [ true, true, false, 'Offer a treaty' ];
+$orderTable['productivity'] 	= [ true, false, false, 'Increase productivity' ];
+$orderTable['repair'] 		= [ true, false, false, 'Repair unit' ];
+$orderTable['research'] 	= [ false, false, true, 'Invest into research' ];
+$orderTable['sign'] 		= [ true, true, false, 'Sign a treaty' ];
+$orderTable['trade_route'] 	= [ true, true, false, 'Set a trade route' ];
+$orderTable['unload'] 		= [ true, false, true, 'Unload units' ];
+$orderTable['unmothball'] 	= [ true, false, false, 'Unmothball a unit' ];
 
 /*
 Array
@@ -159,9 +185,9 @@ foreach( array_keys($_REQUEST) as $key )
   }
 }
 
-// create any otherwise-empty order fields
 foreach( array_keys($fileContents["orders"]) as $orderNum )
 {
+// create any otherwise-empty order fields
   if( ! isset($fileContents["orders"][$orderNum]["type"]) )
     $fileContents["orders"][$orderNum]["type"] = "";
   if( ! isset($fileContents["orders"][$orderNum]["reciever"]) )
@@ -170,6 +196,29 @@ foreach( array_keys($fileContents["orders"]) as $orderNum )
     $fileContents["orders"][$orderNum]["target"] = "";
   if( ! isset($fileContents["orders"][$orderNum]["note"]) )
     $fileContents["orders"][$orderNum]["note"] = "";
+
+// Check that all required fields are not blank
+  if( ! isset( $orderTable[ $fileContents["orders"][$orderNum]["type"] ] ) )
+  {
+    $errorStrings .= "Order processing file does not know of order type '".$fileContents["orders"][$orderNum]["type"]."'.\n";
+    unset( $fileContents["orders"][$orderNum] ); // delete the offending entry
+  }
+  $orderTableEntry = $orderTable[ $fileContents["orders"][$orderNum]["type"] ];
+  if( empty($fileContents["orders"][$orderNum]["reciever"]) && $orderTableEntry[0] == true )
+  {
+    $errorStrings .= "Order type '".$orderTableEntry[3]."' requires a reciever. None given.\n";
+    unset( $fileContents["orders"][$orderNum] ); // delete the offending entry
+  }
+  if( empty($fileContents["orders"][$orderNum]["target"]) && $orderTableEntry[1] == true )
+  {
+    $errorStrings .= "Order type '".$orderTableEntry[3]."' requires a target. None given.\n";
+    unset( $fileContents["orders"][$orderNum] ); // delete the offending entry
+  }
+  if( empty($fileContents["orders"][$orderNum]["note"]) && $orderTableEntry[2] == true )
+  {
+    $errorStrings .= "Order type '".$orderTableEntry[3]."' requires a note. None given.\n";
+    unset( $fileContents["orders"][$orderNum] ); // delete the offending entry
+  }
 }
 
 // re-index the orders array
@@ -179,7 +228,7 @@ $fileContents["orders"] = array_values( $fileContents["orders"] );
 writeJSON( $fileContents, $dataFileName );
 
 // go back to the player-page
-header( "location: http://".$EXIT_PAGE."?data=".$_REQUEST["dataFile"] );
+header( "location: http://".$EXIT_PAGE."?data=".$_REQUEST["dataFile"]."&e=".$errorStrings );
 
 exit;
 ?>
