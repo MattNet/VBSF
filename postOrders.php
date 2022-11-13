@@ -344,8 +344,28 @@ usort( $inputData["colonies"], "colonyNameSort" );
 usort( $inputData["mapPoints"], "mapLocSort" );
 
 ###
+# Add Checklist
+# - Placed here so raid-output is placed correct
+###
+if( $MAKE_CHECKLIST )
+{
+  $checklist = array();
+  // Fill events with a checklist
+  $checklist[] = "Checklist: Intel";
+  $checklist[] = "Checklist: Diplomatic shifts for NPEs";
+  $checklist[] = "Checklist: Hostility checks for NPEs";
+  $checklist[] = "Checklist: NPEs offer treaties";
+  $checklist[] = "Checklist: Movement";
+  $checklist[] = "Checklist: Check supply";
+  $checklist[] = "Checklist: Raiding";
+  foreach( $checklist as $entry )
+    $inputData["events"][] = array("event"=>$entry,"time"=>"Turn ".$inputData["game"]["turn"],"text"=>"");
+  unset( $checklist );
+}
+
+###
 # Add raids
-# Note: This is post-movement
+# Note: This is post-movement, during combat
 ###
 $ownedPlaces = array();
 $raidPlaces = array();
@@ -445,21 +465,18 @@ foreach( array_keys( $inputData["orders"] ) as $key )
   $inputData["orders"][$key]["perm"] = 1;
 // Note: Leaving $inputData["game"]["blankOrders"] alone. The next segment of the turn needs these drop-downs.
 
+###
+# Add Checklist
+# - Placed here so raid-output is placed correct
+###
 if( $MAKE_CHECKLIST )
 {
   // Fill events with a checklist
-  $checklist[] = "Checklist: Intel";
-  $checklist[] = "Checklist: Diplomatic shifts for NPEs";
-  $checklist[] = "Checklist: Hostility checks for NPEs";
-  $checklist[] = "Checklist: NPEs offer treaties";
-  $checklist[] = "Checklist: Movement";
-  $checklist[] = "Checklist: Check supply";
-  $checklist[] = "Checklist: Raiding";
   $checklist[] = "Checklist: Combat";
+  foreach( $checklist as $entry )
+    $inputData["events"][] = array("event"=>$entry,"time"=>"Turn ".$inputData["game"]["turn"],"text"=>"");
+  unset( $checklist );
 }
-
-foreach( $checklist as $entry )
-  $inputData["events"][] = array("event"=>$entry,"time"=>"Turn ".$inputData["game"]["turn"],"text"=>"");
 
 ###
 # Write out the file
