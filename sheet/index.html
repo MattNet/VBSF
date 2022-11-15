@@ -13,70 +13,6 @@ Receive Game Data
 ***/
 
 /***
-Check for a variable to be set
-Needed to allow the async loading of scripts to catch up to the page
-***/
-function check ()
-{
-  var LookingForVar = window.colonies
-  if( typeof(LookingForVar) !== 'undefined' ) // this is set
-    return true;
-  setTimeout( check, 100 )
-}
-
-/***
-new AJAX()
-- sets up an object that can perform asyncronous HTTP queries
-
-get( url )
-- performs a GET operation to the URL argument.
-- returns true on success
-- returns false if no AJAX code can be found (i.e. older browser)
-
-fetch()
-- Event called when the document is loaded
-- argument is the text contents of the document
-
-error()
-- Event called when there is an error with the document fetch
-- argument is the error object
-***/
-
-function AJAX ()
-{
-  this._xmlhttp = null; // holds the browser-specific ajax object
-
-  if( window.XMLHttpRequest )		// code for Mozilla, etc.
-    this._xmlhttp = new XMLHttpRequest();
-  else if( window.ActiveXObject )	// code for IE
-    this._xmlhttp = new ActiveXObject( "Microsoft.XMLHTTP" );
-}
-
-AJAX.prototype.get = function ( url )
-{
-  if( ! this._xmlhttp )
-    return false; // no can do requests
-  var obj = this;
-  this._xmlhttp.responseType = "text";
-  
-  this._xmlhttp.onreadystatechange = function ()
-  {
-    if( this.readyState == 4 )	// if document loaded
-      if( this.status == 200 )	// if "OK"
-        obj.fetch( this.responseText );
-      else
-        obj.error( this );
-  }
-
-  this._xmlhttp.open( "GET", url, true );
-  this._xmlhttp.send( null );
-  return true;
-}
-
-AJAX.prototype.fetch = function (e) { return null; }
-AJAX.prototype.error = function (e) { return null; }
-
-/***
 # Loads up the JSON data file
 ###
 # PARAMS: 
@@ -114,6 +50,8 @@ fetchData( "../files/"+dataVal+".js" ); // get the datafile
 </script>
 
 </head><body>
+
+<div class='header'></div>
 
 <span id='errorArea' class='errorArea'></span>
 
