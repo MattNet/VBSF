@@ -1,0 +1,232 @@
+/***
+declare the reusable colors
+***/
+
+:root {
+/* define a very vanilla default look. Based on the "General Units" colors */
+  --body-color: black;
+  --card-background-color: ghostwhite;
+  --card-border-color: gray;
+  --card-text-color: black;
+  --error-color: crimson;
+  --header-image: url('');
+  --heading-color-bottom: lightskyblue;
+  --heading-color-text: white;
+  --heading-color-top: royalblue;
+  --summary-color-bottom: dodgerblue;
+  --summary-color-text: white;
+  --summary-color-top: steelblue;
+}
+
+/***
+declare the small-bits of the page
+***/
+
+body {
+  background: var(--body-color);
+}
+
+h3 {
+  text-align:center;
+}
+
+th {
+  padding: 3px 5px;
+  border-radius: 8px;
+  vertical-align: middle;
+
+/* Neato Background */
+  border-top: 1px solid var(--heading-color-bottom);
+  background: #000000;
+  background: linear-gradient(180deg, var(--heading-color-top), var(--heading-color-bottom));
+  box-shadow: rgba(0,0,0,1) 0 1px 0;
+  text-shadow: rgba(0,0,0,.4) 0 1px 0;
+  color: var(--heading-color-text);
+}
+
+.fleetEntry { /* script-added HTML. Shows each fleet */
+  max-width: 500px;
+}
+
+.fleetTitle {
+  grid-column: 1 / -1;
+}
+
+.summation { /* script-added HTML. Totals up costs */
+  padding: 3px 5px;
+  border-radius: 8px;
+  vertical-align: middle;
+
+/* Neato Background */
+  border-top: 1px solid var(--summary-color-bottom);
+  background: #000000;
+  background: linear-gradient(180deg, var(--summary-color-top), var(--summary-color-bottom));
+  box-shadow: rgba(0,0,0,1) 0 1px 0;
+  text-shadow: rgba(0,0,0,.4) 0 1px 0;
+  color: var(--summary-color-text);
+}
+
+.button > a
+{
+  display: inline-block;
+  text-decoration: none;
+  height: 18px;
+  padding: 5px 10px;
+  border-radius: 8px;
+  font-size: 14px;
+  vertical-align: middle;
+  
+/* Neato Background */
+  border-top: 1px solid var(--heading-color-bottom);
+  background: #000000;
+  background: linear-gradient(180deg, var(--heading-color-top), var(--heading-color-bottom));
+  box-shadow: rgba(0,0,0,1) 0 1px 0;
+  text-shadow: rgba(0,0,0,.4) 0 1px 0;
+  color: var(--heading-color-text);
+}
+
+/***
+declare the large sections of the page
+***/
+
+.header {
+  display: block;
+  margin: 4px;
+  padding: 5px;
+  min-height: 50px;
+  margin-left: auto;
+  margin-right: auto;
+  background: var(--body-color) var(--header-image) no-repeat fixed 100%/100%;
+  background-position-y: 0px;
+}
+
+.footer {
+  display: block;
+  margin: 4px;
+  padding: 5px;
+  min-height: 50px;
+  border-radius: 7pt;
+  font-size:smaller;
+}
+
+.economy {
+  grid-area: economy;
+}
+.errorArea {
+  grid-area: errorArea;
+  color: var(--error-color);
+}
+.events {
+  grid-area: events;
+}
+.fleets {
+  grid-area: fleets;
+  display: grid;
+  gap: 20px;
+  grid-template-columns: repeat( auto-fill, minmax(350px,1fr) );
+  grid-auto-columns: auto;
+}
+.intelligence {
+  grid-area: intelligence;
+}
+.orders {
+  grid-area: orders;
+}
+.map {
+  grid-area: map;
+  background: #000;
+}
+.summary {
+  grid-area: summary;
+}
+.systems {
+  grid-area: systems;
+/* need a smaller font-size or else the width is larger than the window */
+   font-size: smaller;
+}
+.treaties {
+  grid-area: treaties;
+}
+
+.orders, .fleets, .systems, .intelligence, .events, .treaties, .summary, .economy {
+  padding: 5px;
+  border-radius: 7pt;
+  
+  border: 1px solid var(--card-border-color);
+  background: var(--card-background-color);
+  color: var(--card-text-color);
+}
+
+/* These are width-limited because their content is vertical, not horizontal */
+.summary, .economy {
+  max-width: 500px;
+}
+
+
+/* This is for single-column mobile applications */
+.wrapper {
+  display: grid;
+  gap: 4px;
+  grid-template-areas:
+    "errorArea"
+    "summary"
+    "orders"
+    "map"
+    "economy"
+    "fleets"
+    "events"
+    "systems"
+    "treaties"
+    "intelligence";
+}
+
+/***
+Declare the variations for different resolutions
+***/
+
+/* This is for double-column applications */
+@media (min-width: 900px) {
+.wrapper {
+  display: grid;
+  gap: 9px;
+  grid-template-columns: repeat( 2, 1fr );
+  grid-template-areas:
+    "errorArea	errorArea"
+    "summary	economy"
+    "orders	orders"
+    "map	map"
+    "fleets	fleets"
+    "systems	systems"
+    "events	treaties"
+    "intelligence intelligence";
+}
+
+.systems {
+/* Revert the font-size because now this is not larger than the window */
+  font-size: revert;
+}
+
+}
+
+/* This is for two-and-half column applications */
+@media (min-width: 1500px) {
+.wrapper {
+  display: grid;
+  gap: 14px;
+  grid-template-columns: repeat( 5, 1fr );
+  grid-template-areas:
+    "errorArea	errorArea	errorArea	errorArea	errorArea"
+    "summary	economy	orders	orders	orders"
+    "map	map	map	map	map"
+    "fleets	fleets	fleets	fleets	fleets"
+    "systems	systems	systems	systems	systems"
+    "events	events	treaties	intelligence intelligence";
+}
+
+.systems {
+/* Revert the font-size because now this is not larger than the window */
+  font-size: revert;
+}
+
+}
+

@@ -1,12 +1,18 @@
 <!DOCTYPE HTML>
 <html><head>
 <meta http-equiv="Content-Type" content="text/html;charset=UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
 <link rel="shortcut icon" href="" type="image/x-icon" />
 <link rel="icon" href="" type="image/x-icon" />
 <link rel='stylesheet' type='text/css' href='index.css' />
 <link rel='stylesheet' type='text/css' href='frax.css' />
 <title></title>
 
+<!--<script src="https://d3js.org/d3-hexbin.v0.2.min.js"></script>-->
+<script src="./d3.v7.min.js"></script>
+<script type="text/javascript" src='indexLib.js'></script>
+<script type="text/javascript" src='./maps.js' defer></script>
+<script type="text/javascript" src='./indexBuild.js' defer></script>
 <script type="text/javascript" >
 /***
 Receive Game Data
@@ -38,134 +44,110 @@ var params = (new URL(document.location)).searchParams;
 var dataVal = params.get('data'); // is the filename of the data file
 var errorVal = params.get('e'); // is the error string
 fetchData( "../files/"+dataVal+".js" ); // get the datafile
-
 </script>
 
 </head><body>
 
 <div class='header'></div>
 
-<span id='errorArea' class='errorArea'></span>
+<div class='wrapper'>
 
-<div class='main'>
+  <span id='errorArea' class='errorArea'></span>
 
-<div class='one'>
-<h3 id='empireName'></h3>
-<table>
-<tr><td>Game Turn</td><td><span class='button'><a href='#' id='PrevDoc'><</a></span> <span id='gameTurn'></span> <span class='button'><a href='#' id='NextDoc'>></a></span></td></tr>
-<tr><td>Game Month</td><td id='gameMonth'></td></tr>
-<tr><td><a title='Aggressiveness'>Agg</a> / <a title='Integrity'>Int</a> / <a title='Xenophobia'>Xen</a></td><td id='AIX'></td></tr>
-</table>
+  <div class='summary'>
+    <h3 id='empireName'></h3>
+    <table>
+    <tr><td>Game Turn</td><td><span class='button'><a href='#' id='PrevDoc'><</a></span> <span id='gameTurn'></span> <span class='button'><a href='#' id='NextDoc'>></a></span></td></tr>
+    <tr><td>Game Month</td><td id='gameMonth'></td></tr>
+    <tr><td><a title='Aggressiveness'>Agg</a> / <a title='Integrity'>Int</a> / <a title='Xenophobia'>Xen</a></td><td id='AIX'></td></tr>
+    </table>
 
-<span class='button'><a href='../rules.html' target='_BLANK'>Campaign Rules</a></span>
-<span class='button'><a href='#' id='UnitListDoc' target='_BLANK'>List of Units</a></span>
+    <span class='button'><a href='../rules.html' target='_BLANK'>Campaign Rules</a></span>
+    <span class='button'><a href='#' id='UnitListDoc' target='_BLANK'>List of Units</a></span>
 
+    <h3>Total Domestic Product</h3>
+    <table>
+    <tr><td>Previous Point Pool</td><td id='previousEPs'></td></tr>
+    <tr><td>Planetary Income</td><td id='planetaryIncome'></td></tr>
+    <tr><td>Commerce Income</td><td id='commerceIncome'></td></tr>
+    <tr><td>Misc Income</td><td id='miscIncome'></td></tr>
+    <tr><td>Maintenance Expense</td><td id='maintTotal'></td></tr>
+    <tr><td>Misc Expense</td><td id='miscExpense'></td></tr>
+    <tr><td class='summation'>Total Available Points</td><td class='summation' id='totalIncome'></td></tr>
+    </table>
 
-<h3>Total Domestic Product</h3>
-<table>
-<tr><td>Previous Point Pool</td><td id='previousEPs'></td></tr>
-<tr><td>Planetary Income</td><td id='planetaryIncome'></td></tr>
-<tr><td>Commerce Income</td><td id='commerceIncome'></td></tr>
-<tr><td>Misc Income</td><td id='miscIncome'></td></tr>
-<tr><td>Maintenance Expense</td><td id='maintTotal'></td></tr>
-<tr><td>Misc Expense</td><td id='miscExpense'></td></tr>
-<tr><td class='summation'>Total Available Points</td><td class='summation' id='totalIncome'></td></tr>
-</table>
+    <h3>Tech Investment</h3>
+    <table>
+    <tr><td>Current Tech Year</td><td id='techYear'></td></tr>
+    <tr><td>Tech Investments<br>Made This Year</td><td id='researchInvested'></td></tr>
+    <tr><td>Preliminary <br>Investment Needed</td><td id='researchNeeded'></td></tr>
+    </table>
+  </div>
 
-<h3>Tech Investment</h3>
-<table>
-<tr><td>Current Tech Year</td><td id='techYear'></td></tr>
-<tr><td>Tech Investments<br>Made This Year</td><td id='researchInvested'></td></tr>
-<tr><td>Preliminary <br>Investment Needed</td><td id='researchNeeded'></td></tr>
-</table>
+  <div class='orders'>
+    <h3>Turn Orders</h3>
+    <form accept-charset='UTF-8' action='../orderForm.php' id='' method='post' target='_SELF'>
+    <input type='hidden' name='dataFile' value=''>
 
-</div>
+    <span id='ordersArea'></span>
 
-<div class='article'>
-<h3>Turn Orders</h3>
-<form accept-charset='UTF-8' action='../orderForm.php' id='' method='post' target='_SELF'>
-<input type='hidden' name='dataFile' value=''>
+    <p><input type='submit' value='Save Orders'>
+    </form>
+  </div>
 
-<span id='ordersArea'></span>
+  <div id='mapImg' class='map'></div>
 
-<p><input type='submit' value='Save Orders'>
-</form>
-</div>
+  <div class='economy'>
+    <h3>Maintenance</h3>
+    <table id='maintData'>
+    </table>
+    <h3>Purchases</h3>
+    <table id='purchaseData'>
+    </table>
 
-</div> <!-- end container -->
+    <h3>Construction Status</h3>
+    <table id='constructionData'>
+    <tr style='font-weight:bolder'><td>Location</td><td>Unit</td></tr>
+    </table>
+  </div>
 
-<div id='mapImg' class='map'></div>
+  <div class='fleets' id='fleetData'>
+    <h3 class='fleetTitle'>Fleet Assets</h3>
+  </div>
 
+  <div class='events' id='eventArea'>
+    <h3>Events</h3>
+  </div>
 
-<div class='main'>
+  <div class='systems'>
+    <h3>System Assets</h3>
+    <table style='margin:auto;'><thead>
+    <tr><th>System Name</td><th>Census</th><th>Morale</th><th>Raw</th><th>Productivity</th><th>Capacity</th><th>Output</th><th>Intel<br>Points</th><th>Special Notes</th><th>Fixed Units</th></tr>
+    </thead><tbody id='systemData'>
+    </tbody></table>
+  </div>
 
-<div class='three'>
-<h3>Maintenance</h3>
-<table id='maintData'>
-</table>
-<h3>Purchases</h3>
-<table id='purchaseData'>
-</table>
+  <div class='treaties' id='treatyArea'>
+    <h3>Treaties</h3>
+  </div>
 
-<h3>Construction Status</h3>
-<table id='constructionData'>
-<tr style='font-weight:bolder'><td>Location</td><td>Unit</td></tr>
-</table>
-</div>
-
-
-<div class='article' id='fleetData'>
-<h3>Fleet Assets</h3>
-
-</div>
-
-</div> <!-- end container -->
-
-<div class='main'>
-
-<div class='one' id='eventArea'>
-<h3>Events</h3>
-
-</div>
-
-<div class='article'>
-<h3>System Assets</h3>
-<table style='margin:auto;'><thead>
-<tr><th>System Name</td><th>Census</th><th>Morale</th><th>Raw</th><th>Productivity</th><th>Capacity</th><th>Output</th><th>Intel<br>Points</th><th>Special Notes</th><th>Fixed Units</th></tr>
-</thead><tbody id='systemData'>
-</tbody></table>
-
-</div>
-
-</div> <!-- end container -->
-
-
-<div class='main'>
-
-<div class='three' id='treatyArea'>
-<h3>Treaties</h3>
-</div>
-
-<div class='article'>
-<h3>Intelligence Actions</h3>
-<table style='margin:auto;' id='IntelArea'>
-<tr><th>Mission Type</th><th>Target</th><th>Location</th><th>Intel Pts<br>Assigned</th><th>Notes</th></tr>
-</table>
-</div>
+  <div class='intelligence'>
+    <h3>Intelligence Actions</h3>
+    <table style='margin:auto;' id='IntelArea'>
+    <tr><th>Mission Type</th><th>Target</th><th>Location</th><th>Intel Pts<br>Assigned</th><th>Notes</th></tr>
+    </table>
+  </div>
 
 </div> <!-- end container -->
 
 <div class='footer'>
-<br>Copyright &copy; 2017 Matthew Potter
+  <br>Copyright &copy; 2017 Matthew Potter
 </div>
 
-<!--<script src="https://d3js.org/d3-hexbin.v0.2.min.js"></script>-->
-<script src="./d3.v7.min.js"></script>
-<script type="text/javascript" src='indexLib.js'></script>
-<script type="text/javascript" src='./maps.js' defer></script>
-<script type="text/javascript" src='./indexBuild.js' defer></script>
+<!-- Last-moment declarations, now that the basic DOM is loaded -->
 <script>
 // set the value of certain hidden input to the name of the data file
 document.getElementsByName("dataFile")[0].value = dataVal;
 </script>
+
 </body></html>

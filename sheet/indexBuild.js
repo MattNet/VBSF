@@ -244,10 +244,13 @@ orderTable['unmothball'] = [ unitsInMothballs, [], '', 'Unmothball a unit' ];
   {
     var unitCount = []; // format is [ ['designation','count', 'index'], ... ]
 
+/*
     if( a%2 == 0 )
       FleetOut += "\n<table style='float:right'>";
     else
       FleetOut += "\n<table>";
+*/
+      FleetOut += "\n<table class='fleetEntry'>";
 
     FleetOut += "<tr><th>Fleet Name</th><td>"+fleets[a].name+"</td><th>Location</th><td>"+fleets[a].location+"</td></tr>";
     FleetOut += "<tr><th># of Units</th><th>Class</th><th colspan=2>Notes</th></tr>";
@@ -303,7 +306,7 @@ orderTable['unmothball'] = [ unitsInMothballs, [], '', 'Unmothball a unit' ];
     }
     eventOut += events[i].time+": "+events[i].event+"</a>";
   }
-  eventOut += "<p style='font-size:smaller;'>Click on event for description</p>";
+  eventOut += "<p style='font-size:smaller;'>Mouseover or click on event for description</p>";
   ElementFind('eventArea').innerHTML = ElementFind('eventArea').innerHTML + eventOut;
 
   // Assemble the Treaty area

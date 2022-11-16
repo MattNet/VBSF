@@ -6,9 +6,8 @@
 // Height = radius × 3 / 2
 var HexRadius = 20;
 //var FinalMapWidth = 1870;
-var FinalMapWidth = window.screen.width;
+var FinalMapWidth = window.screen.width-40;
 var FinalMapHeight = 700;
-
 //###
 // NOTE: Primitives rotated so that they are flat-topped.
 // Pointy-top is the default in D3-Hexbin
