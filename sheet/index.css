@@ -1,0 +1,209 @@
+
+/***
+declare the small-bits of the page
+***/
+
+body {
+  background: #333;
+}
+
+h3 {
+  text-align:center;
+}
+
+th {
+  padding: 3px 5px;
+  -webkit-border-radius: 8px;
+  -moz-border-radius: 8px;
+  border-radius: 8px;
+  vertical-align: middle;
+
+/* Neato Background */
+  border-top: 1px solid #9AF;
+  background: #000000;
+  background: -webkit-gradient(linear, left top, left bottom, from(#57C), to(#9AF));
+  background: -webkit-linear-gradient(top, #57C, #9AF);
+  background: -moz-linear-gradient(top, #57C, #9AF);
+  background: -ms-linear-gradient(top, #57C, #9AF);
+  background: -o-linear-gradient(top, #57C, #9AF);
+  -webkit-box-shadow: rgba(0,0,0,1) 0 1px 0;
+  -moz-box-shadow: rgba(0,0,0,1) 0 1px 0;
+  box-shadow: rgba(0,0,0,1) 0 1px 0;
+  text-shadow: rgba(0,0,0,.4) 0 1px 0;
+  color: white;
+}
+
+.summation {
+  padding: 3px 5px;
+  -webkit-border-radius: 8px;
+  -moz-border-radius: 8px;
+  border-radius: 8px;
+  vertical-align: middle;
+
+/* Neato Background */
+  border-top: 1px solid #89C;
+  background: #000000;
+  background: -webkit-gradient(linear, left top, left bottom, from(#313181), to(#8181c0));
+  background: -webkit-linear-gradient(top, #313181, #8181c0);
+  background: -moz-linear-gradient(top, #313181, #8181c0);
+  background: -ms-linear-gradient(top, #313181, #8181c0);
+  background: -o-linear-gradient(top, #313181, #8181c0);
+  -webkit-box-shadow: rgba(0,0,0,1) 0 1px 0;
+  -moz-box-shadow: rgba(0,0,0,1) 0 1px 0;
+  box-shadow: rgba(0,0,0,1) 0 1px 0;
+  text-shadow: rgba(0,0,0,.4) 0 1px 0;
+  color: white;
+}
+
+.button > a
+{
+  display: inline-block;
+  text-decoration: none;
+  height: 18px;
+  padding: 5px 10px;
+  -webkit-border-radius: 8px;
+  -moz-border-radius: 8px;
+  border-radius: 8px;
+  font-size: 14px;
+  vertical-align: middle;
+  
+/* Neato Background */
+  border-top: 1px solid #9AF;
+  background: #000000;
+  background: -webkit-gradient(linear, left top, left bottom, from(#57C), to(#9AF));
+  background: -webkit-linear-gradient(top, #57C, #9AF);
+  background: -moz-linear-gradient(top, #57C, #9AF);
+  background: -ms-linear-gradient(top, #57C, #9AF);
+  background: -o-linear-gradient(top, #57C, #9AF);
+  -webkit-box-shadow: rgba(0,0,0,1) 0 1px 0;
+  -moz-box-shadow: rgba(0,0,0,1) 0 1px 0;
+  box-shadow: rgba(0,0,0,1) 0 1px 0;
+  text-shadow: rgba(0,0,0,.4) 0 1px 0;
+  color: white;
+}
+
+/***
+declare the large sections of the page
+***/
+
+.header {
+  display: block;
+  margin: 4px;
+  padding: 5px;
+  min-height: 50px;
+  margin-left: auto;
+  margin-right: auto;
+/*  background: #CCCCCC url('./frax_back.png') no-repeat fixed 100%/100%; */
+  background-position-y: 0px;
+}
+
+.footer {
+  display: block;
+  margin: 4px;
+  padding: 5px;
+  min-height: 50px;
+  border-radius: 7pt;
+  font-size:smaller;
+}
+
+.economy {
+  grid-area: economy;
+}
+.errorArea {
+  grid-area: errorArea;
+  color: #BB3333;
+}
+.events {
+  grid-area: events;
+}
+.fleets {
+  grid-area: fleets;
+}
+.intelligence {
+  grid-area: intelligence;
+}
+.orders {
+  grid-area: orders;
+}
+.map {
+  grid-area: map;
+  background: #000;
+}
+.summary {
+  grid-area: summary;
+}
+.systems {
+  grid-area: systems;
+}
+.treaties {
+  grid-area: treaties;
+}
+
+.orders, .fleets, .systems, .intelligence, .events, .treaties, .summary, .economy {
+  padding: 5px;
+  border-radius: 7pt;
+  
+  border: 1px solid #eebb55;
+  background: #AAE;
+}
+
+/* These are width-limited because their content is vertical, not horizontal */
+.summary, .economy {
+  max-width: 500px;
+}
+
+
+/* This is for single-column mobile applications */
+.wrapper {
+  display: grid;
+  gap: 4px;
+  grid-template-areas:
+    "errorArea"
+    "summary"
+    "orders"
+    "map"
+    "economy"
+    "fleets"
+    "events"
+    "systems"
+    "treaties"
+    "intelligence";
+}
+
+/***
+Declare the variations for different resolutions
+***/
+
+/* This is for double-column applications */
+@media (min-width: 1000px) {
+.wrapper {
+  display: grid;
+  gap: 9px;
+  grid-template-columns: repeat( 2, 1fr );
+  grid-template-areas:
+    "errorArea	errorArea"
+    "summary	economy"
+    "orders	orders"
+    "map	map"
+    "fleets	fleets"
+    "systems	systems"
+    "events	treaties"
+    "intelligence intelligence";
+}
+}
+
+/* This is for two-and-half column applications */
+@media (min-width: 1500px) {
+.wrapper {
+  display: grid;
+  gap: 14px;
+  grid-template-columns: repeat( 5, 1fr );
+  grid-template-areas:
+    "errorArea	errorArea	errorArea	errorArea	errorArea"
+    "summary	economy	orders	orders	orders"
+    "map	map	map	map	map"
+    "fleets	fleets	fleets	fleets	fleets"
+    "systems	systems	systems	systems	systems"
+    "events	events	treaties	intelligence intelligence";
+}
+}
