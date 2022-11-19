@@ -6,7 +6,7 @@ var filePath = document.location.origin+document.location.pathname+"?data=";
 
 // names of the themes to allow the player to select 
 // format is: displayed, filename, displayed, filename, ...
-var themeNames = [ "Default", "", "Federation", "federation", "Frax", "frax", "Klingon", "klingon", "Quari", "quari" ];
+var themeNames = [ "Default", "", "Federation", "federation", "Frax", "frax", "Gorn", "gorn", "Klingon", "klingon", "Peladine", "peladine", "Quari", "quari" ];
 
 /***
 Build Game Data

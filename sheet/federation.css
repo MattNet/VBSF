@@ -1,0 +1,19 @@
+:root {
+  --body-color: #000;
+  --card-background-color: #35A;
+  --card-border-color: #57C;
+  --card-text-color: white;
+  --error-text-color: crimson;
+  --footer-text-color: white;
+  --header-image: url('./federation_back.png');
+  --heading-color-bottom: #888;
+  --heading-color-text: white;
+  --heading-color-top: #333;
+  --summary-color-bottom: #88C;
+  --summary-color-text: white;
+  --summary-color-top: #338;
+}
+
+.header {
+  min-height: 300px;
+}

@@ -1,0 +1,19 @@
+:root {
+  --body-color: black;
+  --card-background-color: ghostwhite;
+  --card-border-color: crimson;
+  --card-text-color: black;
+  --error-text-color: lightskyblue;
+  --footer-text-color: white;
+  --header-image: url('./gorn_back.png');
+  --heading-color-bottom: #D88;
+  --heading-color-text: white;
+  --heading-color-top: #D33;
+  --summary-color-bottom: #F33;
+  --summary-color-text: white;
+  --summary-color-top: #F88;
+}
+
+.header {
+  min-height: 250px;
+}

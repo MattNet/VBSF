@@ -1,16 +1,17 @@
 :root {
   --body-color: #333;
-  --card-background-color: #AAE;
-  --card-border-color: #eebb55;
+  --card-background-color: #999;
+  --card-border-color: #DAD;
   --card-text-color: black;
-  --error-color: crimson;
+  --error-text-color: crimson;
+  --footer-text-color: white;
   --header-image: url('./frax_back.png');
-  --heading-color-bottom: #9AF;
+  --heading-color-bottom: #A9D;
   --heading-color-text: white;
-  --heading-color-top: #57C;
-  --summary-color-bottom: #8181c0;
+  --heading-color-top: #87A;
+  --summary-color-bottom: #98A;
   --summary-color-text: white;
-  --summary-color-top: #313181;
+  --summary-color-top: #435;
 }
 
 .header {
