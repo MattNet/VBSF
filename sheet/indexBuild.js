@@ -4,6 +4,10 @@ This file provides specific code used to generate the client-side interface. It 
 
 var filePath = document.location.origin+document.location.pathname+"?data=";
 
+// names of the themes to allow the player to select 
+// format is: displayed, filename, displayed, filename, ...
+var themeNames = [ "Default", "", "Federation", "federation", "Frax", "frax", "Klingon", "klingon", "Quari", "quari" ];
+
 /***
 Build Game Data
 ***/
@@ -31,6 +35,21 @@ var orderTable = [];
 Emit Game Data
 ***/
 onLoadStartUp( function () {
+
+// build the themes drop-down
+for( var i=0; i<themeNames.length; i+=2 )
+{
+  var o = document.createElement("option");
+  o.text = themeNames[i];
+  o.value = themeNames[i+1];
+  if( o.value == readCookie( 'theme' ) )
+    o.selected = true;
+  document.getElementById("themeChange").appendChild(o);
+}
+document.getElementById("themeChange").addEventListener( 
+   "change", 
+   function(){ createCookie( "theme", this.value, 21 ); location.reload() }
+);
 
 // Iterate through the list of colonies
 for( var i=0; i<colonies.length; i++ )
@@ -388,6 +407,5 @@ orderTable['unmothball'] = [ unitsInMothballs, [], '', 'Unmothball a unit' ];
   if( errorVal )
     ElementFind('errorArea').innerHTML = errorVal;
 
-});
-
+}); // end onLoadStartUp() arg declaration
 
