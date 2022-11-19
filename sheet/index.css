@@ -8,7 +8,8 @@ declare the reusable colors
   --card-background-color: ghostwhite;
   --card-border-color: gray;
   --card-text-color: black;
-  --error-color: crimson;
+  --error-text-color: crimson;
+  --footer-text-color: white;
   --header-image: url('');
   --heading-color-bottom: lightskyblue;
   --heading-color-text: white;
@@ -107,6 +108,7 @@ declare the large sections of the page
   min-height: 50px;
   border-radius: 7pt;
   font-size:smaller;
+  color: var(--footer-text-color);
 }
 
 .economy {
