@@ -159,7 +159,7 @@ function findOrder( $dataArray, $orderType )
 # Args:
 # - (array) the data sheet
 # - (array) a list of hull types present
-# - (boolean) if true, skips trade, transport, and colony fleets
+# - (boolean) [optional] if true, skips trade, transport, and colony fleets
 # Return:
 # - (integer) The combined purchased amount. False for an error
 ###
@@ -187,6 +187,88 @@ function getFleetValue( $dataArray, $unitArray, $skipCivilian = false )
         $output += $unit["cost"];
     }
   }
+  return $output;
+}
+
+###
+# Determines the total supply value of a list of units (e.g. present in a fleet)
+###
+# Args:
+# - (array) the data sheet
+# - (array) a list of hull types present
+# - (boolean) [optional] if true, skips trade, transport, and colony fleets
+# Return:
+# - (integer) The combined supply amount. False for an error
+###
+function getFleetSupplyValue( $dataArray, $unitArray, $skipCivilian = false )
+{
+  $output = 0;
+
+  // leave if something isn't set
+  if( ! isset($dataArray["unitList"]) )
+    return false;
+
+  foreach( $unitArray as $hull )
+  {
+    if( $skipCivilian &&
+        ( $hull == "Colony Fleet" ||
+          $hull == "Trade Fleet" ||
+          $hull == "Transport Fleet" )
+      )
+    {
+      continue; // skip civilian units
+    }
+    foreach( $dataArray["unitList"] as $unit )
+    {
+      if( $unit["ship"] == $hull )
+      {
+        $cutPos = strpos( strtolower($unit["notes"]), "supply(" );
+        if( $cutPos === false ) // skip if there is no supply trait
+          continue;
+        // find the end of the supply value. may be single or double digit
+        $doublePos = strpos( $unit["notes"], ")", $cutPos );
+        $output += substr( $unit["notes"], $cutPos+7, $doublePos-$cutPos-7 ); // get the value
+      }
+    }
+  }
+  return $output;
+}
+
+###
+# Determines the total supply value being used by a list of units (e.g. present in a fleet)
+###
+# Args:
+# - (array) The fleet entry of the data sheet
+# Return:
+# - (integer) The combined supply used. False for an error
+###
+function getFleetloadedValue( $fleet )
+{
+  $output = 0;
+  $notes = explode( ".", $fleet["notes"] );
+
+  foreach( $notes as $value ) // iterate through each sentence of the notes
+  {
+    // Capture what is loaded and how much
+    $flag = preg_match( "/(\d+) (\w+)+ loaded/i", $value, $match );
+    if( $flag == 0 ) // return if there is none loaded
+      return $output;
+
+    $amt = $match[1];
+    $type = strtolower( $match[2] );
+
+    switch( $type )
+    {
+    case "census":
+    case "light infantry":
+    case "heavy infantry":
+    case "light armor":
+    case "heavy armor":
+      $output += $amt*10;
+      break;
+    }  
+  }
+
   return $output;
 }
 
@@ -289,6 +371,28 @@ function getTDP( $dataArray )
       $out += ( $factories * $place["raw"] );
     }
   return $out;
+}
+
+###
+# Determines the location key to the colony array for the given location name
+###
+# Args:
+# - (string) The location name
+# - (array) the data sheet
+# Return:
+# - (integer) The key to the colony array. False for error
+###
+function getcolonyLocation( $name, $dataArray )
+{
+  $output = false;
+  foreach( $dataArray["colonies"] as $key=>$value )
+  {
+    if( strtolower($value["name"]) != strtolower($name) )
+      continue;
+    $output = $key;
+    break; // skip to the end, since we found the location
+  }
+  return $output;
 }
 
 ###

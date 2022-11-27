@@ -78,7 +78,7 @@ if( isset($orderKeys[0]) ) // if there are none of these orders, then skip
     elseif( strtolower($inputData["orders"][ $key ]["type"]) == "convert" ) // unit conversions
     {
 // How to know which unit to convert?
-// need to define the order
+// need to define the order to convert
 /*
       $unitCost = 0;
       $unitRebate = 0;
@@ -198,18 +198,8 @@ if( isset($orderKeys[0]) ) // if there are none of these orders, then skip
         break; // skip to the end, since we found the fleet for this order
       }
 
-      // find the location in colonies
-      foreach( $inputData["colonies"] as $key=>$value )
-      {
-        if( strtolower($value["name"]) != strtolower($fleetLocation) )
-          continue;
-
-        $flag = true; // we found the location in colonies
-
-        break; // skip to the end, since we found the location
-      }
       // if the location is not in colonies, add it
-      if( ! $flag )
+      if( getColonyLocation( $fleetLocation, $inputData ) != false )
       {
         // roll for newly-explored systems, if set to do so
         if( $AUTO_ROLL_EMPTY_SYSTEMS )
@@ -362,6 +352,102 @@ if( $MAKE_CHECKLIST )
     $inputData["events"][] = array("event"=>$entry,"time"=>"Turn ".$inputData["game"]["turn"],"text"=>"");
   unset( $checklist );
 }
+
+###
+# Load / unload units (colony fleets, troop transports)
+# Note: This is post-movement, before combat
+# Load Order: {"type":"load","reciever":"Colony Fleet w\/ Colony-1","target":"Census","note":"1"}
+###
+  // Find any load orders
+  $orderKeys = findOrder( $inputData, "load" );
+
+  if( isset($orderKeys[0]) ) // is there at least one instance?
+  {
+    foreach( $orderKeys as $key )
+    {
+      $loadAmt = (int) $inputData["orders"][$key]["note"];
+      // Keep the load amount a single digit
+      if( $loadAmt > 9 )
+      {
+        $loadAmt = 9;
+        echo "Order given to load '".$inputData["orders"][$key]["reciever"];
+        echo "' with ".$inputData["orders"][$key]["note"]." of '";
+        echo $inputData["orders"][$key]["target"]."'. Amount truncated to 9.\n";
+      }
+
+      // convenience variable. Error string that identifies order that is wrong
+      $loadErrorString = "Order given to load '".$inputData["orders"][$key]["reciever"];
+      $loadErrorString .= "' with $loadAmt of '".$inputData["orders"][$key]["target"];
+
+      $fleet = -1; // key of the fleet array that is being loaded
+
+      // find the fleet
+      foreach( $inputData["fleets"] as $fleetKey=>$value )
+       if( str_ends_with( $inputData["orders"][$key]["reciever"], $value["name"] ) )
+         $fleet = $fleetKey;
+      if( $fleet == -1 )
+      {
+        echo $loadErrorString."'. Could not find fleet.\n";
+        exit(1);
+      }
+
+      // find fleet location
+      $fleetLoc = getColonyLocation( $inputData["fleets"][$fleet]["location"], $inputData );
+      if( $fleetLoc === false ) // skip if this fleet location cannot be found
+      {
+        echo $loadErrorString."'. Location of fleet is not a colony.\n";
+        continue;
+      }
+
+      // determine if this colony is owned by the player
+      if( $inputData["colonies"][$fleetLoc]["owner"] != $inputData["empire"]["empire"] )
+      {
+        echo $loadErrorString."'. This player does not own this colony.\n";
+        continue;
+      }
+
+      // find amt of the supply trait in this fleet
+      $supplyAmt = getFleetSupplyValue( $inputData, $inputData["fleets"][$fleet]["units"] );
+      if( $supplyAmt == 0 ) // skip if this fleet has no supply trait
+      {
+        echo $loadErrorString."'. Fleet has no supply trait.\n";
+        continue;
+      }
+
+      // find supply amt already used in this fleet
+      $supplyUsed = getFleetloadedValue( $inputData["fleets"][$fleet] );
+
+      // skip if the fleet cannot hold the unit
+      if( $supplyAmt - $supplyUsed < ( 10 * $loadAmt ) )
+      {
+        echo $loadErrorString."'. Loading $loadAmt would overload fleet.\n";
+        continue;
+      }
+
+      // Load Census
+      if( strtolower($inputData["orders"][$key]["target"]) == "census" )
+      {
+        // skip if there is not enough census to load
+        if( $inputData["colonies"][$fleetLoc]["census"] <= $loadAmt+1 )
+        {
+          echo $loadErrorString."'. Loading $loadAmt of Census would empty the colony.\n";
+          continue;
+        }
+        
+        // Add Census to fleet
+        $inputData["fleets"][$fleet]["notes"] .= $loadAmt." Census loaded.";
+        // remove Census from location
+        $inputData["colonies"][$fleetLoc]["census"] -= $loadAmt;
+      }
+// handle other loading
+// - infantry and armor
+// - Mobile Bases?
+/*
+Unloading uses the same process, but with reverse effects
+*/
+    }
+  }
+
 
 ###
 # Add raids
