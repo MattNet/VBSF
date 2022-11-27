@@ -280,11 +280,18 @@ orderTable['unmothball'] = [ unitsInMothballs, [], '', 'Unmothball a unit' ];
     // list the units
     for( var b=0; b<unitCount.length; b++ )
     {
-      FleetOut += "<tr><td>"+unitCount[b][1]+"</td><td>"+unitCount[b][0]+"</td><td>";
+      FleetOut += "<tr><td>"+unitCount[b][1]+"</td><td>"+unitCount[b][0]+"</td><td colspan=2>";
       if( isNaN(unitCount[b][2]) )
         FleetOut += unitCount[b][2];
       else
         FleetOut += unitList[ unitCount[b][2] ].notes;
+      FleetOut += "</td></tr>";
+    }
+    // Add the fleet notes
+    if( fleets[a].notes )
+    {
+      FleetOut += "<tr><td colspan=2>&nbsp;</td><td colspan=2>";
+      FleetOut += fleets[a].notes;
       FleetOut += "</td></tr>";
     }
     FleetOut += "</table>";

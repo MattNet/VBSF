@@ -40,13 +40,16 @@ th {
   border-top: 1px solid var(--heading-color-bottom);
   background: #000000;
   background: linear-gradient(180deg, var(--heading-color-top), var(--heading-color-bottom));
-  box-shadow: rgba(0,0,0,1) 0 1px 0;
+  box-shadow: rgba(0,0,0,1) 1px 1px 1px;
   text-shadow: rgba(0,0,0,.4) 0 1px 0;
   color: var(--heading-color-text);
 }
 
 .fleetEntry { /* script-added HTML. Shows each fleet */
   max-width: 500px;
+  border: 1px solid var(--card-border-color);
+  border-radius: 8px;
+  box-shadow: rgba(0,0,0,1) 1px 1px 2px;
 }
 
 .fleetTitle {
@@ -62,7 +65,7 @@ th {
   border-top: 1px solid var(--summary-color-bottom);
   background: #000000;
   background: linear-gradient(180deg, var(--summary-color-top), var(--summary-color-bottom));
-  box-shadow: rgba(0,0,0,1) 0 1px 0;
+  box-shadow: rgba(0,0,0,1) 1px 1px 1px;
   text-shadow: rgba(0,0,0,.4) 0 1px 0;
   color: var(--summary-color-text);
 }
@@ -81,7 +84,7 @@ th {
   border-top: 1px solid var(--heading-color-bottom);
   background: #000000;
   background: linear-gradient(180deg, var(--heading-color-top), var(--heading-color-bottom));
-  box-shadow: rgba(0,0,0,1) 0 1px 0;
+  box-shadow: rgba(0,0,0,1) 1px 1px 1px;
   text-shadow: rgba(0,0,0,.4) 0 1px 0;
   color: var(--heading-color-text);
 }
