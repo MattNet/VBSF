@@ -199,7 +199,7 @@ if( isset($orderKeys[0]) ) // if there are none of these orders, then skip
       }
 
       // if the location is not in colonies, add it
-      if( getColonyLocation( $fleetLocation, $inputData ) != false )
+      if( getColonyLocation( $fleetLocation, $inputData ) == false )
       {
         // roll for newly-explored systems, if set to do so
         if( $AUTO_ROLL_EMPTY_SYSTEMS )
@@ -380,6 +380,7 @@ if( $MAKE_CHECKLIST )
       $loadErrorString .= "' with $loadAmt of '".$inputData["orders"][$key]["target"];
 
       $fleet = -1; // key of the fleet array that is being loaded
+      $isGroundUnit = false; // determines if a unit being loaded is a ground unit
 
       // find the fleet
       foreach( $inputData["fleets"] as $fleetKey=>$value )
@@ -435,16 +436,176 @@ if( $MAKE_CHECKLIST )
         }
         
         // Add Census to fleet
-        $inputData["fleets"][$fleet]["notes"] .= $loadAmt." Census loaded.";
+        $inputData["fleets"][$fleet]["notes"] .= "$loadAmt Census loaded.";
         // remove Census from location
         $inputData["colonies"][$fleetLoc]["census"] -= $loadAmt;
+
+        // finished with this load order
+        continue;
       }
-// handle other loading
-// - infantry and armor
-// - Mobile Bases?
-/*
+
+      // determine if this is a ground unit being loaded
+      foreach( $inputData["unitList"] as $unit )
+      {
+        if( strtolower($unit["design"]) != "ground unit" )
+          continue;
+        if( strtolower($inputData["orders"][$key]["target"]) == strtolower($unit["design"]) )
+        {
+          $isGroundUnit = true;
+          break;
+        }
+      }
+
+      // Load ground units
+      if( $isGroundUnit )
+      {
+        $unitCount = 0;
+
+        // skip if there is not enough of this ground unit to load
+        foreach( $inputData["colonies"][$fleetLoc]["fixed"] as $fixedKey=>$fixed )
+        {
+          if( strtolower($inputData["orders"][$key]["target"]) == strtolower($fixed) )
+            $unitCount++;
+        }
+        if( $unitCount < $loadAmt )
+        {
+          echo $loadErrorString."'. Not enough ".$inputData["orders"][$key]["target"]." are present at colony.\n";
+          continue;
+        }
+        
+        // Add unit to fleet
+        $inputData["fleets"][$fleet]["notes"] .= "$loadAmt ".$inputData["orders"][$key]["target"]." loaded.";
+        // remove unit from location
+        foreach( $inputData["colonies"][$fleetLoc]["fixed"] as $fixedKey=>$fixed )
+        {
+          if( strtolower($inputData["orders"][$key]["target"]) == strtolower($fixed) && $loadAmt > 0 )
+          {
+            unset( $inputData["colonies"][$fleetLoc]["fixed"][$fixedKey] );
+            $loadAmt--;
+          }
+        }
+        // re-index the fixed-unit array
+        $inputData["colonies"][$fleetLoc]["fixed"] = array_values( $inputData["colonies"][$fleetLoc]["fixed"] );
+
+        // finished with this load order
+        continue;
+      }
+      echo $loadErrorString."'. Unit not loaded.\n";
+    }
+  }
+/***
 Unloading uses the same process, but with reverse effects
-*/
+***/
+  // Find any unload orders
+  $orderKeys = findOrder( $inputData, "unload" );
+
+  if( isset($orderKeys[0]) ) // is there at least one instance?
+  {
+    foreach( $orderKeys as $key )
+    {
+      $loadAmt = (int) $inputData["orders"][$key]["note"];
+      // Keep the unload amount a single digit
+      if( $loadAmt > 9 )
+      {
+        $loadAmt = 9;
+        echo "Order given to unload '".$inputData["orders"][$key]["reciever"];
+        echo "' with ".$inputData["orders"][$key]["note"]." of '";
+        echo $inputData["orders"][$key]["target"]."'. Amount truncated to 9.\n";
+      }
+
+      // convenience variable. Error string that identifies order that is wrong
+      $loadErrorString = "Order given to unload '".$inputData["orders"][$key]["reciever"];
+      $loadErrorString .= "' with $loadAmt of '".$inputData["orders"][$key]["target"];
+
+      $fleet = -1; // key of the fleet array that is being loaded
+      $isGroundUnit = false; // determines if a unit being loaded is a ground unit
+      $success = preg_match( "/(\d) ".$inputData["orders"][$key]["reciever"]." loaded/i", $inputData["fleets"][$fleet]["notes"], $matches );
+      $amtLoaded = (int) $matches[1];
+      if( ! $success || $amtLoaded < 1 )
+      {
+        echo $loadErrorString."'. Fleet does not carry any ".$inputData["orders"][$key]["target"].".\n";
+        exit(1);
+      }
+
+      // skip if there is not enough to unload
+      if( $amtLoaded >= $loadAmt )
+      {
+        echo $loadErrorString."'. The fleet does not carry enough. It only has $amtLoaded.\n";
+        continue;
+      }
+        
+      // find the fleet
+      foreach( $inputData["fleets"] as $fleetKey=>$value )
+       if( str_ends_with( $inputData["orders"][$key]["reciever"], $value["name"] ) )
+         $fleet = $fleetKey;
+      if( $fleet == -1 )
+      {
+        echo $loadErrorString."'. Could not find fleet.\n";
+        exit(1);
+      }
+
+      // find fleet location
+      $fleetLoc = getColonyLocation( $inputData["fleets"][$fleet]["location"], $inputData );
+      if( $fleetLoc === false ) // skip if this fleet location cannot be found
+      {
+        echo $loadErrorString."'. Location of fleet is not a colony.\n";
+        continue;
+      }
+
+      // Unload Census
+      if( strtolower($inputData["orders"][$key]["target"]) == "census" )
+      {
+        // determine if this colony is owned by the player
+        if( $inputData["colonies"][$fleetLoc]["owner"] != $inputData["empire"]["empire"] )
+        {
+          echo $loadErrorString."'. This player does not own this colony.\n";
+          continue;
+        }
+
+        // Remove Census from fleet
+        $inputData["fleets"][$fleet]["notes"] = str_replace(
+          "$loadAmt Census loaded.",
+          "",
+          $inputData["fleets"][$fleet]["notes"]
+        );
+        // add Census to location
+        $inputData["colonies"][$fleetLoc]["census"] += $loadAmt;
+
+        // finished with this unload order
+        continue;
+      }
+
+      // determine if this is a ground unit being unloaded
+      foreach( $inputData["unitList"] as $unit )
+      {
+        if( strtolower($unit["design"]) != "ground unit" )
+          continue;
+        if( strtolower($inputData["orders"][$key]["target"]) == strtolower($unit["design"]) )
+        {
+          $isGroundUnit = true;
+          break;
+        }
+      }
+
+      // Unload ground units
+      if( $isGroundUnit )
+      {
+        // Remove unit to fleet
+        $inputData["fleets"][$fleet]["notes"] = str_replace(
+          "$loadAmt ".$inputData["orders"][$key]["target"]." loaded.",
+          "",
+          $inputData["fleets"][$fleet]["notes"]
+        );
+        // add unit to location
+        for( $i=$loadAmt; $i=0; $i-- )
+          $inputData["colonies"][$fleetLoc]["fixed"][] = $inputData["orders"][$key]["target"];
+        // re-index the fixed-unit array
+        $inputData["colonies"][$fleetLoc]["fixed"] = array_values( $inputData["colonies"][$fleetLoc]["fixed"] );
+
+        // finished with this unload order
+        continue;
+      }
+      echo $loadErrorString."'. Unit not unloaded.\n";
     }
   }
 
@@ -580,7 +741,7 @@ function colonyNameSort( $a, $b )
 }
 
 ###
-# Sorting function to be used on the colonies data structure
+# Sorting function to be used on the mapPoints data structure
 ###
 function mapLocSort( $a, $b )
 {

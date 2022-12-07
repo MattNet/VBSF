@@ -205,6 +205,7 @@ else
         $outputData["fleets"][] = array( "name" => $outputData["orders"][$orderKey]["note"], 
                        "location" => $outputData["orders"][$orderKey]["target"], 
                        "units" => array( $outputData["orders"][$orderKey]["reciever"] ), 
+                       "notes" => "",
                      );
       }
     }

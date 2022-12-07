@@ -4,9 +4,9 @@ var colonies = [
 var empire = {"AIX":[42,79,85],"empire":"Frax","maintExpense":0,"miscExpense":49,"miscIncome":0,"name":"The FRAX Battle Line","planetaryIncome":0,"previousEP":0,"techYear":166,"tradeIncome":0,"researchInvested":0};
 var events = [];
 var fleets = [
-   {"name":"Exploration Beta","location":"Fraxee","units":["DW","DW","DWS"]},
-   {"name":"Exploration Alpha","location":"Fraxee","units":["DW","DW","DWS"]},
-   {"name":"Wolf Pack One","location":"Fraxee","units":["SFF","SFF","SFF"]}
+   {"name":"Exploration Beta","location":"Fraxee","units":["DW","DW","DWS"],"notes":""},
+   {"name":"Exploration Alpha","location":"Fraxee","units":["DW","DW","DWS"],"notes":""},
+   {"name":"Wolf Pack One","location":"Fraxee","units":["SFF","SFF","SFF"],"notes":""}
 ];
 var game = {"turn":0,"monthsPerYear":6,"blankOrders":0,"nextDoc":"sample01","previousDoc":""};
 var intelProjects = [];

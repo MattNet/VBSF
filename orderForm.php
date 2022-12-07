@@ -35,7 +35,7 @@
 ###
 # Configuration
 ###
-$EXIT_PAGE = "sfb.local/vbsf/sheet/index.html"; // the page to show when the script is finished
+$EXIT_PAGE = $_SERVER["HTTP_HOST"]."/sheet/index.html"; // the page to show when the script is finished
 $dataFileDir = "files/"; // location of the data files
 
 ###
@@ -228,7 +228,6 @@ $fileContents["orders"] = array_values( $fileContents["orders"] );
 writeJSON( $fileContents, $dataFileName );
 
 // go back to the player-page
-header( "location: http://".$EXIT_PAGE."?data=".$_REQUEST["dataFile"]."&e=".$errorStrings );
-
+header( "location: http://".$EXIT_PAGE."?data=".$_REQUEST["dataFile"]."&e=".$errorStrings."&t=".time(), true, 302 );
 exit;
 ?>
