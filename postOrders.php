@@ -73,6 +73,19 @@ if( isset($orderKeys[0]) ) // if there are none of these orders, then skip
     // research investment
     if( strtolower($inputData["orders"][ $key ]["type"]) == "research" )
     {
+      // Determine if this would cause overspending
+      if( getLeftover( $inputData ) < intval($inputData["orders"][ $key ]["note"]) )
+      {
+        $inputData["events"][] = array(
+          "event"=>"Research order cancelled due to overspending",
+          "time"=>"Turn ".$inputData["game"]["turn"],
+          "text"=>""
+        );
+        echo "Research order cancelled due to overspending.\n";
+        continue; // go on to the next order
+      }
+
+      // add to the purchases
       $inputData["purchases"][] = array( "name"=>"Research","cost"=>intval($inputData["orders"][ $key ]["note"]) );
     }
     elseif( strtolower($inputData["orders"][ $key ]["type"]) == "convert" ) // unit conversions
@@ -121,6 +134,19 @@ if( isset($orderKeys[0]) ) // if there are none of these orders, then skip
           $unitCost = $hull["cost"];
           break; // quit the loop. We found our unit.
         }
+
+      // Determine if this would cause overspending
+      if( getLeftover( $inputData ) < $unitCost )
+      {
+        $inputData["events"][] = array(
+          "event"=>"Build order of ".$inputData["orders"][ $key ]["reciever"]." cancelled due to overspending",
+          "time"=>"Turn ".$inputData["game"]["turn"],
+          "text"=>""
+        );
+        echo "Build order of ".$inputData["orders"][ $key ]["reciever"]." cancelled due to overspending.\n";
+        continue; // go on to the next order
+      }
+
       $inputData["purchases"][] = array( "name"=>$inputData["orders"][ $key ]["reciever"],"cost"=>$unitCost );
       $inputData["underConstruction"][] = array( "location"=>$inputData["orders"][ $key ]["target"],"unit"=>$inputData["orders"][ $key ]["reciever"] );
     }

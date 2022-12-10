@@ -116,6 +116,10 @@ else
   // Add in the excess EPs
   $outputData["empire"]["previousEP"] = getLeftover( $inputData );
 
+  // calculate the income for the turn-start
+  $outputData["empire"]["pointPool"] = getTDP( $outputData ) + $outputData["empire"]["previousEP"];
+  $outputData["empire"]["pointPool"] += $outputData["empire"]["tradeIncome"] + $outputData["empire"]["miscIncome"];
+
   // invest research
   $orderKeys = findOrder( $inputData, "research" );
   if( isset($orderKeys[0]) )

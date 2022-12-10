@@ -351,8 +351,7 @@ orderTable['unmothball'] = [ unitsInMothballs, [], '', 'Unmothball a unit' ];
   ElementFind('IntelArea').innerHTML = ElementFind('IntelArea').innerHTML + intelOut;
 
   // calculate the EPs spent
-  empire.totalIncome = empire.previousEP + empire.planetaryIncome + empire.tradeIncome
-  empire.totalIncome += empire.miscIncome - empire.maintExpense - empire.miscExpense;
+  empire.totalIncome = empire.pointPool - empire.maintExpense - empire.miscExpense;
 
   // write the surplus EPs from this turn.
   // put here because of the total EP is unknown until now
