@@ -684,7 +684,14 @@ if( isset($inputData["fleets"]) ) // make sure the input exists
 // note places empty of naval units
 foreach( $ownedPlaces as $place )
 {
-  if( $place["navalCost"] == 0 )
+  $flag = false; // true if the ownedPlace is already in raidPlaces
+  foreach( $raidPlaces as $raid )
+  {
+    if( $raid["location"] == $place["name"] )
+      $flag = true;
+  }
+
+  if( $place["navalCost"] == 0 && ! $flag )
     $raidPlaces[] = array( "civCount" => 0, "location"=>$place["name"], "naval"=>0 );
 }
 
