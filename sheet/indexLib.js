@@ -73,6 +73,72 @@ function newRound( number, decimal )
   return Number(Math.round(number+'e'+decimal)+'e-'+decimal);
 }
 
+/*
+Equates an in-game month to a month-name or a season-name
+
+PARAMS: (int) The current month. 1-based
+        (int) How many turns per year
+RETURN: (string) The name of the current month
+*/
+function makeFancyMonth( monthNum, monthsYear )
+{
+  var placeInYear = 0; // A float representing which month
+  // return nothing if it doesn't look like this is looking for a place-in-year
+  // e.g. one turn is a week, one turn is a year, and so on.
+  if( monthsYear > 12 || monthsYear < 2 )
+    return "";
+  // error out if monthNum is less than 1
+  if( monthNum < 1 )
+    return "";
+
+  // call out a season
+  if( monthsYear == 2 && monthNum == 1 )
+    return "Spring";
+  if( monthsYear == 2 && monthNum == 2 )
+    return "Fall";
+  if( monthsYear == 4 )
+  {
+   switch( monthNum )
+   {
+   case 1:
+     return "Spring";
+   case 2:
+     return "Summer";
+   case 3:
+     return "Fall";
+   case 4:
+     return "Winter";
+   }
+  }
+
+  // If we are here, then we want some sort of month
+  placeInYear = monthNum / monthsYear;
+  if( placeInYear < 0.1 )
+    return "January";
+  if( placeInYear < 0.2 )
+    return "Febuary";
+  if( placeInYear < 0.275 )
+    return "March";
+  if( placeInYear < 0.35 )
+    return "April";
+  if( placeInYear < 0.45 )
+    return "May";
+  if( placeInYear < 0.55 )
+    return "June";
+  if( placeInYear < 0.6 )
+    return "July";
+  if( placeInYear < 0.7 )
+    return "August";
+  if( placeInYear < 0.775 )
+    return "September";
+  if( placeInYear < 0.85 )
+    return "October";
+  if( placeInYear < 0.95 )
+    return "November";
+  if( placeInYear < 0.11 )
+    return "December";
+}
+
 /***
 # Concatonates up to four JSON arrays together and returns the result. The 
 #   original arrays are untouched

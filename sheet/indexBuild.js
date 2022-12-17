@@ -361,10 +361,13 @@ orderTable['unmothball'] = [ unitsInMothballs, [], '', 'Unmothball a unit' ];
     "<tr><td class='summation'>Ending Point Pool</td><td class='summation'>"+
     newRound(empire.totalIncome-purchaseTotal, 2)+"</td></tr>";
 
+  // determine which month of the year this turn is
+  var gameMonth = (game.turn%game.monthsPerYear)?(game.turn%game.monthsPerYear):game.monthsPerYear;
+
   // write the one-liners
   ElementFind('empireName').innerHTML = empire.name+" ("+empire.empire+")";
   ElementFind('gameTurn').innerHTML = game.turn;
-  ElementFind('gameMonth').innerHTML = (game.turn%game.monthsPerYear)?(game.turn%game.monthsPerYear):game.monthsPerYear;
+  ElementFind('gameMonth').innerHTML = gameMonth+" ("+makeFancyMonth( gameMonth, game.monthsPerYear )+")";
   ElementFind('previousEPs').innerHTML = empire.previousEP;
   ElementFind('planetaryIncome').innerHTML = empire.planetaryIncome;
   ElementFind('commerceIncome').innerHTML = empire.tradeIncome;
