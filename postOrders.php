@@ -24,7 +24,7 @@ if( ! isset($argv[1]) )
 # Configuration
 ###
 $AUTO_ROLL_EMPTY_SYSTEMS = true; // if true, calls $SYSTEM_ROLLER for any new explorations
-$MAKE_CHECKLIST = true; // if true, adds a turn checklist to the events
+$MAKE_CHECKLIST = false; // if true, adds a turn checklist to the events
 $MAPPOINTS_NAME = 3; // Index in mapPoints array of datafile for the location name
 $MAPPOINTS_OWNER = 2; // Index in mapPoints array of datafile for the owning position (empire type)
 $mapX = 30; // mapPoints increment for the x-coord

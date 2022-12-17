@@ -1,7 +1,7 @@
 var colonies = [
    {"name":"Fraxee","census":10,"owner":"Frax","morale":9,"raw":6,"prod":10,"capacity":12,"intel":0,"fixed":["Orbital Shipyard","Base Station"],"notes":"Homeworld"}
 ];
-var empire = {"AIX":[42,79,85],"empire":"Frax","maintExpense":0,"miscExpense":49,"miscIncome":0,"name":"The FRAX Battle Line","planetaryIncome":0,"pointPool":0,"previousEP":0,"techYear":166,"tradeIncome":0,"researchInvested":0};
+var empire = {"AIX":[42,79,85],"empire":"Frax","maintExpense":0,"miscExpense":49,"miscIncome":0,"name":"The FRAX Battle Line","planetaryIncome":0,"previousEP":0,"techYear":166,"tradeIncome":0,"researchInvested":0};
 var events = [];
 var fleets = [
    {"name":"Exploration Beta","location":"Fraxee","units":["DW","DW","DWS"],"notes":""},

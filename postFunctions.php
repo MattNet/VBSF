@@ -282,9 +282,9 @@ function getFleetloadedValue( $fleet )
 ###
 function getLeftover( $dataArray )
 {
-  // "pointPool" is set when the turn file is written.
+  // "planetaryIncome" is set when the turn file is written.
   // It is set to TDP + previous EPs + trade income + misc income
-  $out = $dataArray["empire"]["pointPool"];
+  $out = $dataArray["empire"]["planetaryIncome"];
   // list of units present, for maint purposes
   // format is: [hull type] => count
   $unitList = array();
@@ -294,14 +294,14 @@ function getLeftover( $dataArray )
     return false;
 
   // If "pointPool" is zero, it has probably not been properly set yet
-  if( $dataArray["empire"]["pointPool"] == 0 )
+  if( $dataArray["empire"]["planetaryIncome"] == 0 )
   {
     // add domestic product
     $out = getTDP( $dataArray );
-
-    // add misc income
-    $out += $dataArray["empire"]["previousEP"] + $dataArray["empire"]["tradeIncome"] + $dataArray["empire"]["miscIncome"];
   }
+
+  // add misc income
+  $out += $dataArray["empire"]["previousEP"] + $dataArray["empire"]["tradeIncome"] + $dataArray["empire"]["miscIncome"];
 
   // deduct misc expenses
   $out -= $dataArray["empire"]["miscExpense"];

@@ -58,7 +58,8 @@ for( var i=0; i<colonies.length; i++ )
     // assemble the colonyNames array
     colonyNames.push( colonies[i].name );
     // figure colony econ output
-    empire.planetaryIncome += calcColonyOutput(colonies[i]);
+    if( empire.planetaryIncome == 0 )
+      empire.planetaryIncome += calcColonyOutput(colonies[i]);
     // Assemble the lists of fighter units
     for( var b=0; b<colonies[i].fixed.length; b++ )
       for( var c=0; c<unitList[i].length; c++ )
@@ -351,7 +352,8 @@ orderTable['unmothball'] = [ unitsInMothballs, [], '', 'Unmothball a unit' ];
   ElementFind('IntelArea').innerHTML = ElementFind('IntelArea').innerHTML + intelOut;
 
   // calculate the EPs spent
-  empire.totalIncome = empire.pointPool - empire.maintExpense - empire.miscExpense;
+  empire.totalIncome = empire.planetaryIncome + empire.previousEP + empire.tradeIncome;
+  empire.totalIncome += empire.miscIncome - empire.maintExpense - empire.miscExpense;
 
   // write the surplus EPs from this turn.
   // put here because of the total EP is unknown until now

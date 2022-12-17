@@ -28,7 +28,7 @@ $fileRepoDir = "files/";
 $inputData = array(); // PHP variable of the JSON data
 $newFileName = ""; // save file filename
 $checklist = array(); // list of things that need to be done
-$MAKE_CHECKLIST = true; // if true, adds a turn checklist to the events
+$MAKE_CHECKLIST = false; // if true, adds a turn checklist to the events
 $ACCELLERATED_RESEARCH = false; // If true, do research every half year. *Is Buggy*
 
 if( isset($argv[2]) )
@@ -59,6 +59,12 @@ if( empty($newFileName) )
     echo "Filename for new data file not given in data and not given in script-arguments.\n\n";
     exit(0);
   } 
+}
+else if( strpos( $newFileName, ".", -3 ) === false )
+{
+  // Filename does not contain the proper filetype extension (e.g. ".js")
+  echo "Filename does not contain the proper filetype extension (e.g. '.js').\n\n";
+  exit(0);
 }
 
 ###
@@ -113,12 +119,15 @@ else
   // create the drop-downs in the orders section
   $outputData["game"]["blankOrders"] = 3;
 
+  // clear the expenses so they aren't carried over to the new turn
+  $outputData["empire"]["maintExpense"] = 0;
+  $outputData["empire"]["miscExpense"] = 0;
+
   // Add in the excess EPs
   $outputData["empire"]["previousEP"] = getLeftover( $inputData );
 
   // calculate the income for the turn-start
-  $outputData["empire"]["pointPool"] = getTDP( $outputData ) + $outputData["empire"]["previousEP"];
-  $outputData["empire"]["pointPool"] += $outputData["empire"]["tradeIncome"] + $outputData["empire"]["miscIncome"];
+  $outputData["empire"]["planetaryIncome"] = getTDP( $outputData );
 
   // invest research
   $orderKeys = findOrder( $inputData, "research" );
