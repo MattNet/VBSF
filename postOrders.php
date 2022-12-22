@@ -545,6 +545,17 @@ Unloading uses the same process, but with reverse effects
 
       $fleet = -1; // key of the fleet array that is being loaded
       $isGroundUnit = false; // determines if a unit being loaded is a ground unit
+      
+      // find the fleet
+      foreach( $inputData["fleets"] as $fleetKey=>$value )
+       if( str_ends_with( $inputData["orders"][$key]["reciever"], $value["name"] ) )
+         $fleet = $fleetKey;
+      if( $fleet == -1 )
+      {
+        echo $loadErrorString."'. Could not find fleet.\n";
+        exit(1);
+      }
+      
       $success = preg_match( "/(\d) ".$inputData["orders"][$key]["reciever"]." loaded/i", $inputData["fleets"][$fleet]["notes"], $matches );
       $amtLoaded = (int) $matches[1];
       if( ! $success || $amtLoaded < 1 )
@@ -634,7 +645,6 @@ Unloading uses the same process, but with reverse effects
       echo $loadErrorString."'. Unit not unloaded.\n";
     }
   }
-
 
 ###
 # Add raids

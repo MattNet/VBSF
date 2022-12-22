@@ -43,15 +43,13 @@ $inputData = extractJSON( $argv[1] );
 if( $inputData === false ) // leave if there was an error loading the file
   exit(1);
 
-$outputData = $inputData; // Copy the input data to use as output data
-
 // pull out the next-file name for writing the new data
 if( empty($newFileName) )
 {
-  if( ! empty($outputData["game"]["nextDoc"]) )
+  if( ! empty($inputData["game"]["nextDoc"]) )
   {
   // Filename is defined in the data file and is not assigned when the script was called
-    $newFileName = $outputData["game"]["nextDoc"].".js";
+    $newFileName = $inputData["game"]["nextDoc"].".js";
   }
   else
   {
@@ -68,8 +66,145 @@ else if( strpos( $newFileName, ".", -3 ) === false )
 }
 
 ###
+# Perform the end-of-turn actions
+###
+
+/***
+Colonization
+   {"type":"colonize","reciever":"Fraxee dir B","note":"","target":""}
+***/
+  // Find any colonize orders
+  $orderKeys = findOrder( $inputData, "colonize" );
+
+  if( isset($orderKeys[0]) ) // is there at least one instance?
+  {
+    foreach( $orderKeys as $key )
+    {
+      // convenience variable
+      $fleetLoc = $inputData["orders"][$key]["reciever"];
+      // convenience variable. Error string that identifies order that is wrong
+      $loadErrorString = "Order given to colonize at '$fleetLoc'";
+      // key of the fleet array that is colonizing
+      $fleet = -1;
+      // key of the colony array that is being colonized
+      $colony = -1;
+
+      // find the colony
+      foreach( $inputData["colonies"] as $colonyKey=>$value )
+      {
+        if( $value["name"] != $fleetLoc )
+          continue;
+        $colony = $colonyKey;
+      }
+      if( $colony == -1 )
+      {
+        echo $loadErrorString."'. Could not find colonization location in colony data.\n";
+        continue;
+      }
+
+      // find the fleet
+      foreach( $inputData["fleets"] as $fleetKey=>$value )
+      {
+        if( $value["location"] != $fleetLoc )
+          continue; // skip if the fleet is not at the colonization location
+        // check to see if this fleet has a colony fleet
+        if( ! in_array( "Colony Fleet", $value["units"] ) )
+          continue;
+        // check to see if this fleet has census loaded
+        $success = preg_match( "/(\d) Census loaded/i", $value["notes"], $matches );
+        if( ! $success || $matches[1] < 1 )
+          continue;
+        // if here, then the above checks passed
+        $fleet = $fleetKey;
+        $loadedAmt = $matches[1];
+      }
+      if( $fleet == -1 )
+      {
+        $inputData["events"][] = array("event"=>$loadErrorString."'. Could not find a fleet with all colonization elements.","time"=>"Turn ".$inputData["game"]["turn"],"text"=>"");
+        echo $loadErrorString."'. Could not find fleet with all colonization elements.\n";
+        continue;
+      }
+
+      // Fail if this is an empty system. e.g. by capacity = 0
+      if( $inputData["colonies"][$colony]["capacity"] < 1 )
+      {
+        $inputData["events"][] = array("event"=>$loadErrorString."'. There is no system here.","time"=>"Turn ".$inputData["game"]["turn"],"text"=>"");
+        echo $loadErrorString."'. There is no system here.\n";
+        continue;
+      }
+
+      // determine if this colony is owned by nobody. e.g. by "General"
+      if( $inputData["colonies"][$colony]["owner"] != "General" )
+      {
+        $inputData["events"][] = array("event"=>$loadErrorString."'. This location is already a colony.","time"=>"Turn ".$inputData["game"]["turn"],"text"=>"");
+        echo $loadErrorString."'. This location is already a colony.\n";
+        continue;
+      }
+
+      // add Census to location
+      $inputData["colonies"][$colony]["census"] = 1;
+      // add Morale to location
+      $inputData["colonies"][$colony]["morale"] = 1;
+
+
+      // change ownership of the location
+      $inputData["colonies"][$colony]["owner"] = $inputData["empire"]["empire"];
+
+      // add owner to the map info
+      foreach( $inputData["mapPoints"] as $mapKey=>$value )
+      {
+        if( $value[4] != $fleetLoc )
+          continue; // skip if this is not the location
+        $inputData["mapPoints"][$mapKey][3] = $inputData["empire"]["empire"];
+      }
+      
+
+      // Remove Census from fleet
+      if( $loadedAmt == 1 )
+        $inputData["fleets"][$fleet]["notes"] = str_replace(
+          "$loadedAmt Census loaded.",
+          "",
+         $inputData["fleets"][$fleet]["notes"]
+        );
+      else
+        $inputData["fleets"][$fleet]["notes"] = str_replace(
+          "$loadedAmt Census loaded.",
+          ($loadedAmt-1)." Census loaded.",
+         $inputData["fleets"][$fleet]["notes"]
+        );
+
+      // Remove Colony Fleet from fleet
+      foreach( $inputData["fleets"][$fleet]["units"] as  $fleetKey=>$fleetValue )
+      {
+        if( $fleetValue == "Colony Fleet" )
+        {
+          unset( $inputData["fleets"][$fleet]["units"][$fleetKey] );
+          break; // stop the loop here. Don't want to unset more than one Colony Fleet
+        }
+      }
+
+      // If the fleet is empty, remove the fleet
+      if( empty($inputData["fleets"][$fleet]["units"]) )
+      {
+        unset( $inputData["fleets"][$fleet] ); // remove the fleet
+        $inputData["fleets"] = array_values( $inputData["fleets"] ); // re-index the fleets array
+      }
+
+      $inputData["events"][] = array("event"=>"Colonized '$fleetLoc'","time"=>"Turn ".$inputData["game"]["turn"],"text"=>"Ready to be renamed.");
+
+      // finished with this colonization order
+      continue;
+    }
+  }
+
+###
 # Modify and write the previous-turn data file
 ###
+// Copy the input data to use as output data
+// Make seperate because of last-minute edits to the input copy that we don't 
+// want to propogate to the output copy
+$outputData = $inputData;
+
 // make all of the orders section into non-drop-down menus
 foreach( array_keys( $inputData["orders"] ) as $key )
   $inputData["orders"][$key]["perm"] = 1;
@@ -84,7 +219,7 @@ $inputData["game"]["nextDoc"] = substr( $newFileName, 0, -3 );
 
 // remove any location info from nextdoc but allow the written file name to keep it
 // This means the display will point only at files in the same location,
-// but the scriopt will write to where the user wants
+// but the script will write to where the user wants
 if( strrpos( $inputData["game"]["nextDoc"], "/" ) !== false )
   $inputData["game"]["nextDoc"] = substr( $inputData["game"]["nextDoc"], strrpos( $inputData["game"]["nextDoc"], "/" )+1 );
 
