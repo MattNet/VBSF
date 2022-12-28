@@ -465,6 +465,9 @@ if( $MAKE_CHECKLIST )
         $inputData["fleets"][$fleet]["notes"] .= "$loadAmt Census loaded.";
         // remove Census from location
         $inputData["colonies"][$fleetLoc]["census"] -= $loadAmt;
+        // deal with maybe having to much Morale
+        if( $inputData["colonies"][$fleetLoc]["morale"] > $inputData["colonies"][$fleetLoc]["census"] )
+          $inputData["colonies"][$fleetLoc]["morale"] = $inputData["colonies"][$fleetLoc]["census"];
 
         // finished with this load order
         continue;

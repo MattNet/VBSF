@@ -134,7 +134,6 @@ if( ! is_writeable($dataFileName) )
   exit(0);
 }
 
-
 // get the data file
 $fileContents = extractJSON( $dataFileName );
 
@@ -145,8 +144,12 @@ $flagDelete = -1; // set to an order number to be deleted
 // otherwise add to the data file
 foreach( array_keys($_REQUEST) as $key )
 {
+  // skip if this is not an order entry
+  if( strpos( $key, "OrderEntry" ) !== 0 ) // catches if the needle is missing or not at start
+    continue;
+
   // get the order to affect with this $key
-  $orderNum = intval( substr( $key, 10, 1 ) );
+  $orderNum = intval( substr( $key, 10, 2 ) );
   $orderPos = strtolower( substr( $key, 11, 1 ) );
 
   // skip if we failed to get the location inside the order from the $key
@@ -162,7 +165,6 @@ foreach( array_keys($_REQUEST) as $key )
   }
 
   // set everything else. They might have changed
-
   // set up the entry to the orders array if not already
   if( ! isset( $fileContents["orders"][$orderNum]) )
     $fileContents["orders"][$orderNum] = array();
@@ -187,6 +189,9 @@ foreach( array_keys($_REQUEST) as $key )
 
 foreach( array_keys($fileContents["orders"]) as $orderNum )
 {
+  // used to check which parts of the order array are required for each order type
+  $orderTableEntry = $orderTable[ $fileContents["orders"][$orderNum]["type"] ];
+
 // create any otherwise-empty order fields
   if( ! isset($fileContents["orders"][$orderNum]["type"]) )
     $fileContents["orders"][$orderNum]["type"] = "";
@@ -203,7 +208,6 @@ foreach( array_keys($fileContents["orders"]) as $orderNum )
     $errorStrings .= "Order processing file does not know of order type '".$fileContents["orders"][$orderNum]["type"]."'.\n";
     unset( $fileContents["orders"][$orderNum] ); // delete the offending entry
   }
-  $orderTableEntry = $orderTable[ $fileContents["orders"][$orderNum]["type"] ];
   if( empty($fileContents["orders"][$orderNum]["reciever"]) && $orderTableEntry[0] == true )
   {
     $errorStrings .= "Order type '".$orderTableEntry[3]."' requires a reciever. None given.\n";

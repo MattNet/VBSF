@@ -69,10 +69,10 @@ else if( strpos( $newFileName, ".", -3 ) === false )
 # Perform the end-of-turn actions
 ###
 
-/***
-Colonization
-   {"type":"colonize","reciever":"Fraxee dir B","note":"","target":""}
-***/
+###
+# Colonization
+###
+
   // Find any colonize orders
   $orderKeys = findOrder( $inputData, "colonize" );
 
@@ -269,6 +269,10 @@ else
   if( isset($orderKeys[0]) )
     $outputData["empire"]["researchInvested"] += intval($outputData["orders"][$orderKeys[0]]["note"]);
 
+###
+# Process research advancement
+###
+
   // if the current turn was the 0th turn of the year or if the accellerated research and we are halfway through the year
   // then advance research (if needed)
   if( $outputData["game"]["turn"] % $outputData["game"]["monthsPerYear"] == 0 ||
@@ -327,6 +331,10 @@ else
     }
   }
 
+###
+# Build units
+###
+
   // find the build orders and create the fleets
   $orderKeys = findOrder( $inputData, "build_unit" );
   if( isset($orderKeys[0]) )
@@ -358,6 +366,14 @@ else
       }
     }
   }
+
+###
+# Handle Morale checks
+###
+
+###
+# Ready the new player sheet
+###
 
   // Empty the orders
   unset( $outputData["orders"] );

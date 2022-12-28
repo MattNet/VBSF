@@ -87,19 +87,21 @@ function makeFancyMonth( monthNum, monthsYear )
   // e.g. one turn is a week, one turn is a year, and so on.
   if( monthsYear > 12 || monthsYear < 2 )
     return "";
-  // error out if monthNum is less than 1
-  if( monthNum < 1 )
+  // error out if monthNum is less than 0
+  if( monthNum < 0 )
     return "";
 
   // call out a season
   if( monthsYear == 2 && monthNum == 1 )
     return "Spring";
-  if( monthsYear == 2 && monthNum == 2 )
+  if( monthsYear == 2 ) // catches monthNum=2 and monthNum=0
     return "Fall";
   if( monthsYear == 4 )
   {
    switch( monthNum )
    {
+   case 0: // can only happen on the zeroth turn
+     return "Winter";
    case 1:
      return "Spring";
    case 2:
@@ -135,7 +137,7 @@ function makeFancyMonth( monthNum, monthsYear )
     return "October";
   if( placeInYear < 0.95 )
     return "November";
-  if( placeInYear < 0.11 )
+  if( placeInYear < 1.1 )
     return "December";
 }
 
