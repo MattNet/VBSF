@@ -224,8 +224,11 @@ if( isset($orderKeys[0]) ) // if there are none of these orders, then skip
         break; // skip to the end, since we found the fleet for this order
       }
 
+###
+# Exploration
+###
       // if the location is not in colonies, add it
-      if( getColonyLocation( $fleetLocation, $inputData ) == false )
+      if( getColonyLocation( $fleetLocation, $inputData ) === false )
       {
         // roll for newly-explored systems, if set to do so
         if( $AUTO_ROLL_EMPTY_SYSTEMS )

@@ -386,7 +386,8 @@ function getTDP( $dataArray )
 # - (string) The location name
 # - (array) the data sheet
 # Return:
-# - (integer) The key to the colony array. False for error
+# - (integer) The key to the colony array. False for error or non-existant
+# NOTE: Can return 0, which is the first entry and which is falsey. Use '===' to check return value
 ###
 function getcolonyLocation( $name, $dataArray )
 {
