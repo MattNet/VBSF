@@ -70,6 +70,89 @@ else if( strpos( $newFileName, ".", -3 ) === false )
 ###
 
 ###
+# Modify and write the previous-turn data file
+###
+// Copy the input data to use as output data
+// Make seperate because of last-minute edits to the input copy that we don't 
+// want to propogate to the output copy
+$outputData = $inputData;
+
+// make all of the orders section into non-drop-down menus
+foreach( array_keys( $inputData["orders"] ) as $key )
+  $inputData["orders"][$key]["perm"] = 1;
+
+// clear the drop-downs in the orders section
+$inputData["game"]["blankOrders"] = 0;
+
+// add the next-doc link
+// Overwrite previous value, since it might have been re-defined by the CLI
+// remove the last 3 chars. They should be ".js"
+$inputData["game"]["nextDoc"] = substr( $newFileName, 0, -3 );
+
+// remove any location info from nextdoc but allow the written file name to keep it
+// This means the display will point only at files in the same location,
+// but the script will write to where the user wants
+if( strrpos( $inputData["game"]["nextDoc"], "/" ) !== false )
+  $inputData["game"]["nextDoc"] = substr( $inputData["game"]["nextDoc"], strrpos( $inputData["game"]["nextDoc"], "/" )+1 );
+
+$results = writeJSON( $inputData, $argv[1] );
+if( $results === false )
+{
+  echo "Error writing '".$argv[1]."'.\n\n";
+  exit(0);
+}
+else
+{
+  echo "Removed order drop-down-menus in '".$argv[1]."'.\n\n";
+}
+
+###
+# Make the end-of-turn modifications
+###
+
+  // set the prev file
+  $outputData["game"]["previousDoc"] = str_replace( $fileRepoDir, "", $argv[1] );
+  $outputData["game"]["previousDoc"] = str_replace( ".js", "", $outputData["game"]["previousDoc"] );
+
+  // remove the next file
+  $outputData["game"]["nextDoc"] = "";
+
+  // remove the previous-turn events
+  $outputData["events"] = array();
+
+  // Advance the turn
+  $outputData["game"]["turn"] += 1;
+
+  // create the drop-downs in the orders section
+  $outputData["game"]["blankOrders"] = 3;
+
+  // clear the expenses so they aren't carried over to the new turn
+  $outputData["empire"]["maintExpense"] = 0;
+  $outputData["empire"]["miscExpense"] = 0;
+
+  // Add in the excess EPs
+  $outputData["empire"]["previousEP"] = getLeftover( $inputData );
+
+  // Empty the events list
+  unset( $outputData["events"] );
+  $outputData["events"] = array();
+
+###
+# Start Of Turn processing
+###
+
+###
+# Destroy units
+# Note: Do this before colonization, in case colony fleets are destroyed before they can colonize
+###
+
+###
+# Reduce or increase colony stats
+# Note: This is for random events, loading or unloading census
+###
+// to move the reduction/addition of census and gnd units from postOrders.php to here
+
+###
 # Colonization
 ###
 
@@ -197,68 +280,8 @@ else if( strpos( $newFileName, ".", -3 ) === false )
   }
 
 ###
-# Modify and write the previous-turn data file
+# Calculate economy
 ###
-// Copy the input data to use as output data
-// Make seperate because of last-minute edits to the input copy that we don't 
-// want to propogate to the output copy
-$outputData = $inputData;
-
-// make all of the orders section into non-drop-down menus
-foreach( array_keys( $inputData["orders"] ) as $key )
-  $inputData["orders"][$key]["perm"] = 1;
-
-// clear the drop-downs in the orders section
-$inputData["game"]["blankOrders"] = 0;
-
-// add the next-doc link
-// Overwrite previous value, since it might have been re-defined by the CLI
-// remove the last 3 chars. They should be ".js"
-$inputData["game"]["nextDoc"] = substr( $newFileName, 0, -3 );
-
-// remove any location info from nextdoc but allow the written file name to keep it
-// This means the display will point only at files in the same location,
-// but the script will write to where the user wants
-if( strrpos( $inputData["game"]["nextDoc"], "/" ) !== false )
-  $inputData["game"]["nextDoc"] = substr( $inputData["game"]["nextDoc"], strrpos( $inputData["game"]["nextDoc"], "/" )+1 );
-
-$results = writeJSON( $inputData, $argv[1] );
-if( $results === false )
-{
-  echo "Error writing '".$argv[1]."'.\n\n";
-  exit(0);
-}
-else
-{
-  echo "Removed order drop-down-menus in '".$argv[1]."'.\n\n";
-}
-
-###
-# Make the end-of-turn modifications
-###
-
-  // set the prev file
-  $outputData["game"]["previousDoc"] = str_replace( $fileRepoDir, "", $argv[1] );
-  $outputData["game"]["previousDoc"] = str_replace( ".js", "", $outputData["game"]["previousDoc"] );
-
-  // remove the next file
-  $outputData["game"]["nextDoc"] = "";
-
-  // remove the previous-turn events
-  $outputData["events"] = array();
-
-  // Advance the turn
-  $outputData["game"]["turn"] += 1;
-
-  // create the drop-downs in the orders section
-  $outputData["game"]["blankOrders"] = 3;
-
-  // clear the expenses so they aren't carried over to the new turn
-  $outputData["empire"]["maintExpense"] = 0;
-  $outputData["empire"]["miscExpense"] = 0;
-
-  // Add in the excess EPs
-  $outputData["empire"]["previousEP"] = getLeftover( $inputData );
 
   // calculate the income for the turn-start
   $outputData["empire"]["planetaryIncome"] = getTDP( $outputData );
@@ -267,10 +290,6 @@ else
   $orderKeys = findOrder( $inputData, "research" );
   if( isset($orderKeys[0]) )
     $outputData["empire"]["researchInvested"] += intval($outputData["orders"][$orderKeys[0]]["note"]);
-
-  // Empty the events list
-  unset( $outputData["events"] );
-  $outputData["events"] = array();
 
 ###
 # Process research advancement
