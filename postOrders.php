@@ -399,6 +399,7 @@ if( $MAKE_CHECKLIST )
       if( $loadAmt > 9 )
       {
         $loadAmt = 9;
+        $inputData["orders"][$key]["note"] = 9; // truncate the given order
         echo "Order given to load '".$inputData["orders"][$key]["reciever"];
         echo "' with ".$inputData["orders"][$key]["note"]." of '";
         echo $inputData["orders"][$key]["target"]."'. Amount truncated to 9.\n";
@@ -418,6 +419,7 @@ if( $MAKE_CHECKLIST )
       if( $fleet == -1 )
       {
         echo $loadErrorString."'. Could not find fleet.\n";
+        // do not remove order, because exiting the script
         exit(1);
       }
 
@@ -426,6 +428,9 @@ if( $MAKE_CHECKLIST )
       if( $fleetLoc === false ) // skip if this fleet location cannot be found
       {
         echo $loadErrorString."'. Location of fleet is not a colony.\n";
+        $inputData["events"][] = array("event"=>"Load order failed","time"=>"Turn ".$inputData["game"]["turn"],
+                                       "text"=>$loadErrorString."'. Location of fleet is not a colony.\n");
+        unset( $inputData["orders"][$key] ); // remove failed order
         continue;
       }
 
@@ -433,6 +438,9 @@ if( $MAKE_CHECKLIST )
       if( $inputData["colonies"][$fleetLoc]["owner"] != $inputData["empire"]["empire"] )
       {
         echo $loadErrorString."'. This player does not own this colony.\n";
+        $inputData["events"][] = array("event"=>"Load order failed","time"=>"Turn ".$inputData["game"]["turn"],
+                                       "text"=>$loadErrorString."'. This player does not own this colony.\n");
+        unset( $inputData["orders"][$key] ); // remove failed order
         continue;
       }
 
@@ -441,6 +449,9 @@ if( $MAKE_CHECKLIST )
       if( $supplyAmt == 0 ) // skip if this fleet has no supply trait
       {
         echo $loadErrorString."'. Fleet has no supply trait.\n";
+        $inputData["events"][] = array("event"=>"Load order failed","time"=>"Turn ".$inputData["game"]["turn"],
+                                       "text"=>$loadErrorString."'. Fleet has no supply trait.\n");
+        unset( $inputData["orders"][$key] ); // remove failed order
         continue;
       }
 
@@ -451,6 +462,9 @@ if( $MAKE_CHECKLIST )
       if( $supplyAmt - $supplyUsed < ( 10 * $loadAmt ) )
       {
         echo $loadErrorString."'. Loading $loadAmt would overload fleet.\n";
+        $inputData["events"][] = array("event"=>"Load order failed","time"=>"Turn ".$inputData["game"]["turn"],
+                                       "text"=>$loadErrorString."'. Loading $loadAmt would overload fleet.\n");
+        unset( $inputData["orders"][$key] ); // remove failed order
         continue;
       }
 
@@ -461,6 +475,9 @@ if( $MAKE_CHECKLIST )
         if( $inputData["colonies"][$fleetLoc]["census"] <= $loadAmt+1 )
         {
           echo $loadErrorString."'. Loading $loadAmt of Census would empty the colony.\n";
+          $inputData["events"][] = array("event"=>"Load order failed","time"=>"Turn ".$inputData["game"]["turn"],
+                                         "text"=>$loadErrorString."'. Loading $loadAmt of Census would empty the colony.\n");
+          unset( $inputData["orders"][$key] ); // remove failed order
           continue;
         }
         
@@ -502,6 +519,9 @@ if( $MAKE_CHECKLIST )
         if( $unitCount < $loadAmt )
         {
           echo $loadErrorString."'. Not enough ".$inputData["orders"][$key]["target"]." are present at colony.\n";
+          $inputData["events"][] = array("event"=>"Load order failed","time"=>"Turn ".$inputData["game"]["turn"],
+                                         "text"=>$loadErrorString."'. Not enough ".$inputData["orders"][$key]["target"]." are present at colony.\n");
+          unset( $inputData["orders"][$key] ); // remove failed order
           continue;
         }
         
@@ -523,7 +543,10 @@ if( $MAKE_CHECKLIST )
         continue;
       }
       echo $loadErrorString."'. Unit not loaded.\n";
+      $inputData["events"][] = array("event"=>"Load order failed","time"=>"Turn ".$inputData["game"]["turn"],"text"=>$loadErrorString."'. Unit not loaded.\n");
+      unset( $inputData["orders"][$key] ); // remove failed order
     }
+    $inputData["orders"] = array_values( $inputData["orders"] ); // re-index the orders to close up gaps caused by invalid orders
   }
 /***
 Unloading uses the same process, but with reverse effects
@@ -540,6 +563,7 @@ Unloading uses the same process, but with reverse effects
       if( $loadAmt > 9 )
       {
         $loadAmt = 9;
+        $inputData["orders"][$key]["note"] = 9; // truncate the given order
         echo "Order given to unload '".$inputData["orders"][$key]["reciever"];
         echo "' with ".$inputData["orders"][$key]["note"]." of '";
         echo $inputData["orders"][$key]["target"]."'. Amount truncated to 9.\n";
@@ -559,6 +583,7 @@ Unloading uses the same process, but with reverse effects
       if( $fleet == -1 )
       {
         echo $loadErrorString."'. Could not find fleet.\n";
+        // do not remove order, because exiting the script
         exit(1);
       }
       
@@ -567,6 +592,7 @@ Unloading uses the same process, but with reverse effects
       if( ! $success || $amtLoaded < 1 )
       {
         echo $loadErrorString."'. Fleet does not carry any ".$inputData["orders"][$key]["target"].".\n";
+        // do not remove order, because exiting the script
         exit(1);
       }
 
@@ -574,6 +600,9 @@ Unloading uses the same process, but with reverse effects
       if( $amtLoaded >= $loadAmt )
       {
         echo $loadErrorString."'. The fleet does not carry enough. It only has $amtLoaded.\n";
+        $inputData["events"][] = array("event"=>"Load order failed","time"=>"Turn ".$inputData["game"]["turn"],
+                                       "text"=>$loadErrorString."'. The fleet does not carry enough. It only has $amtLoaded.\n");
+        unset( $inputData["orders"][$key] ); // remove failed order
         continue;
       }
         
@@ -592,6 +621,9 @@ Unloading uses the same process, but with reverse effects
       if( $fleetLoc === false ) // skip if this fleet location cannot be found
       {
         echo $loadErrorString."'. Location of fleet is not a colony.\n";
+        $inputData["events"][] = array("event"=>"Load order failed","time"=>"Turn ".$inputData["game"]["turn"],
+                                       "text"=>$loadErrorString."'. Location of fleet is not a colony.\n");
+        unset( $inputData["orders"][$key] ); // remove failed order
         continue;
       }
 
@@ -602,6 +634,9 @@ Unloading uses the same process, but with reverse effects
         if( $inputData["colonies"][$fleetLoc]["owner"] != $inputData["empire"]["empire"] )
         {
           echo $loadErrorString."'. This player does not own this colony.\n";
+          $inputData["events"][] = array("event"=>"Load order failed","time"=>"Turn ".$inputData["game"]["turn"],
+                                         "text"=>$loadErrorString."'. This player does not own this colony.\n");
+          unset( $inputData["orders"][$key] ); // remove failed order
           continue;
         }
 
@@ -649,9 +684,12 @@ Unloading uses the same process, but with reverse effects
         continue;
       }
       echo $loadErrorString."'. Unit not unloaded.\n";
+      $inputData["events"][] = array("event"=>"Load order failed","time"=>"Turn ".$inputData["game"]["turn"],
+                                     "text"=>$loadErrorString."'. Unit not unloaded.\n");
+      unset( $inputData["orders"][$key] ); // remove failed order
     }
+    $inputData["orders"] = array_values( $inputData["orders"] ); // re-index the orders to close up gaps caused by invalid orders
   }
-
 ###
 # Add raids
 # Note: This is post-movement, during combat
