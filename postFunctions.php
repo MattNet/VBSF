@@ -403,6 +403,77 @@ function getcolonyLocation( $name, $dataArray )
 }
 
 ###
+# Cerates the look-up arrays for the data file
+###
+# Args:
+# - (array) the data sheet
+# Return:
+# - (Array) An array of arrays of look-up tables
+# look-up tables provided (by array index):
+# 1) By colony name - Key is colony name, value is colony index
+# 2) By colony owner - Key is owner, value is array of colony indexes
+# 3) By fleet name - Key is name, value is fleet index
+# 4) By fleet location - Key is location name, value is array of fleet indexes
+# 5) By unit - Key is unit hull type, value is array of fleet indexes
+# 6) By location name - Key is location, value is map index
+# 7) By location owner - Key is location owner, value is array of map indexes
+###
+function makeLookUps( $dataArray )
+{
+  $colonyName = array();
+  $colonyOwner = array();
+  $fleetName = array();
+  $fleetLocation = array();
+  $fleetUnits = array();
+  $mapLocation = array();
+  $mapOwner = array();
+
+  foreach( $dataArray["colonies"] as $key=>$value )
+  {
+    // by colony name
+    $colonyName[ $value["name"] ] = $key;
+
+    // by colony owner
+    if( ! isset( $colonyOwner[ $value["owner"] ] ) )
+      $colonyOwner[ $value["owner"] ] = array();
+    $colonyOwner[ $value["owner"] ][] = $key;
+  }
+
+  foreach( $dataArray["fleets"] as $key=>$value )
+  {
+    // by fleet name
+    $fleetName[ $value["name"] ] = $key;
+
+    // by fleet location
+    if( ! isset( $fleetLocation[ $value["location"] ] ) )
+      $fleetLocation[ $value["location"] ] = array();
+    $fleetLocation[ $value["location"] ][] = $key;
+  }
+
+  // by fleet units
+  foreach( $dataArray["fleets"] as $fleetKey=>$value )
+    foreach( $value["units"] as $unitValue )
+    {
+      if( ! isset( $fleetUnits[ $unitValue ] ) )
+        $fleetUnits[ $unitValue ] = array();
+      $fleetUnits[ $unitValue ][] = $fleetKey;
+    }
+
+  foreach( $dataArray["mapPoints"] as $key=>$value )
+  {
+    // by map location
+    $mapLocation[ $value[3] ] = $key;
+
+    // by map owner
+    if( ! isset( $mapOwner[ $value[2] ] ) )
+      $mapOwner[ $value[2] ] = array();
+    $mapOwner[ $value[2] ] = $key;
+  }
+
+  return array( $colonyName, $colonyOwner, $fleetName, $fleetLocation, $fleetUnits, $mapLocation, $mapOwner );
+}
+
+###
 # A key-sorting function that puts "unitList" at the end
 ###
 function UKSortFunc( $a, $b )

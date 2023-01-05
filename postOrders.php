@@ -32,6 +32,7 @@ $mapY = 35; // mapPoints increment for the y-coord
 $SHOW_ALL_RAIDS = true; // if true, shows failed raids as events
 $SYSTEM_ROLLER = "./system_data.php"; // script to generate each system
 $SYSTEM_ROLLER_SEPERATOR = "&bull;"; // HTML entity that prepends the output of $SYSTEM_ROLLER
+$CIVILIAN_FLEETS = array( "Colony Fleet", "Trade Fleet", "Transport Fleet" ); // These have higher chance of being raided. Case sensitive
 
 ###
 # Initialization
@@ -54,6 +55,9 @@ include( $SYSTEM_ROLLER );
 $inputData = extractJSON( $argv[1] );
 if( $inputData === false ) // leave if there was an error loading the file
   exit(1);
+
+// get the lookup tables
+list( $byColonyName, $byColonyOwner, $byFleetName, $byFleetLocation, $byFleetUnits, $byMapLocation, $byMapOwner ) = makeLookUps($inputData);
 
 ###
 # Make the middle-turn modifications
@@ -165,70 +169,60 @@ if( isset($orderKeys[0]) ) // if there are none of these orders, then skip
   {
     foreach( $orderKeys as $orderKey ) // go through the movement orders
     {
-      // convenience variable for the fleet's location
-      $fleetLocation = strtolower( $inputData["orders"][ $orderKey ]["target"] );
+      # Verifies that the target location in unknownMovementPlaces or colonies is valid
+      # Removes it from unknownMoementPlaces, if the location is there
+      # It would verify the initial fleet location and hte target location are immediate neighbors,
+      #   but there is currently no way to know they are connected.
+      # Updates the location of the fleet to match the destination
 
-      // flag for if the location is not in unknownMovementPlaces
+      // convenience variable for the fleet's location
+      $fleetLocation = $inputData["orders"][ $orderKey ]["target"];
+      // convenience variable for the fleet's name
+      $fleetName = $inputData["orders"][ $orderKey ]["reciever"];
+
+      // flag for if the location is known
       // if it remains false, the location may not be a location that the position knows about
       $flag = false;
 
       // if the location is in the unknownMovementPlaces, remove it
-      foreach( $inputData["unknownMovementPlaces"] as $key=>$value )
+      $unknownKey = array_search( $fleetLocation, $inputData["unknownMovementPlaces"] );
+      if( $unknownKey !== false )
       {
-        if( strtolower($value) != strtolower($fleetLocation) )
-          continue;
-
         $flag = true; // we found the location in unknownMovementPlaces
 
         // update the fleet location with the proper case
-        $fleetLocation = $value;
+        $fleetLocation = $inputData["unknownMovementPlaces"][$unknownKey];
 
         // remove the entry
-        unset( $inputData["unknownMovementPlaces"][$key] );
-
-        break; // skip to the end, since we found the location
+        unset( $inputData["unknownMovementPlaces"][$unknownKey] );
       }
       // if the location is in colonies, then it is a valid order
-      foreach( $inputData["colonies"] as $key=>$value )
-      {
-        if( strtolower($value["name"]) != strtolower($fleetLocation) )
-          continue;
-
+      else if( isset( $byColonyName[ $fleetLocation ] ) )
         $flag = true; // we found the location in colonies
-
-        // update the fleet location with the proper case
-        $fleetLocation = $value["name"];
-
-        break; // skip to the end, since we found the location
-      }
 
       if( ! $flag )
       {
-        echo "Fleet '".$inputData["orders"][ $orderKey ]["reciever"];
+        echo "Fleet '".$fleetName;
         echo "' ordered to move to '$fleetLocation', but location is not \nfound in ";
         echo "unknown, movable locations. Perhaps the order is mispelled.\n";
+        $inputData["events"][] = array("event"=>"move order failed","time"=>"Turn ".$inputData["game"]["turn"],
+                                       "text"=>"Fleet '$fleetName' ordered to move to '$fleetLocation', but "
+                                              ."location is not found in unknown, movable locations. Perhaps "
+                                              ."the order is mispelled.\n"
+                                      );
+        unset( $inputData["orders"][$key] ); // remove failed order
       }
 
-      $flag = false; // reset the flag
-
-      // find a movement order that matches that fleet and update it
-      foreach( $inputData["fleets"] as $key=>$value )
-      {
-        // case insensative;
-        if( strtolower($value["name"]) != strtolower($inputData["orders"][ $orderKey ]["reciever"]) )
-          continue;
-
-        // set the new location of the fleet
-        $inputData["fleets"][ $key ]["location"] = $fleetLocation;
-
-        break; // skip to the end, since we found the fleet for this order
-      }
+      // update the location of the fleet to match the target location
+      $inputData["fleets"][ $byFleetName[ $fleetName ] ]["location"] = $fleetLocation;
 
 ###
 # Exploration
 ###
+      $flag = false; // reset the flag
+
       // if the location is not in colonies, add it
-      if( getColonyLocation( $fleetLocation, $inputData ) === false )
+      if( ! isset($byColonyName[ $fleetLocation ]) )
       {
         // roll for newly-explored systems, if set to do so
         if( $AUTO_ROLL_EMPTY_SYSTEMS )
@@ -289,7 +283,7 @@ if( isset($orderKeys[0]) ) // if there are none of these orders, then skip
       foreach( $mapCopy as $key=>$value )
       {
         // Skip if this value of mapPoints is not the location of interest
-        // case insensative
+        // case insensitive
         if( $value[3] != $fleetLocation )
           continue;
 
@@ -413,8 +407,8 @@ if( $MAKE_CHECKLIST )
       $isGroundUnit = false; // determines if a unit being loaded is a ground unit
 
       // find the fleet
-      foreach( $inputData["fleets"] as $fleetKey=>$value )
-       if( str_ends_with( $inputData["orders"][$key]["reciever"], $value["name"] ) )
+      foreach( $byFleetName as $fleetName=>$fleetKey )
+       if( str_ends_with( $inputData["orders"][$key]["reciever"], $fleetName ) )
          $fleet = $fleetKey;
       if( $fleet == -1 )
       {
@@ -423,15 +417,18 @@ if( $MAKE_CHECKLIST )
         exit(1);
       }
 
-      // find fleet location
-      $fleetLoc = getColonyLocation( $inputData["fleets"][$fleet]["location"], $inputData );
-      if( $fleetLoc === false ) // skip if this fleet location cannot be found
+      // skip if this fleet location cannot be found
+      if( ! isset( $byColonyName[ $inputData["fleets"][$fleet]["location"] ] ) )
       {
         echo $loadErrorString."'. Location of fleet is not a colony.\n";
         $inputData["events"][] = array("event"=>"Load order failed","time"=>"Turn ".$inputData["game"]["turn"],
                                        "text"=>$loadErrorString."'. Location of fleet is not a colony.\n");
         unset( $inputData["orders"][$key] ); // remove failed order
         continue;
+      }
+      else
+      {
+        $fleetLoc = $byColonyName[ $inputData["fleets"][$fleet]["location"] ]; // find fleet location
       }
 
       // determine if this colony is owned by the player
@@ -471,7 +468,7 @@ if( $MAKE_CHECKLIST )
       // Load Census
       if( strtolower($inputData["orders"][$key]["target"]) == "census" )
       {
-        // skip if there is not enough census to load
+        // skip if there is not enough Census to load
         if( $inputData["colonies"][$fleetLoc]["census"] <= $loadAmt+1 )
         {
           echo $loadErrorString."'. Loading $loadAmt of Census would empty the colony.\n";
@@ -605,26 +602,19 @@ Unloading uses the same process, but with reverse effects
         unset( $inputData["orders"][$key] ); // remove failed order
         continue;
       }
-        
-      // find the fleet
-      foreach( $inputData["fleets"] as $fleetKey=>$value )
-       if( str_ends_with( $inputData["orders"][$key]["reciever"], $value["name"] ) )
-         $fleet = $fleetKey;
-      if( $fleet == -1 )
-      {
-        echo $loadErrorString."'. Could not find fleet.\n";
-        exit(1);
-      }
 
-      // find fleet location
-      $fleetLoc = getColonyLocation( $inputData["fleets"][$fleet]["location"], $inputData );
-      if( $fleetLoc === false ) // skip if this fleet location cannot be found
+      // skip if this fleet location cannot be found
+      if( ! isset( $byColonyName[ $inputData["fleets"][$fleet]["location"] ] ) )
       {
         echo $loadErrorString."'. Location of fleet is not a colony.\n";
         $inputData["events"][] = array("event"=>"Load order failed","time"=>"Turn ".$inputData["game"]["turn"],
                                        "text"=>$loadErrorString."'. Location of fleet is not a colony.\n");
         unset( $inputData["orders"][$key] ); // remove failed order
         continue;
+      }
+      else
+      {
+        $fleetLoc = $byColonyName[ $inputData["fleets"][$fleet]["location"] ]; // find fleet location
       }
 
       // Unload Census
@@ -690,6 +680,7 @@ Unloading uses the same process, but with reverse effects
     }
     $inputData["orders"] = array_values( $inputData["orders"] ); // re-index the orders to close up gaps caused by invalid orders
   }
+  
 ###
 # Add raids
 # Note: This is post-movement, during combat
@@ -698,13 +689,8 @@ $ownedPlaces = array();
 $raidPlaces = array();
 
 // Mark locations owned by this player
-foreach( $inputData["colonies"] as $item )
-{
-  if( $item["owner"] == $inputData["empire"]["empire"] )
-  {
-    $ownedPlaces[] = array( "name"=>$item["name"], "navalCost"=>0 );
-  }
-}
+foreach( $byColonyOwner[ $inputData["empire"]["empire"] ] as $item )
+  $ownedPlaces[] = array( "name"=>$inputData["colonies"][ $item ]["name"], "navalCost"=>0 );
 
 // look through the fleets for colony and trade fleets
 // Note naval units to locations
@@ -721,14 +707,9 @@ if( isset($inputData["fleets"]) ) // make sure the input exists
     // Count the trade, transport, and colony fleets at the fleet location
     $civCount = 0;
     foreach( $item["units"] as $unit )
-    {
-      if( $unit == "Colony Fleet" )
-        $civCount++;
-      else if( $unit == "Trade Fleet" )
-        $civCount++;
-      else if( $unit == "Transport Fleet" )
-        $civCount++;
-    }
+      foreach( $CIVILIAN_FLEETS as $civvie )
+        if( $unit == $civvie )
+          $civCount++;
     // Note locations and count of trade, transport, and colony fleets
     if( $civCount > 0 )
       $raidPlaces[] = array( "civCount" => $civCount, "location"=>$item["location"], "naval"=>getFleetValue( $inputData, $item["units"], true ) );
@@ -740,10 +721,8 @@ foreach( $ownedPlaces as $place )
 {
   $flag = false; // true if the ownedPlace is already in raidPlaces
   foreach( $raidPlaces as $raid )
-  {
     if( $raid["location"] == $place["name"] )
       $flag = true;
-  }
 
   if( $place["navalCost"] == 0 && ! $flag )
     $raidPlaces[] = array( "civCount" => 0, "location"=>$place["name"], "naval"=>0 );
@@ -760,26 +739,20 @@ foreach( $raidPlaces as $place )
   if( $place["civCount"] > 1 )
     $chance += ($place["civCount"]-1) * 20;
 
-  if( $place["naval"] < 0 )
+  if( $place["naval"] > 0 )
     $chance -= 5; // 5% off for more than 0 construction value
-  if( $place["naval"] < 8 )
+  if( $place["naval"] > 8 )
     $chance -= 5; // total of 10% off for more than 8 construction value
-  if( $place["naval"] < 12 )
+  if( $place["naval"] > 12 )
     $chance -= 10; // total of 20% off for more than 12 construction value
 
   // find out if intel was used to prevent this
   $orderKeys = findOrder( $inputData, "intel" );
   if( isset($orderKeys[0]) )
-  {
     foreach( $orderKeys as $key )
-    {
       if( $inputData["orders"][$key]["reciever"] == "Reduce Raiding" && $inputData["orders"][$key]["target"] == $place["location"] )
-      {
         // reduce chances by 10% per intel used
         $chance -= 10 * intval($inputData["orders"][$key]["note"]);
-      }
-    }
-  }
 
   if( $rand <= $chance )
   {
@@ -797,7 +770,7 @@ foreach( $raidPlaces as $place )
 // make all of the orders section into non-drop-down menus
 foreach( array_keys( $inputData["orders"] ) as $key )
   $inputData["orders"][$key]["perm"] = 1;
-// Note: Leaving $inputData["game"]["blankOrders"] alone. The next segment of the turn needs these drop-downs.
+// Note: Leave $inputData["game"]["blankOrders"] alone. The next segment of the turn needs these drop-downs.
 
 ###
 # Add Checklist

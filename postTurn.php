@@ -43,6 +43,9 @@ $inputData = extractJSON( $argv[1] );
 if( $inputData === false ) // leave if there was an error loading the file
   exit(1);
 
+// get the lookup tables
+list( $byColonyName, $byColonyOwner, $byFleetName, $byFleetLocation, $byFleetUnits, $byMapLocation, $byMapOwner ) = makeLookUps($inputData);
+
 // pull out the next-file name for writing the new data
 if( empty($newFileName) )
 {
@@ -157,14 +160,14 @@ else
 ###
 
   // Find any colonize orders
-  $orderKeys = findOrder( $inputData, "colonize" );
+  $orderKeys = findOrder( $outputData, "colonize" );
 
   if( isset($orderKeys[0]) ) // is there at least one instance?
   {
     foreach( $orderKeys as $key )
     {
       // convenience variable
-      $fleetLoc = $inputData["orders"][$key]["reciever"];
+      $fleetLoc = $outputData["orders"][$key]["reciever"];
       // convenience variable. Error string that identifies order that is wrong
       $loadErrorString = "Order given to colonize at '$fleetLoc'";
       // key of the fleet array that is colonizing
@@ -173,106 +176,130 @@ else
       $colony = -1;
 
       // find the colony
-      foreach( $inputData["colonies"] as $colonyKey=>$value )
+      if( isset($byColonyName[ $fleetLoc ]) )
       {
-        if( $value["name"] != $fleetLoc )
-          continue;
-        $colony = $colonyKey;
+        $colony = $byColonyName[ $fleetLoc ];
       }
-      if( $colony == -1 )
+      else
       {
         echo $loadErrorString."'. Could not find colonization location in colony data.\n";
         continue;
       }
 
       // find the fleet
-      foreach( $inputData["fleets"] as $fleetKey=>$value )
+      if( isset($byFleetLocation[ $fleetLoc ]) )
       {
-        if( $value["location"] != $fleetLoc )
-          continue; // skip if the fleet is not at the colonization location
-        // check to see if this fleet has a colony fleet
-        if( ! in_array( "Colony Fleet", $value["units"] ) )
+        foreach( $byFleetLocation[ $fleetLoc ] as $tempFleetID )
+        {
+          // if the fleet has a colony fleet
+          if( ! in_array( $tempFleetID, $fleetUnits["Colony Fleet"] ) )
+            continue;
+          // if the fleet has Census loaded
+          $success = preg_match( "/(\d) Census loaded/i", $outputData["fleets"][$tempFleetID]["notes"], $matches );
+          if( ! $success || $matches[1] < 1 )
+            continue;
+          $fleet = $tempFleetID;
+          $loadedAmt = $matches[1];
+        }
+
+        if( $fleet == -1 )
+        {
+          $outputData["events"][] = array("event"=>$loadErrorString."'. Could not find a fleet with all colonization elements.","time"=>"Turn ".$outputData["game"]["turn"],"text"=>"");
+          echo $loadErrorString."'. Could not find fleet with all colonization elements.\n";
           continue;
-        // check to see if this fleet has census loaded
-        $success = preg_match( "/(\d) Census loaded/i", $value["notes"], $matches );
-        if( ! $success || $matches[1] < 1 )
-          continue;
-        // if here, then the above checks passed
-        $fleet = $fleetKey;
-        $loadedAmt = $matches[1];
+        }
       }
-      if( $fleet == -1 )
+      else
       {
-        $inputData["events"][] = array("event"=>$loadErrorString."'. Could not find a fleet with all colonization elements.","time"=>"Turn ".$inputData["game"]["turn"],"text"=>"");
-        echo $loadErrorString."'. Could not find fleet with all colonization elements.\n";
-        continue;
+        // hard failure if we could not find the fleet location
+        echo $loadErrorString."'. Could not find the fleet location.\n";
+        exit(1);
       }
 
       // Fail if this is an empty system. e.g. by capacity = 0
-      if( $inputData["colonies"][$colony]["capacity"] < 1 )
+      if( $outputData["colonies"][$colony]["capacity"] < 1 )
       {
-        $inputData["events"][] = array("event"=>$loadErrorString."'. There is no system here.","time"=>"Turn ".$inputData["game"]["turn"],"text"=>"");
+        $outputData["events"][] = array("event"=>$loadErrorString."'. There is no system here.","time"=>"Turn ".$outputData["game"]["turn"],"text"=>"");
         echo $loadErrorString."'. There is no system here.\n";
         continue;
       }
 
       // determine if this colony is owned by nobody. e.g. by "General"
-      if( $inputData["colonies"][$colony]["owner"] != "General" )
+      if( $outputData["colonies"][$colony]["owner"] != "General" )
       {
-        $inputData["events"][] = array("event"=>$loadErrorString."'. This location is already a colony.","time"=>"Turn ".$inputData["game"]["turn"],"text"=>"");
+        $outputData["events"][] = array("event"=>$loadErrorString."'. This location is already a colony.","time"=>"Turn ".$outputData["game"]["turn"],"text"=>"");
         echo $loadErrorString."'. This location is already a colony.\n";
         continue;
       }
 
       // add Census to location
-      $inputData["colonies"][$colony]["census"] = 1;
+      $outputData["colonies"][$colony]["census"] = 1;
       // add Morale to location
-      $inputData["colonies"][$colony]["morale"] = 1;
+      $outputData["colonies"][$colony]["morale"] = 1;
 
 
       // change ownership of the location
-      $inputData["colonies"][$colony]["owner"] = $inputData["empire"]["empire"];
+      $outputData["colonies"][$colony]["owner"] = $outputData["empire"]["empire"];
+
+      // update the lookup tables
+      $byColonyOwner[ "General" ][ $outputData["empire"]["empire"] ][] = $colony;
+      foreach( $byColonyOwner[ "General" ] as $genKey => $gen )
+        if( $gen == $colony )
+          unset( $byColonyOwner[ "General" ][ $genKey ] );
 
       // add owner to the map info
-      foreach( $inputData["mapPoints"] as $mapKey=>$value )
+      foreach( $outputData["mapPoints"] as $mapKey=>$value )
       {
         if( $value[3] != $fleetLoc )
           continue; // skip if this is not the location
-        $inputData["mapPoints"][$mapKey][2] = $inputData["empire"]["empire"];
+        $outputData["mapPoints"][$mapKey][2] = $outputData["empire"]["empire"];
+
+        // update the lookup tables
+        $byMapOwner[ $outputData["empire"]["empire"] ][] = $mapKey;
+        foreach( $byMapOwner[ "General" ] as $genKey => $gen )
+          if( $gen == $mapKey )
+            unset( $byMapOwner[ "General" ][ $genKey ] );
       }
 
       // Remove Census from fleet
       if( $loadedAmt == 1 )
-        $inputData["fleets"][$fleet]["notes"] = str_replace(
+        $outputData["fleets"][$fleet]["notes"] = str_replace(
           "$loadedAmt Census loaded.",
           "",
-         $inputData["fleets"][$fleet]["notes"]
+         $outputData["fleets"][$fleet]["notes"]
         );
       else
-        $inputData["fleets"][$fleet]["notes"] = str_replace(
+        $outputData["fleets"][$fleet]["notes"] = str_replace(
           "$loadedAmt Census loaded.",
           ($loadedAmt-1)." Census loaded.",
-         $inputData["fleets"][$fleet]["notes"]
+         $outputData["fleets"][$fleet]["notes"]
         );
 
       // Remove Colony Fleet from fleet
-      foreach( $inputData["fleets"][$fleet]["units"] as  $fleetKey=>$fleetValue )
+      foreach( $outputData["fleets"][$fleet]["units"] as  $fleetKey=>$fleetValue )
       {
         if( $fleetValue == "Colony Fleet" )
         {
-          unset( $inputData["fleets"][$fleet]["units"][$fleetKey] );
+          unset( $outputData["fleets"][$fleet]["units"][$fleetKey] );
           break; // stop the loop here. Don't want to unset more than one Colony Fleet
         }
       }
 
       // If the fleet is empty, remove the fleet
-      if( empty($inputData["fleets"][$fleet]["units"]) )
+      if( empty($outputData["fleets"][$fleet]["units"]) )
       {
-        unset( $inputData["fleets"][$fleet] ); // remove the fleet
-        $inputData["fleets"] = array_values( $inputData["fleets"] ); // re-index the fleets array
+        // update the lookup tables
+        unset( $byFleetName[ $outputData["fleets"][$fleet]["name"] ] );
+        foreach( $byFleetLocation[ $fleetLoc ] as $tempKey=>$tempFleet)
+          if( $tempFleet == $fleetKey )
+            unset( $byFleetLocation[ $fleetLoc ][$fleetKey] );
+
+        // remove the fleet
+        unset( $outputData["fleets"][$fleet] );
+        $outputData["fleets"] = array_values( $outputData["fleets"] ); // re-index the fleets array
       }
 
-      $inputData["events"][] = array("event"=>"Colonized '$fleetLoc'","time"=>"Turn ".$inputData["game"]["turn"],"text"=>"Ready to be renamed.");
+      $outputData["events"][] = array("event"=>"Colonized '$fleetLoc'","time"=>"Turn ".$outputData["game"]["turn"],"text"=>"Ready to be renamed.");
 
       // finished with this colonization order
       continue;
@@ -287,7 +314,7 @@ else
   $outputData["empire"]["planetaryIncome"] = getTDP( $outputData );
 
   // invest research
-  $orderKeys = findOrder( $inputData, "research" );
+  $orderKeys = findOrder( $outputData, "research" );
   if( isset($orderKeys[0]) )
     $outputData["empire"]["researchInvested"] += intval($outputData["orders"][$orderKeys[0]]["note"]);
 
@@ -303,8 +330,8 @@ else
     )
   {
     $amt = $outputData["empire"]["researchInvested"]; // convenience variable
+    $goal = floor( getTDP($outputData) / 2 ); // convenience variable
     $rand = mt_rand(1,100);
-    $goal = floor( getTDP() / 2 ); // convenience variable
     if( $amt > $goal )
       $amt = $goal; // first roll can be no better than the goal
 
@@ -358,34 +385,30 @@ else
 ###
 
   // find the build orders and create the fleets
-  $orderKeys = findOrder( $inputData, "build_unit" );
+  $orderKeys = findOrder( $outputData, "build_unit" );
   if( isset($orderKeys[0]) )
   {
     foreach( $orderKeys as $orderKey )
     {
-      $fleetFlag = false; // flag to mark if the built goes into an existing fleet
+      $fleetKey = -1; // index to the fleets array for the destination fleet
+
       // find fleets with this name
-      foreach( $outputData["fleets"] as $fleetKey=>$fleetData )
-      {
-        // skip if the name of the fleet does not match the name on the orders
-        // and if the named fleet is not where the build occured
-        if( $fleetData["name"] != $outputData["orders"][$orderKey]["note"] || 
-            $fleetData["location"] != $outputData["orders"][$orderKey]["target"]
-          )
-          continue;
-        $fleetFlag = true;
-        // this unit should be built into this fleet
+      if( isset($byFleetName[ $outputData["orders"][$orderKey]["note"] ]) )
+        $fleetKey = $byFleetName[ $outputData["orders"][$orderKey]["note"] ];
+      // reset $fleetKey if the named fleet is not where the build occured
+      if( $fleetKey >= 0 && $outputData["fleets"][ $fleetKey ]["location"] != $outputData["orders"][$orderKey]["target"] )
+        $fleetKey = -1;
+
+      // this unit should be built into an existing fleet
+      if( $fleetKey >= 0 )
         $outputData["fleets"][$fleetKey]["units"][] = $outputData["orders"][$orderKey]["reciever"];
-      }
-      if( ! $fleetFlag )
-      {
-        // if no fleets with this name, then create a new one
-        $outputData["fleets"][] = array( "name" => $outputData["orders"][$orderKey]["note"], 
-                       "location" => $outputData["orders"][$orderKey]["target"], 
-                       "units" => array( $outputData["orders"][$orderKey]["reciever"] ), 
-                       "notes" => "",
-                     );
-      }
+      else
+      // if no fleets with this name, then create a new one
+      $outputData["fleets"][] = array( "name" => $outputData["orders"][$orderKey]["note"], 
+                     "location" => $outputData["orders"][$orderKey]["target"], 
+                     "units" => array( $outputData["orders"][$orderKey]["reciever"] ), 
+                     "notes" => "",
+                   );
     }
   }
 
@@ -402,7 +425,7 @@ else
 // rename the location of fleets at that place
 
   // find renaming orders
-  $orderKeys = findOrder( $inputData, "name" );
+  $orderKeys = findOrder( $outputData, "name" );
 
   if( isset($orderKeys[0]) ) // is there at least one instance?
   {
@@ -411,31 +434,37 @@ else
       // some convenience variables
       $oldName = $outputData["orders"][$key]["reciever"];
       $newName = $outputData["orders"][$key]["note"];
+      $colonyKey = -1; // index to the colony array
       $flag = false; // used to detect a fraudulent order
 
-      // find and rename the colony
-      foreach( $outputData["colonies"] as $colonyKey=>$value )
-      {
-        if( $value["name"] == $oldName )
-          if( $value["owner"] == $inputData["empire"]["empire"] )
-          {
-            $outputData["colonies"][$colonyKey]["name"] = $newName;
-            $flag = true;
-          }
-      }
       // Does this colony exist?
-      if( $flag == false )
+      if( isset($byColonyName[ $oldName ]) )
+        $colonyKey = $byColonyName[ $oldName ];
+      else
       {
-        echo "Tried to rename colony '$oldName' that doesn't exist or doesn't belong to them.\n";
-        $outputData["events"][] = array("event"=>"Could not rename $oldName: Does not exist or is not owned by you.","time"=>"Turn ".$inputData["game"]["turn"],"text"=>"");
-        break;
+        echo "Tried to rename colony '$oldName' that doesn't exist.\n";
+        $outputData["events"][] = array("event"=>"Could not rename $oldName: Does not exist.","time"=>"Turn ".$outputData["game"]["turn"],"text"=>"");
+        continue;
       }
 
-      // find and rename the map point
-      foreach( $outputData["mapPoints"] as $mapKey=>$value )
+      // Does this colony belong to this empire?
+      if( in_array( $colonyKey, $byColonyOwner[ $outputData["empire"]["empire"] ] ) )
       {
-        if( $value[3] == $oldName )
-          $outputData["mapPoints"][$mapKey][3] = $newName;
+        echo "Tried to rename colony '$oldName' that doesn't belong to this player.\n";
+        $outputData["events"][] = array("event"=>"Could not rename $oldName: Does not belong to you.","time"=>"Turn ".$outputData["game"]["turn"],"text"=>"");
+        continue;
+      }
+
+      // Rename the colony
+      $outputData["colonies"][$colonyKey]["name"] = $newName;
+
+      // find and rename the map point
+      if( isset($byMapLocation[ $oldName ]) )
+        $outputData["mapPoints"][ $byMapLocation[$oldName] ][3] = $newName;
+      else
+      {
+        echo "Tried to rename colony '$oldName' that isn't in.\n";
+        exit(1);
       }
 
       // find and rename the fleet locations
