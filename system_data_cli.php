@@ -129,7 +129,7 @@ if( $NPEchance < $result )
 }
 else
 {
-  $outputString .= $result."] Someone lives here!\n\n";
+  echo $result."] Someone lives here!\n\n";
 }
 
 // Determine NPE tech level (may remove NPE)
