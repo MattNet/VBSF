@@ -57,7 +57,7 @@ if( $inputData === false ) // leave if there was an error loading the file
   exit(1);
 
 // get the lookup tables
-list( $byColonyName, $byColonyOwner, $byFleetName, $byFleetLocation, $byFleetUnits, $byMapLocation, $byMapOwner ) = makeLookUps($inputData);
+list( $byColonyName, $byColonyOwner, $byFleetName, $byFleetLocation, $byFleetUnits, $byMapLocation, $byMapOwner, $byDesignator ) = makeLookUps($inputData);
 
 ###
 # Make the middle-turn modifications
@@ -130,14 +130,8 @@ if( isset($orderKeys[0]) ) // if there are none of these orders, then skip
     }
     else // unit purchase
     {
-      $unitCost = 0;
       // find the cost of the unit
-      foreach( $inputData["unitList"] as $hull )
-        if( strtolower($hull["ship"]) == strtolower($inputData["orders"][ $key ]["reciever"]) )
-        {
-          $unitCost = $hull["cost"];
-          break; // quit the loop. We found our unit.
-        }
+      $unitCost = $inputData["unitList"][ $byDesignator[ $inputData["orders"][ $key ]["reciever"] ] ]["cost"];
 
       // Determine if this would cause overspending
       if( getLeftover( $inputData ) < $unitCost )
@@ -406,6 +400,10 @@ if( $MAKE_CHECKLIST )
       $fleet = -1; // key of the fleet array that is being loaded
       $isGroundUnit = false; // determines if a unit being loaded is a ground unit
 
+      // determine if this is a ground unit being loaded
+      if( $inputData["unitList"][ $byDesignator[ $inputData["orders"][$key]["target"] ] ]["design"] == "ground unit" )
+        $isGroundUnit = true;
+
       // find the fleet
       foreach( $byFleetName as $fleetName=>$fleetKey )
        if( str_ends_with( $inputData["orders"][$key]["reciever"], $fleetName ) )
@@ -490,18 +488,6 @@ if( $MAKE_CHECKLIST )
         continue;
       }
 
-      // determine if this is a ground unit being loaded
-      foreach( $inputData["unitList"] as $unit )
-      {
-        if( strtolower($unit["design"]) != "ground unit" )
-          continue;
-        if( strtolower($inputData["orders"][$key]["target"]) == strtolower($unit["design"]) )
-        {
-          $isGroundUnit = true;
-          break;
-        }
-      }
-
       // Load ground units
       if( $isGroundUnit )
       {
@@ -572,6 +558,10 @@ Unloading uses the same process, but with reverse effects
 
       $fleet = -1; // key of the fleet array that is being loaded
       $isGroundUnit = false; // determines if a unit being loaded is a ground unit
+
+      // determine if this is a ground unit being unloaded
+      if( $inputData["unitList"][ $byDesignator[ $inputData["orders"][$key]["target"] ] ]["design"] == "ground unit" )
+        $isGroundUnit = true;
       
       // find the fleet
       foreach( $inputData["fleets"] as $fleetKey=>$value )
@@ -641,18 +631,6 @@ Unloading uses the same process, but with reverse effects
 
         // finished with this unload order
         continue;
-      }
-
-      // determine if this is a ground unit being unloaded
-      foreach( $inputData["unitList"] as $unit )
-      {
-        if( strtolower($unit["design"]) != "ground unit" )
-          continue;
-        if( strtolower($inputData["orders"][$key]["target"]) == strtolower($unit["design"]) )
-        {
-          $isGroundUnit = true;
-          break;
-        }
       }
 
       // Unload ground units

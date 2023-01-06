@@ -380,29 +380,6 @@ function getTDP( $dataArray )
 }
 
 ###
-# Determines the location key to the colony array for the given location name
-###
-# Args:
-# - (string) The location name
-# - (array) the data sheet
-# Return:
-# - (integer) The key to the colony array. False for error or non-existant
-# NOTE: Can return 0, which is the first entry and which is falsey. Use '===' to check return value
-###
-function getcolonyLocation( $name, $dataArray )
-{
-  $output = false;
-  foreach( $dataArray["colonies"] as $key=>$value )
-  {
-    if( strtolower($value["name"]) != strtolower($name) )
-      continue;
-    $output = $key;
-    break; // skip to the end, since we found the location
-  }
-  return $output;
-}
-
-###
 # Cerates the look-up arrays for the data file
 ###
 # Args:
@@ -410,13 +387,14 @@ function getcolonyLocation( $name, $dataArray )
 # Return:
 # - (Array) An array of arrays of look-up tables
 # look-up tables provided (by array index):
-# 1) By colony name - Key is colony name, value is colony index
-# 2) By colony owner - Key is owner, value is array of colony indexes
-# 3) By fleet name - Key is name, value is fleet index
-# 4) By fleet location - Key is location name, value is array of fleet indexes
-# 5) By unit - Key is unit hull type, value is array of fleet indexes
-# 6) By location name - Key is location, value is map index
-# 7) By location owner - Key is location owner, value is array of map indexes
+# 0) By colony name - Key is colony name, value is colony index
+# 1) By colony owner - Key is owner, value is array of colony indexes
+# 2) By fleet name - Key is name, value is fleet index
+# 3) By fleet location - Key is location name, value is array of fleet indexes
+# 4) By fleet unit - Key is unit hull type, value is array of fleet indexes
+# 5) By location name - Key is location, value is map index
+# 6) By location owner - Key is location owner, value is array of map indexes
+# 7) By unit designation - key is designator, value is unitList index
 ###
 function makeLookUps( $dataArray )
 {
@@ -427,6 +405,7 @@ function makeLookUps( $dataArray )
   $fleetUnits = array();
   $mapLocation = array();
   $mapOwner = array();
+  $designator = array();
 
   foreach( $dataArray["colonies"] as $key=>$value )
   {
@@ -470,7 +449,13 @@ function makeLookUps( $dataArray )
     $mapOwner[ $value[2] ] = $key;
   }
 
-  return array( $colonyName, $colonyOwner, $fleetName, $fleetLocation, $fleetUnits, $mapLocation, $mapOwner );
+  // by unit designator
+  foreach( $dataArray["unitList"] as $key=>$value )
+  {
+    $designator[ $value["ship"] ] = $key;
+  }
+  
+  return array( $colonyName, $colonyOwner, $fleetName, $fleetLocation, $fleetUnits, $mapLocation, $mapOwner, $designator );
 }
 
 ###
