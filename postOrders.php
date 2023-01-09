@@ -24,6 +24,7 @@ if( ! isset($argv[1]) )
 # Configuration
 ###
 $AUTO_ROLL_EMPTY_SYSTEMS = true; // if true, calls $SYSTEM_ROLLER for any new explorations
+$EXPLAIN_RAIDS = true; // if true, explains the chances of a successful raid
 $MAKE_CHECKLIST = false; // if true, adds a turn checklist to the events
 $MAPPOINTS_NAME = 3; // Index in mapPoints array of datafile for the location name
 $MAPPOINTS_OWNER = 2; // Index in mapPoints array of datafile for the owning position (empire type)
@@ -32,7 +33,6 @@ $mapY = 35; // mapPoints increment for the y-coord
 $SHOW_ALL_RAIDS = true; // if true, shows failed raids as events
 $SYSTEM_ROLLER = "./system_data.php"; // script to generate each system
 $SYSTEM_ROLLER_SEPERATOR = "&bull;"; // HTML entity that prepends the output of $SYSTEM_ROLLER
-$CIVILIAN_FLEETS = array( "Colony Fleet", "Trade Fleet", "Transport Fleet" ); // These have higher chance of being raided. Case sensitive
 
 ###
 # Initialization
@@ -401,7 +401,9 @@ if( $MAKE_CHECKLIST )
       $isGroundUnit = false; // determines if a unit being loaded is a ground unit
 
       // determine if this is a ground unit being loaded
-      if( $inputData["unitList"][ $byDesignator[ $inputData["orders"][$key]["target"] ] ]["design"] == "ground unit" )
+      if( isset( $byDesignator[ $inputData["orders"][$key]["target"] ] )
+          && $inputData["unitList"][ $byDesignator[ $inputData["orders"][$key]["target"] ] ]["design"] == "ground unit"
+        )
         $isGroundUnit = true;
 
       // find the fleet
@@ -560,7 +562,9 @@ Unloading uses the same process, but with reverse effects
       $isGroundUnit = false; // determines if a unit being loaded is a ground unit
 
       // determine if this is a ground unit being unloaded
-      if( $inputData["unitList"][ $byDesignator[ $inputData["orders"][$key]["target"] ] ]["design"] == "ground unit" )
+      if( isset( $byDesignator[ $inputData["orders"][$key]["target"] ] )
+          && $inputData["unitList"][ $byDesignator[ $inputData["orders"][$key]["target"] ] ]["design"] == "ground unit"
+        )
         $isGroundUnit = true;
       
       // find the fleet
@@ -663,66 +667,61 @@ Unloading uses the same process, but with reverse effects
 # Add raids
 # Note: This is post-movement, during combat
 ###
-$ownedPlaces = array();
 $raidPlaces = array();
 
 // Mark locations owned by this player
+// count naval value at each location
 foreach( $byColonyOwner[ $inputData["empire"]["empire"] ] as $item )
-  $ownedPlaces[] = array( "name"=>$inputData["colonies"][ $item ]["name"], "navalCost"=>0 );
-
-// look through the fleets for colony and trade fleets
-// Note naval units to locations
-if( isset($inputData["fleets"]) ) // make sure the input exists
 {
-  foreach( $inputData["fleets"] as $item )
-  {
-    // Note naval value at each owned location
-    foreach( $ownedPlaces as &$place )
-    {
-      if( $item["location"] == $place["name"] )
-        $place["navalCost"] += getFleetValue( $inputData, $item["units"], true );
-    }
-    // Count the trade, transport, and colony fleets at the fleet location
-    $civCount = 0;
-    foreach( $item["units"] as $unit )
-      foreach( $CIVILIAN_FLEETS as $civvie )
-        if( $unit == $civvie )
-          $civCount++;
-    // Note locations and count of trade, transport, and colony fleets
-    if( $civCount > 0 )
-      $raidPlaces[] = array( "civCount" => $civCount, "location"=>$item["location"], "naval"=>getFleetValue( $inputData, $item["units"], true ) );
-  }
-}
+  $locationName = $inputData["colonies"][ $item ]["name"]; // convenience variable
+  $navalCost = 0; // EP cost of ships at this location
+  $civvieCount = 0; // number of civilian units here
 
-// note places empty of naval units
-foreach( $ownedPlaces as $place )
-{
-  $flag = false; // true if the ownedPlace is already in raidPlaces
-  foreach( $raidPlaces as $raid )
-    if( $raid["location"] == $place["name"] )
-      $flag = true;
+  // count the units present only if there are fleets here
+  if( isset( $byFleetLocation[ $locationName ] ) )
+    // count the ships here (civvie count, naval cost)
+    foreach( $byFleetLocation[ $locationName ] as $index )
+      foreach( $inputData["fleets"][$index]["units"] as $hull )
+      {
+        // count if a civilian unit
+        if( in_array( $hull, $CIVILIAN_FLEETS ) )
+        {
+          $civvieCount++;
+          continue;
+        }
 
-  if( $place["navalCost"] == 0 && ! $flag )
-    $raidPlaces[] = array( "civCount" => 0, "location"=>$place["name"], "naval"=>0 );
+        // get EP cost if a naval unit
+        $navalCost += $inputData["unitList"][ $byDesignator[$hull] ]["cost"];
+      }
+
+  // add to raid places if no fleet EP is here or there are civvies present
+  if( $navalCost == 0 || $civvieCount > 0 )
+    $raidPlaces[] = array( "civCount" => $civvieCount,
+                           "location"=> $locationName,
+                           "naval"=> $navalCost
+                         );
 }
 
 // Calculate the raids
 foreach( $raidPlaces as $place )
 {
   $chance = 20; // base chance to get a raid
+  $civChance = 0; // chance from additional civilian ships
+  $navalChance = 0; // chance reduction from naval ships
+  $intelChance = 0; // chance reduction from intel ops
   $rand = mt_rand(1,100); // determination of raid occurance
 
   // If there is more than one civilian fleet, increase the chance of a raid by 20% per additional
   // The first civilian fleet allows the chance of a raid
   if( $place["civCount"] > 1 )
-    $chance += ($place["civCount"]-1) * 20;
+    $civChance = ($place["civCount"]-1) * 20;
 
   if( $place["naval"] > 0 )
-    $chance -= 5; // 5% off for more than 0 construction value
+    $navalChance += 5; // 5% off for more than 0 construction value
   if( $place["naval"] > 8 )
-    $chance -= 5; // total of 10% off for more than 8 construction value
+    $navalChance += 5; // total of 10% off for more than 8 construction value
   if( $place["naval"] > 12 )
-    $chance -= 10; // total of 20% off for more than 12 construction value
+    $navalChance = 20 * intval($place["naval"] / 12); // 20% off the chance for every 12 construction value
 
   // find out if intel was used to prevent this
   $orderKeys = findOrder( $inputData, "intel" );
@@ -730,17 +729,33 @@ foreach( $raidPlaces as $place )
     foreach( $orderKeys as $key )
       if( $inputData["orders"][$key]["reciever"] == "Reduce Raiding" && $inputData["orders"][$key]["target"] == $place["location"] )
         // reduce chances by 10% per intel used
-        $chance -= 10 * intval($inputData["orders"][$key]["note"]);
+        $intelChance = 10 * intval($inputData["orders"][$key]["note"]);
+
+  $chance += $civChance - $navalChance - $intelChance;
 
   if( $rand <= $chance )
   {
     $raidAmt = mt_rand(1,3) * mt_rand(1,6);
-    $text = "A raid struck '".$place["location"]."'. There was a $chance% chance and a $rand was rolled. If there is a civilian fleet present, that is the target of the raid. Otherwise, it is the fixed installation that are raided. It is raided with $raidAmt construction value of raiders.";
+    $text = "A raid struck '".$place["location"]."'. There was a $chance% chance and a $rand was rolled. ";
+    $text .= "If there is a civilian fleet present, that is the target of the raid. Otherwise, it is the ";
+    $text .= "fixed installation that are raided. It is raided with $raidAmt construction value of raiders.";
+    if( $EXPLAIN_RAIDS )
+    {
+      $text .= " There were ".$place["civCount"]." civilian craft, for a base chance of ".(20+$civChance);
+      $text .= "% and ".$place["naval"]." EP in naval units, which reduced the chance by $navalChance%. ";
+      $text .= "Intel (if used) dropped chances by $intelChance%.";
+    }
     $inputData["events"][] = array("event"=>"A raid in '".$place["location"]."' happened.","time"=>"Turn ".$inputData["game"]["turn"],"text"=>$text);
   }
   else
   {
     $text = "There was no raid in '".$place["location"]."'. There was a $chance% chance and a $rand was rolled.";
+    if( $EXPLAIN_RAIDS )
+    {
+      $text .= " There were ".$place["civCount"]." civilian craft, for a base chance of ".(20+$civChance);
+      $text .= "% and ".$place["naval"]." EP in naval units, which reduced the chance by $navalChance%. ";
+      $text .= "Intel (if used) dropped chances by $intelChance%.";
+    }
     $inputData["events"][] = array("event"=>"A raid failed in '".$place["location"]."'.","time"=>"Turn ".$inputData["game"]["turn"],"text"=>$text);
   }
 }

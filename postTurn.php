@@ -44,7 +44,7 @@ if( $inputData === false ) // leave if there was an error loading the file
   exit(1);
 
 // get the lookup tables
-list( $byColonyName, $byColonyOwner, $byFleetName, $byFleetLocation, $byFleetUnits, $byMapLocation, $byMapOwner ) = makeLookUps($inputData);
+list( $byColonyName, $byColonyOwner, $byFleetName, $byFleetLocation, $byFleetUnits, $byMapLocation, $byMapOwner, $byDesignator ) = makeLookUps($inputData);
 
 // pull out the next-file name for writing the new data
 if( empty($newFileName) )
@@ -236,7 +236,6 @@ else
       $outputData["colonies"][$colony]["census"] = 1;
       // add Morale to location
       $outputData["colonies"][$colony]["morale"] = 1;
-
 
       // change ownership of the location
       $outputData["colonies"][$colony]["owner"] = $outputData["empire"]["empire"];

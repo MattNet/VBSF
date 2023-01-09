@@ -28,6 +28,11 @@
 ###
 
 ###
+# Constants
+###
+$CIVILIAN_FLEETS = array("Colony Fleet", "Trade Fleet", "Transport Fleet" );
+
+###
 # Reads the data variable from a JSON file
 ###
 # Args:
@@ -173,14 +178,9 @@ function getFleetValue( $dataArray, $unitArray, $skipCivilian = false )
 
   foreach( $unitArray as $hull )
   {
-    if( $skipCivilian &&
-        ( $hull == "Colony Fleet" ||
-          $hull == "Trade Fleet" ||
-          $hull == "Transport Fleet" )
-      )
-    {
+    if( $skipCivilian && in_array( $hull, $CIVILIAN_FLEETS ) )
       continue; // skip civilian units
-    }
+
     foreach( $dataArray["unitList"] as $unit )
     {
       if( $unit["ship"] == $hull )
@@ -210,14 +210,9 @@ function getFleetSupplyValue( $dataArray, $unitArray, $skipCivilian = false )
 
   foreach( $unitArray as $hull )
   {
-    if( $skipCivilian &&
-        ( $hull == "Colony Fleet" ||
-          $hull == "Trade Fleet" ||
-          $hull == "Transport Fleet" )
-      )
-    {
+    if( $skipCivilian && in_array( $hull, $CIVILIAN_FLEETS ) )
       continue; // skip civilian units
-    }
+
     foreach( $dataArray["unitList"] as $unit )
     {
       if( $unit["ship"] == $hull )
@@ -380,7 +375,7 @@ function getTDP( $dataArray )
 }
 
 ###
-# Cerates the look-up arrays for the data file
+# Creates the look-up arrays for the data file
 ###
 # Args:
 # - (array) the data sheet
