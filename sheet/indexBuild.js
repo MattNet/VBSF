@@ -53,6 +53,7 @@ document.getElementById("themeChange").addEventListener(
 
 // Iterate through the list of colonies
 for( var i=0; i<colonies.length; i++ )
+{
   if( colonies[i].owner == empire.empire )
   {
     // assemble the colonyNames array
@@ -72,6 +73,9 @@ for( var i=0; i<colonies.length; i++ )
     // fill the list of known colonies not owned by this position
     otherSystems.push( colonies[i].name );
   }
+  // add temporary record keeping items to the colony data set
+  colonies[i].censusLoad = 0; // Amt of census being loaded / unloaded
+}
 
 // Iterate through the list of fleet
 for( var a=0; a<fleets.length; a++ )
@@ -112,10 +116,10 @@ for( var i=0; i<unitList.length; i++ )
     // List of Ground Units, because notes contain 'Ground'
     buildableGround.push( unitList[i].ship );
   else if( unitList[i].notes.indexOf('Flight') !== -1 )
-    // List of Fighter Units, because notes does not contain 'Ground'
+    // List of Fighter Units, because notes contain 'Flight'
     buildableFlights.push( unitList[i].ship );
   else
-    // List of Orbital Units, because its whats left
+    // List of Orbital Units, because it is remaining
     buildableShips.push( unitList[i].ship );
 }
 
@@ -215,21 +219,60 @@ orderTable['unmothball'] = [ unitsInMothballs, [], '', 'Unmothball a unit' ];
     ElementFind('PrevDoc').parentElement.classList.remove("button");
   }
 
+  for (var a = 0; a < orders.length; a++)
+  {
+    var order = orders[a], fleetKey = -1, colonyKey = -1;
+
+    // find the location of the fleet being loaded
+    for (var b = 0; b < fleets.length; b++)
+      if (order.reciever.endsWith(fleets[b].name)) {
+        fleetKey = b;
+        break;
+      }
+
+    if (fleetKey == -1)
+      continue;
+
+    // find the colony that is being taken from
+    for (b = 0; b < colonies.length; b++)
+      if (colonies[b].name === fleets[fleetKey].location) {
+        colonyKey = b;
+        break;
+      }
+
+    if (colonyKey == -1)
+      continue;
+
+    if (order.target == 'Census')
+      if( order.type == 'load' )
+        // claim we are removing one from the colony census
+        colonies[colonyKey].censusLoad -= 1;
+      else if( order.type == 'unload' )
+        // claim we are adding one from the colony census
+        colonies[colonyKey].censusLoad += 1;
+  }
+
   // Assemble the System Assets area
   var SystemOut = '';
   for( var i=0; i<colonies.length; i++ )
   {
-    SystemOut += "<tr><td>"+colonies[i].name+"</td><td>"+colonies[i].census+" "+String(colonies[i].owner).substr(0,3)+"</td><td>";
-    SystemOut += colonies[i].morale+"</td><td>"+colonies[i].raw+"</td><td>"+colonies[i].prod+"</td><td>"+colonies[i].capacity;
-    SystemOut += "</td><td>"+calcColonyOutput(colonies[i])+"</td><td>"+colonies[i].intel+"</td><td>"+colonies[i].notes+"</td><td>";
-    // add in the fixed-defenses units
-    for( var a=0; a<colonies[i].fixed.length; a++ )
-      SystemOut += colonies[i].fixed[a]+", ";
-    if( colonies[i].fixed.length > 0 ) // if there were fixed units
-      SystemOut = SystemOut.substr(0, (SystemOut.length - 2) ); // trim off the last deliminator
-    SystemOut += "</td></tr>\n";
+    var colony = colonies[i];
+    var fixedUnits = colony.fixed.join(', ');
+    var censusLoad = colony.censusLoad < 0 ? `(${colony.censusLoad})` : colony.censusLoad > 0 ? `(+${colony.censusLoad})` : '';
+    SystemOut += `<tr>
+      <td>${colony.name}</td>
+      <td>${colony.census} ${censusLoad} ${colony.owner.substr(0,3)}</td>
+      <td>${colony.morale}</td>
+      <td>${colony.raw}</td>
+      <td>${colony.prod}</td>
+      <td>${colony.capacity}</td>
+      <td>${calcColonyOutput(colony)}</td>
+      <td>${colony.intel}</td>
+      <td>${colony.notes}</td>
+      <td>${fixedUnits}</td>
+    </tr>`;
   }
-  ElementFind('systemData').innerHTML = ElementFind('systemData').innerHTML + SystemOut;
+  ElementFind('systemData').innerHTML += SystemOut;
 
   // Assemble the Maintenance Cost area
   var MaintOut = '<tr><th>Maintenance Item</th><th>Number</th><th>Cost</th></tr>';
@@ -264,13 +307,7 @@ orderTable['unmothball'] = [ unitsInMothballs, [], '', 'Unmothball a unit' ];
   {
     var unitCount = []; // format is [ ['designation','count', 'index'], ... ]
 
-/*
-    if( a%2 == 0 )
-      FleetOut += "\n<table style='float:right'>";
-    else
-      FleetOut += "\n<table>";
-*/
-      FleetOut += "\n<table class='fleetEntry'>";
+    FleetOut += "\n<table class='fleetEntry'>";
 
     FleetOut += "<tr><th>Fleet Name</th><td>"+fleets[a].name+"</td><th>Location</th><td>"+fleets[a].location+"</td></tr>";
     FleetOut += "<tr><th># of Units</th><th>Class</th><th colspan=2>Notes</th></tr>";
