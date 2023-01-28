@@ -203,6 +203,7 @@ function getFleetValue( $dataArray, $unitArray, $skipCivilian = false )
 function getFleetSupplyValue( $dataArray, $unitArray, $skipCivilian = false )
 {
   $output = 0;
+  global $CIVILIAN_FLEETS;
 
   // leave if something isn't set
   if( ! isset($dataArray["unitList"]) )
@@ -373,7 +374,75 @@ function getTDP( $dataArray )
     }
   return $out;
 }
+/*
+###
+# Finds all of the orders of the specified type
+###
+# Args:
+# - (array) The order data
+#           e.g. [ "type":"load", "reciever":"Colony Fleet w\/ Colony-1", "target":"Census", "note":"1" ]
+# Return:
+# - (string) True for legal, An error string if not legal
+###
+function isLegalLoadOrder( $order )
+{
+  // convenience variable. Error string that identifies order that is wrong
+  $loadErrorString = "Order given to load '".$order["reciever"];
+  $loadErrorString .= "' with ".$order["note"]." of '".$order["target"];
 
+  $fleet = -1; // key of the fleet array that is being loaded
+
+  // find the fleet
+  foreach( $byFleetName as $fleetName=>$fleetKey )
+   if( str_ends_with( $inputData["orders"][$key]["reciever"], $fleetName ) )
+     $fleet = $fleetKey;
+  if( $fleet == -1 )
+  {
+    echo $loadErrorString."'. Could not find fleet.\n";
+    exit(1);
+  }
+
+  // skip if this fleet location cannot be found
+  if( ! $fleetLoc = $byColonyName[ $inputData["fleets"][$fleet]["location"] ] )
+  {
+    echo $loadErrorString."'. Location of fleet is not a colony.\n";
+    $inputData["events"][] = array("event"=>"Load order failed","time"=>"Turn ".$inputData["game"]["turn"],
+                                   "text"=>$loadErrorString."'. Location of fleet is not a colony.\n");
+    continue;
+  }
+
+  // determine if this colony is owned by the player
+  if( $inputData["colonies"][$fleetLoc]["owner"] != $inputData["empire"]["empire"] )
+  {
+    echo $loadErrorString."'. This player does not own this colony.\n";
+    $inputData["events"][] = array("event"=>"Load order failed","time"=>"Turn ".$inputData["game"]["turn"],
+                                   "text"=>$loadErrorString."'. This player does not own this colony.\n");
+    continue;
+  }
+
+  // find amt of the supply trait in this fleet
+  $supplyAmt = getFleetSupplyValue( $inputData, $inputData["fleets"][$fleet]["units"] );
+  if( $supplyAmt == 0 ) // skip if this fleet has no supply trait
+  {
+    echo $loadErrorString."'. Fleet has no supply trait.\n";
+    $inputData["events"][] = array("event"=>"Load order failed","time"=>"Turn ".$inputData["game"]["turn"],
+                                   "text"=>$loadErrorString."'. Fleet has no supply trait.\n");
+    continue;
+  }
+
+  // find supply amt already used in this fleet
+  $supplyUsed = getFleetloadedValue( $inputData["fleets"][$fleet] );
+
+  // skip if the fleet cannot hold the unit
+  if( $supplyAmt - $supplyUsed < ( 10 * $loadAmt ) )
+  {
+    echo $loadErrorString."'. Loading $loadAmt would overload fleet.\n";
+    $inputData["events"][] = array("event"=>"Load order failed","time"=>"Turn ".$inputData["game"]["turn"],
+                                   "text"=>$loadErrorString."'. Loading $loadAmt would overload fleet.\n");
+    continue;
+  }
+}
+*/
 ###
 # Creates the look-up arrays for the data file
 ###

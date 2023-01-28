@@ -204,7 +204,6 @@ if( isset($orderKeys[0]) ) // if there are none of these orders, then skip
                                               ."location is not found in unknown, movable locations. Perhaps "
                                               ."the order is mispelled.\n"
                                       );
-        unset( $inputData["orders"][$key] ); // remove failed order
       }
 
       // update the location of the fleet to match the target location
@@ -383,37 +382,38 @@ if( $MAKE_CHECKLIST )
     foreach( $orderKeys as $key )
     {
       $loadAmt = (int) $inputData["orders"][$key]["note"];
+      $reciever = (string) $inputData["orders"][$key]["reciever"];
+      $target = (string) $inputData["orders"][$key]["target"];
+
       // Keep the load amount a single digit
       if( $loadAmt > 9 )
       {
         $loadAmt = 9;
         $inputData["orders"][$key]["note"] = 9; // truncate the given order
-        echo "Order given to load '".$inputData["orders"][$key]["reciever"];
-        echo "' with ".$inputData["orders"][$key]["note"]." of '";
-        echo $inputData["orders"][$key]["target"]."'. Amount truncated to 9.\n";
+        echo "Order given to load '$reciever' with ".$inputData["orders"][$key]["note"];
+        echo " of '$target'. Amount truncated to 9.\n";
       }
 
       // convenience variable. Error string that identifies order that is wrong
-      $loadErrorString = "Order given to load '".$inputData["orders"][$key]["reciever"];
-      $loadErrorString .= "' with $loadAmt of '".$inputData["orders"][$key]["target"];
+      $loadErrorString = "Order given to load '$reciever' with $loadAmt of '$target'. ";
 
-      $fleet = -1; // key of the fleet array that is being loaded
+      $fleet = -1; // key to the fleet array
+      $fleetLoc = -1; // key to colonies array
       $isGroundUnit = false; // determines if a unit being loaded is a ground unit
 
       // determine if this is a ground unit being loaded
-      if( isset( $byDesignator[ $inputData["orders"][$key]["target"] ] )
-          && $inputData["unitList"][ $byDesignator[ $inputData["orders"][$key]["target"] ] ]["design"] == "ground unit"
+      if( isset( $byDesignator[ $target ] )
+          && $inputData["unitList"][ $byDesignator[ $target ] ]["design"] == "ground unit"
         )
         $isGroundUnit = true;
 
       // find the fleet
       foreach( $byFleetName as $fleetName=>$fleetKey )
-       if( str_ends_with( $inputData["orders"][$key]["reciever"], $fleetName ) )
+       if( str_ends_with( $reciever, $fleetName ) )
          $fleet = $fleetKey;
       if( $fleet == -1 )
       {
-        echo $loadErrorString."'. Could not find fleet.\n";
-        // do not remove order, because exiting the script
+        echo $loadErrorString."Could not find fleet.\n";
         exit(1);
       }
 
@@ -422,8 +422,7 @@ if( $MAKE_CHECKLIST )
       {
         echo $loadErrorString."'. Location of fleet is not a colony.\n";
         $inputData["events"][] = array("event"=>"Load order failed","time"=>"Turn ".$inputData["game"]["turn"],
-                                       "text"=>$loadErrorString."'. Location of fleet is not a colony.\n");
-        unset( $inputData["orders"][$key] ); // remove failed order
+                                       "text"=>$loadErrorString."Location of fleet is not a colony.\n");
         continue;
       }
       else
@@ -436,8 +435,7 @@ if( $MAKE_CHECKLIST )
       {
         echo $loadErrorString."'. This player does not own this colony.\n";
         $inputData["events"][] = array("event"=>"Load order failed","time"=>"Turn ".$inputData["game"]["turn"],
-                                       "text"=>$loadErrorString."'. This player does not own this colony.\n");
-        unset( $inputData["orders"][$key] ); // remove failed order
+                                       "text"=>$loadErrorString."This player does not own this colony.\n");
         continue;
       }
 
@@ -447,8 +445,7 @@ if( $MAKE_CHECKLIST )
       {
         echo $loadErrorString."'. Fleet has no supply trait.\n";
         $inputData["events"][] = array("event"=>"Load order failed","time"=>"Turn ".$inputData["game"]["turn"],
-                                       "text"=>$loadErrorString."'. Fleet has no supply trait.\n");
-        unset( $inputData["orders"][$key] ); // remove failed order
+                                       "text"=>$loadErrorString."Fleet has no supply trait.\n");
         continue;
       }
 
@@ -460,8 +457,7 @@ if( $MAKE_CHECKLIST )
       {
         echo $loadErrorString."'. Loading $loadAmt would overload fleet.\n";
         $inputData["events"][] = array("event"=>"Load order failed","time"=>"Turn ".$inputData["game"]["turn"],
-                                       "text"=>$loadErrorString."'. Loading $loadAmt would overload fleet.\n");
-        unset( $inputData["orders"][$key] ); // remove failed order
+                                       "text"=>$loadErrorString."Loading $loadAmt would overload fleet.\n");
         continue;
       }
 
@@ -473,19 +469,22 @@ if( $MAKE_CHECKLIST )
         {
           echo $loadErrorString."'. Loading $loadAmt of Census would empty the colony.\n";
           $inputData["events"][] = array("event"=>"Load order failed","time"=>"Turn ".$inputData["game"]["turn"],
-                                         "text"=>$loadErrorString."'. Loading $loadAmt of Census would empty the colony.\n");
-          unset( $inputData["orders"][$key] ); // remove failed order
+                                         "text"=>$loadErrorString."Loading $loadAmt of Census would empty the colony.\n");
           continue;
         }
-        
         // Add Census to fleet
         $inputData["fleets"][$fleet]["notes"] .= "$loadAmt Census loaded.";
+
+        // Do not remove Census from location
+        // It is needed for showing the start-of-turn economics
+        // The UI shows that the Census will be deducted at the end of turn
+/*
         // remove Census from location
         $inputData["colonies"][$fleetLoc]["census"] -= $loadAmt;
         // deal with maybe having to much Morale
         if( $inputData["colonies"][$fleetLoc]["morale"] > $inputData["colonies"][$fleetLoc]["census"] )
           $inputData["colonies"][$fleetLoc]["morale"] = $inputData["colonies"][$fleetLoc]["census"];
-
+*/
         // finished with this load order
         continue;
       }
@@ -497,25 +496,22 @@ if( $MAKE_CHECKLIST )
 
         // skip if there is not enough of this ground unit to load
         foreach( $inputData["colonies"][$fleetLoc]["fixed"] as $fixedKey=>$fixed )
-        {
           if( strtolower($inputData["orders"][$key]["target"]) == strtolower($fixed) )
             $unitCount++;
-        }
         if( $unitCount < $loadAmt )
         {
-          echo $loadErrorString."'. Not enough ".$inputData["orders"][$key]["target"]." are present at colony.\n";
+          echo $loadErrorString."'. Not enough $target are present at colony.\n";
           $inputData["events"][] = array("event"=>"Load order failed","time"=>"Turn ".$inputData["game"]["turn"],
-                                         "text"=>$loadErrorString."'. Not enough ".$inputData["orders"][$key]["target"]." are present at colony.\n");
-          unset( $inputData["orders"][$key] ); // remove failed order
+                                         "text"=>$loadErrorString."'. Not enough $target are present at colony.\n");
           continue;
         }
         
         // Add unit to fleet
-        $inputData["fleets"][$fleet]["notes"] .= "$loadAmt ".$inputData["orders"][$key]["target"]." loaded.";
+        $inputData["fleets"][$fleet]["notes"] .= "$loadAmt $target loaded.";
         // remove unit from location
         foreach( $inputData["colonies"][$fleetLoc]["fixed"] as $fixedKey=>$fixed )
         {
-          if( strtolower($inputData["orders"][$key]["target"]) == strtolower($fixed) && $loadAmt > 0 )
+          if( strtolower($target) == strtolower($fixed) && $loadAmt > 0 )
           {
             unset( $inputData["colonies"][$fleetLoc]["fixed"][$fixedKey] );
             $loadAmt--;
@@ -528,10 +524,9 @@ if( $MAKE_CHECKLIST )
         continue;
       }
       echo $loadErrorString."'. Unit not loaded.\n";
-      $inputData["events"][] = array("event"=>"Load order failed","time"=>"Turn ".$inputData["game"]["turn"],"text"=>$loadErrorString."'. Unit not loaded.\n");
-      unset( $inputData["orders"][$key] ); // remove failed order
+      $inputData["events"][] = array("event"=>"Load order failed","time"=>"Turn ".$inputData["game"]["turn"],"text"=>$loadErrorString."Unit not loaded.\n");
     }
-    $inputData["orders"] = array_values( $inputData["orders"] ); // re-index the orders to close up gaps caused by invalid orders
+//    $inputData["orders"] = array_values( $inputData["orders"] ); // re-index the orders to close up gaps caused by invalid orders
   }
 /***
 Unloading uses the same process, but with reverse effects
@@ -544,45 +539,46 @@ Unloading uses the same process, but with reverse effects
     foreach( $orderKeys as $key )
     {
       $loadAmt = (int) $inputData["orders"][$key]["note"];
+      $reciever = (string) $inputData["orders"][$key]["reciever"];
+      $target = (string) $inputData["orders"][$key]["target"];
+
       // Keep the unload amount a single digit
       if( $loadAmt > 9 )
       {
         $loadAmt = 9;
         $inputData["orders"][$key]["note"] = 9; // truncate the given order
-        echo "Order given to unload '".$inputData["orders"][$key]["reciever"];
-        echo "' with ".$inputData["orders"][$key]["note"]." of '";
-        echo $inputData["orders"][$key]["target"]."'. Amount truncated to 9.\n";
+        echo "Order given to unload '$reciever' with ".$inputData["orders"][$key]["note"];
+        echo " of '$target'. Amount truncated to 9.\n";
       }
 
       // convenience variable. Error string that identifies order that is wrong
-      $loadErrorString = "Order given to unload '".$inputData["orders"][$key]["reciever"];
-      $loadErrorString .= "' with $loadAmt of '".$inputData["orders"][$key]["target"];
+      $loadErrorString = "Order given to unload '$reciever' with $loadAmt of '$target'. ";
 
       $fleet = -1; // key of the fleet array that is being loaded
       $isGroundUnit = false; // determines if a unit being loaded is a ground unit
 
       // determine if this is a ground unit being unloaded
-      if( isset( $byDesignator[ $inputData["orders"][$key]["target"] ] )
-          && $inputData["unitList"][ $byDesignator[ $inputData["orders"][$key]["target"] ] ]["design"] == "ground unit"
+      if( isset( $byDesignator[ $target ] )
+          && $inputData["unitList"][ $byDesignator[ $target ] ]["design"] == "ground unit"
         )
         $isGroundUnit = true;
       
       // find the fleet
       foreach( $inputData["fleets"] as $fleetKey=>$value )
-       if( str_ends_with( $inputData["orders"][$key]["reciever"], $value["name"] ) )
+       if( str_ends_with( $reciever, $value["name"] ) )
          $fleet = $fleetKey;
       if( $fleet == -1 )
       {
-        echo $loadErrorString."'. Could not find fleet.\n";
+        echo $loadErrorString."Could not find fleet.\n";
         // do not remove order, because exiting the script
         exit(1);
       }
       
-      $success = preg_match( "/(\d) ".$inputData["orders"][$key]["reciever"]." loaded/i", $inputData["fleets"][$fleet]["notes"], $matches );
+      $success = preg_match( "/(\d) $reciever loaded/i", $loadAmt, $matches );
       $amtLoaded = (int) $matches[1];
       if( ! $success || $amtLoaded < 1 )
       {
-        echo $loadErrorString."'. Fleet does not carry any ".$inputData["orders"][$key]["target"].".\n";
+        echo $loadErrorString."Fleet does not carry any $target.\n";
         // do not remove order, because exiting the script
         exit(1);
       }
@@ -592,8 +588,7 @@ Unloading uses the same process, but with reverse effects
       {
         echo $loadErrorString."'. The fleet does not carry enough. It only has $amtLoaded.\n";
         $inputData["events"][] = array("event"=>"Load order failed","time"=>"Turn ".$inputData["game"]["turn"],
-                                       "text"=>$loadErrorString."'. The fleet does not carry enough. It only has $amtLoaded.\n");
-        unset( $inputData["orders"][$key] ); // remove failed order
+                                       "text"=>$loadErrorString."The fleet does not carry enough. It only has $amtLoaded.\n");
         continue;
       }
 
@@ -602,8 +597,7 @@ Unloading uses the same process, but with reverse effects
       {
         echo $loadErrorString."'. Location of fleet is not a colony.\n";
         $inputData["events"][] = array("event"=>"Load order failed","time"=>"Turn ".$inputData["game"]["turn"],
-                                       "text"=>$loadErrorString."'. Location of fleet is not a colony.\n");
-        unset( $inputData["orders"][$key] ); // remove failed order
+                                       "text"=>$loadErrorString."Location of fleet is not a colony.\n");
         continue;
       }
       else
@@ -619,11 +613,10 @@ Unloading uses the same process, but with reverse effects
         {
           echo $loadErrorString."'. This player does not own this colony.\n";
           $inputData["events"][] = array("event"=>"Load order failed","time"=>"Turn ".$inputData["game"]["turn"],
-                                         "text"=>$loadErrorString."'. This player does not own this colony.\n");
-          unset( $inputData["orders"][$key] ); // remove failed order
+                                         "text"=>$loadErrorString."This player does not own this colony.\n");
           continue;
         }
-
+/*
         // Remove Census from fleet
         $inputData["fleets"][$fleet]["notes"] = str_replace(
           "$loadAmt Census loaded.",
@@ -632,7 +625,7 @@ Unloading uses the same process, but with reverse effects
         );
         // add Census to location
         $inputData["colonies"][$fleetLoc]["census"] += $loadAmt;
-
+*/
         // finished with this unload order
         continue;
       }
@@ -642,7 +635,7 @@ Unloading uses the same process, but with reverse effects
       {
         // Remove unit to fleet
         $inputData["fleets"][$fleet]["notes"] = str_replace(
-          "$loadAmt ".$inputData["orders"][$key]["target"]." loaded.",
+          "$loadAmt $target loaded.",
           "",
           $inputData["fleets"][$fleet]["notes"]
         );
@@ -655,14 +648,13 @@ Unloading uses the same process, but with reverse effects
         // finished with this unload order
         continue;
       }
-      echo $loadErrorString."'. Unit not unloaded.\n";
+      echo $loadErrorString."Unit not unloaded.\n";
       $inputData["events"][] = array("event"=>"Load order failed","time"=>"Turn ".$inputData["game"]["turn"],
-                                     "text"=>$loadErrorString."'. Unit not unloaded.\n");
-      unset( $inputData["orders"][$key] ); // remove failed order
+                                     "text"=>$loadErrorString."Unit not unloaded.\n");
     }
-    $inputData["orders"] = array_values( $inputData["orders"] ); // re-index the orders to close up gaps caused by invalid orders
+//    $inputData["orders"] = array_values( $inputData["orders"] ); // re-index the orders to close up gaps caused by invalid orders
   }
-  
+
 ###
 # Add raids
 # Note: This is post-movement, during combat
