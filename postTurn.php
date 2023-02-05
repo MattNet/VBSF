@@ -263,7 +263,6 @@ else
         // Add Census to fleet
         $outputData["fleets"][$fleet]["notes"] .= "$loadAmt Census loaded.";
 */
-var_dump( $outputData["colonies"][$fleetLoc]["census"] );
         // remove Census from location
         $outputData["colonies"][$fleetLoc]["census"] -= $loadAmt;
         // deal with maybe having to much Morale
