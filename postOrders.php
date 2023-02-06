@@ -58,6 +58,7 @@ if( $inputData === false ) // leave if there was an error loading the file
 
 // get the lookup tables
 list( $byColonyName, $byColonyOwner, $byFleetName, $byFleetLocation, $byFleetUnits, $byMapLocation, $byMapOwner, $byDesignator ) = makeLookUps($inputData);
+$byRaidLocation = array(); // empty for now. filled when calculating places being raided
 
 ###
 # Make the middle-turn modifications
@@ -221,8 +222,8 @@ if( isset($orderKeys[0]) ) // if there are none of these orders, then skip
         if( $AUTO_ROLL_EMPTY_SYSTEMS )
         {
           echo "\nRolling for system at '".$fleetLocation."'.\n";
-          $outputData = VBAMExploration(); // get the output from the $SYSTEM_ROLLER command
-          $output = array_shift( $outputData ); // the text output was the first entry
+          $explorationData = VBAMExploration(); // get the output from the $SYSTEM_ROLLER command
+          $output = array_shift( $explorationData ); // the text output was the first entry
           // print the result of $SYSTEM_ROLLER with $SYSTEM_ROLLER_SEPERATOR prepended to each line
           echo html_entity_decode( $SYSTEM_ROLLER_SEPERATOR );
           echo str_replace( "\n", "\n".html_entity_decode($SYSTEM_ROLLER_SEPERATOR)." ", rtrim($output) );
@@ -234,8 +235,8 @@ if( isset($orderKeys[0]) ) // if there are none of these orders, then skip
 
           if( strtolower( $answer ) == "y" )
           {
-            $outputData["name"] = $fleetLocation;
-            $inputData["colonies"][] = $outputData;
+            $explorationData["name"] = $fleetLocation;
+            $inputData["colonies"][] = $explorationData;
           }
           else
           {
@@ -348,6 +349,9 @@ usort( $inputData["colonies"], "colonyNameSort" );
 
 // Re-order mapPoints, based on location
 usort( $inputData["mapPoints"], "mapLocSort" );
+
+// update the lookup tables
+list( $byColonyName, $byColonyOwner, $byFleetName, $byFleetLocation, , $byMapLocation, $byMapOwner, ) = makeLookUps( $inputData, true );
 
 ###
 # Add Checklist
@@ -661,8 +665,9 @@ Unloading uses the same process, but with reverse effects
 ###
 $raidPlaces = array();
 
-// Mark locations owned by this player
-// count naval value at each location
+### Need to capture places not owned by this empire, who have civilian fleets
+// Mark locations owned by this player as raid locations if empty of naval elements
+// Count naval EP value at each location
 foreach( $byColonyOwner[ $inputData["empire"]["empire"] ] as $item )
 {
   $locationName = $inputData["colonies"][ $item ]["name"]; // convenience variable
@@ -685,13 +690,48 @@ foreach( $byColonyOwner[ $inputData["empire"]["empire"] ] as $item )
         // get EP cost if a naval unit
         $navalCost += $inputData["unitList"][ $byDesignator[$hull] ]["cost"];
       }
-
-  // add to raid places if no fleet EP is here or there are civvies present
-  if( $navalCost == 0 || $civvieCount > 0 )
+  // add to raid places if no fleet EP is here
+  if( $navalCost == 0 )
     $raidPlaces[] = array( "civCount" => $civvieCount,
                            "location"=> $locationName,
                            "naval"=> $navalCost
                          );
+  $byRaidLocation[$locationName] = array_key_last($raidPlaces);
+}
+
+// find places that contain fleets but are un-owned by this player
+$lonelyRaids = array_diff_key( $byFleetLocation, $byRaidLocation );
+
+// iterate through those fleets, finding locations that contain civilian fleets
+foreach( $lonelyRaids as $locationName=>$fleetList )
+{
+  foreach( $fleetList as $index )
+  {
+    $navalCost = 0; // EP cost of ships at this location
+    $civvieCount = 0; // number of civilian units here
+
+    // count the ships here (civvie count, naval cost)
+    foreach( $inputData["fleets"][$index]["units"] as $hull )
+    {
+      // count if a civilian unit
+      if( in_array( $hull, $CIVILIAN_FLEETS ) )
+      {
+        $civvieCount++;
+        continue;
+      }
+
+      // get EP cost if a naval unit
+      $navalCost += $inputData["unitList"][ $byDesignator[$hull] ]["cost"];
+    }
+    // add to raid places if civilian ships are in this fleet
+    // Other fleets might have more naval units, but they become reinforcements
+    if( $civvieCount > 0 )
+      $raidPlaces[] = array( "civCount" => $civvieCount,
+                             "location"=> $locationName,
+                             "naval"=> $navalCost
+                           );
+    $byRaidLocation[$locationName] = array_key_last($raidPlaces);
+  }
 }
 
 // Calculate the raids
@@ -729,8 +769,9 @@ foreach( $raidPlaces as $place )
   {
     $raidAmt = mt_rand(1,3) * mt_rand(1,6);
     $text = "A raid struck '".$place["location"]."'. There was a $chance% chance and a $rand was rolled. ";
-    $text .= "If there is a civilian fleet present, that is the target of the raid. Otherwise, it is the ";
-    $text .= "fixed installation that are raided. It is raided with $raidAmt construction value of raiders.";
+    $text .= "It is raided with $raidAmt construction value of raiders. If there is a civilian fleet present, ";
+    $text .= "that is the target of the raid. One fleet at that location may participate as reinforcements. ";
+    $text .= "If there are no civilian units to raid, then the fixed installation that are raided.";
     if( $EXPLAIN_RAIDS )
     {
       $text .= " There were ".$place["civCount"]." civilian craft, for a base chance of ".(20+$civChance);

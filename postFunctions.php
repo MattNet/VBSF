@@ -448,6 +448,7 @@ function isLegalLoadOrder( $order )
 ###
 # Args:
 # - (array) the data sheet
+# - (boolean) true if we omit processing the fleet units and unit designations
 # Return:
 # - (Array) An array of arrays of look-up tables
 # look-up tables provided (by array index):
@@ -460,7 +461,7 @@ function isLegalLoadOrder( $order )
 # 6) By location owner - Key is location owner, value is array of map indexes
 # 7) By unit designation - key is designator, value is unitList index
 ###
-function makeLookUps( $dataArray )
+function makeLookUps( $dataArray, $locationOnly = false )
 {
   $colonyName = array();
   $colonyOwner = array();
@@ -471,6 +472,7 @@ function makeLookUps( $dataArray )
   $mapOwner = array();
   $designator = array();
 
+  // by colony owners
   foreach( $dataArray["colonies"] as $key=>$value )
   {
     // by colony name
@@ -482,6 +484,7 @@ function makeLookUps( $dataArray )
     $colonyOwner[ $value["owner"] ][] = $key;
   }
 
+  // by fleet location and fleet name
   foreach( $dataArray["fleets"] as $key=>$value )
   {
     // by fleet name
@@ -494,30 +497,30 @@ function makeLookUps( $dataArray )
   }
 
   // by fleet units
-  foreach( $dataArray["fleets"] as $fleetKey=>$value )
-    foreach( $value["units"] as $unitValue )
-    {
-      if( ! isset( $fleetUnits[ $unitValue ] ) )
-        $fleetUnits[ $unitValue ] = array();
-      $fleetUnits[ $unitValue ][] = $fleetKey;
-    }
+  if( ! $locationOnly )
+    foreach( $dataArray["fleets"] as $fleetKey=>$value )
+      foreach( $value["units"] as $unitValue )
+      {
+        if( ! isset( $fleetUnits[ $unitValue ] ) )
+          $fleetUnits[ $unitValue ] = array();
+        $fleetUnits[ $unitValue ][] = $fleetKey;
+      }
 
+  // by map location and map owner
   foreach( $dataArray["mapPoints"] as $key=>$value )
   {
     // by map location
     $mapLocation[ $value[3] ] = $key;
 
-    // by map owner
     if( ! isset( $mapOwner[ $value[2] ] ) )
       $mapOwner[ $value[2] ] = array();
     $mapOwner[ $value[2] ] = $key;
   }
 
   // by unit designator
-  foreach( $dataArray["unitList"] as $key=>$value )
-  {
-    $designator[ $value["ship"] ] = $key;
-  }
+  if( ! $locationOnly )
+    foreach( $dataArray["unitList"] as $key=>$value )
+      $designator[ $value["ship"] ] = $key;
   
   return array( $colonyName, $colonyOwner, $fleetName, $fleetLocation, $fleetUnits, $mapLocation, $mapOwner, $designator );
 }
