@@ -692,14 +692,17 @@ foreach( $byColonyOwner[ $inputData["empire"]["empire"] ] as $item )
       }
   // add to raid places if no fleet EP is here
   if( $navalCost == 0 )
+  {
     $raidPlaces[] = array( "civCount" => $civvieCount,
                            "location"=> $locationName,
                            "naval"=> $navalCost
                          );
-  $byRaidLocation[$locationName] = array_key_last($raidPlaces);
+    $byRaidLocation[$locationName] = array_key_last($raidPlaces);
+  }
 }
 
 // find places that contain fleets but are un-owned by this player
+// note that these arrays have keys that are colony names
 $lonelyRaids = array_diff_key( $byFleetLocation, $byRaidLocation );
 
 // iterate through those fleets, finding locations that contain civilian fleets
