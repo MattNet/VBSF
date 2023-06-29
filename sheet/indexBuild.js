@@ -7,6 +7,8 @@ var filePath = document.location.origin+document.location.pathname+"?data=";
 // names of the themes to allow the player to select 
 // format is: displayed, filename, displayed, filename, ...
 var themeNames = [ "Default", "", "Federation", "federation", "Frax", "frax", "Gorn", "gorn", "Klingon", "klingon", "Peladine", "peladine", "Quari", "quari" ];
+// The prefix name for each permenant order input 
+var namePrefix = 'OrderEntry';
 
 /***
 Build Game Data
@@ -421,7 +423,6 @@ orderTable['unmothball'] = [ unitsInMothballs, [], '', 'Unmothball a unit' ];
 
   // Write the Orders section
   var ordersOut = "";
-  var namePrefix = 'OrderEntry'; // what to put in the name trait for each input
 
   // write the known orders
   for( i=0; i<orders.length; i++ )
@@ -432,11 +433,33 @@ orderTable['unmothball'] = [ unitsInMothballs, [], '', 'Unmothball a unit' ];
       ordersOut += "<input type='hidden' name='"+namePrefix+i+"B' value='"+orders[i].reciever+"'>";
       ordersOut += "<input type='hidden' name='"+namePrefix+i+"C' value='"+orders[i].target+"'>";
       ordersOut += "<input type='hidden' name='"+namePrefix+i+"D' value='"+orders[i].note+"'>";
-      ordersOut += "Order \""+orders[i].reciever+"\" to do \""+orders[i].type+"\"";
-      if( orders[i].target != '' )
-        ordersOut += " to \""+orders[i].target+"\"";
-      if( orders[i].note != '' )
-        ordersOut += " with \""+orders[i].note+"\"";
+      switch( orders[i].type ) {
+        case "build_unit":
+          ordersOut += "Order for \""+orders[i].target+"\" to build unit \""+orders[i].reciever;
+          ordersOut += "\" to fleet \""+orders[i].note+"\"";
+          break;
+        case "colonize":
+          ordersOut += "Order to colonize system \""+orders[i].reciever+"\"";
+          break;
+        case "load":
+          ordersOut += "Order for \""+orders[i].reciever+"\" to load \""+orders[i].note+"\" of \"";
+          ordersOut += orders[i].target+"\" units ";
+          break;
+        case "move":
+          ordersOut += "Order for \""+orders[i].reciever+"\" to move to \""+orders[i].target+"\"";
+          break;
+        case "research":
+          ordersOut += "Order to do research for \""+orders[i].note+"\" EP";
+          break;
+//        case "":
+//          break;
+        default:
+          ordersOut += "Order \""+orders[i].reciever+"\" to do \""+orders[i].type+"\"";
+          if( orders[i].target != '' )
+            ordersOut += " to \""+orders[i].target+"\"";
+          if( orders[i].note != '' )
+            ordersOut += " with \""+orders[i].note+"\"";
+      }          
       ordersOut += "<br>";
     }
     else

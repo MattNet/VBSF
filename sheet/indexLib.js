@@ -100,8 +100,6 @@ function makeFancyMonth( monthNum, monthsYear )
   {
    switch( monthNum )
    {
-   case 0: // can only happen on the zeroth turn
-     return "Winter";
    case 1:
      return "Spring";
    case 2:
@@ -109,6 +107,7 @@ function makeFancyMonth( monthNum, monthsYear )
    case 3:
      return "Fall";
    case 4:
+   case 0: // can only happen on the zeroth turn
      return "Winter";
    }
   }

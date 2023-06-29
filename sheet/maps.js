@@ -75,12 +75,48 @@ var tooltip = d3.select("#mapImg")
 
 onLoadStartUp( function () {
 
-// create the hexagons
-const hexbin = d3.hexbin();
-hexbin.radius(HexRadius);
+// load the hexagon data
+const hexbin = d3.hexbin()
+  .radius(HexRadius);
 var hexelem = svg.selectAll("g")
   .data(hexbin(mapPoints));
 
+/*
+// Create lines that join the hexagons (used if the map is not dense)
+// create a line generator
+var lineGenerator = d3.line()
+    .x(function(d) { return d[0]; })
+    .y(function(d) { return d[1]; });
+// draw the lines connecting the hexagon centers
+svg.append("path")
+    .datum(centers)
+    .attr("d", lineGenerator)
+    .attr("stroke", "grey");
+    .style("stroke-width", "1px")
+    .style("fill", "grey");
+*/
+/*
+// create lines between hex centers
+var lineData = [];
+hexbin(mapPoints).forEach((d, i) => {
+  const neighbors = hexbin.neighbors(d);
+  neighbors.forEach(j => {
+    lineData.push([centers[i], centers[j]]);
+  });
+});
+
+svg.selectAll(".line")
+  .data(lineData)
+  .enter()
+  .append("line")
+    .attr("x1", d => d[0][0])
+    .attr("y1", d => d[0][1])
+    .attr("x2", d => d[1][0])
+    .attr("y2", d => d[1][1])
+    .attr("stroke", "grey");
+*/
+
+// draw the hexagons
 var elemEnter = hexelem.enter()
   .append("g")
     .attr("transform", d => `translate(${d.y},${d.x}) rotate(90)`)
@@ -103,6 +139,5 @@ elemEnter.append("text")
     .style("fill", function(d){ return EmpireTextColors( String(d).split(',')[2] ) })
     .attr("stroke", function(d){ return EmpireTextColors( String(d).split(',')[2] ) })
     .style("font-size", function(d){ return HexRadius+"px" });
-
 });
 

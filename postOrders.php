@@ -690,8 +690,8 @@ foreach( $byColonyOwner[ $inputData["empire"]["empire"] ] as $item )
         // get EP cost if a naval unit
         $navalCost += $inputData["unitList"][ $byDesignator[$hull] ]["cost"];
       }
-  // add to raid places if no fleet EP is here
-  if( $navalCost == 0 )
+  // add to raid places if no fleet EP is here or some civilian craft
+  if( $navalCost == 0 || $civvieCount > 0 )
   {
     $raidPlaces[] = array( "civCount" => $civvieCount,
                            "location"=> $locationName,
