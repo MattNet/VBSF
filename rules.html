@@ -1,0 +1,663 @@
+<html><head>
+<meta http-equiv="content-type" content="text/html; charset=windows-1252">
+<style>
+TD{ vertical-align:top; }
+.bigdark { background-color:#000000; color:#FFFFFF; font-weight:bolder; font-size:larger; }
+.clickMore { color:#0000FF; text-decoration-line:underline; }
+.darkhead { background-color:#000000; color:#FFFFFF; font-weight:bolder; }
+.lighthead { border-width:2px; border-color:#000000; border-style:solid; font-weight:bolder; }
+.zebra tr:nth-child(even) { background-color:#BFBFBF; }
+.highlightCell { background-color:#BFBFBF; }
+.tableBorder TD { border:2px solid #000000; }
+.horizBorder TR+TR { border-top:2px solid #000000; }
+.borderRight { border-right-style:solid; border-right-width:2px; }
+.borderBottom { border-bottom-style:solid; border-bottom-width:2px; }
+.hide{ display:none; }
+.visually-hidden:not(:focus):not(:active) {
+  clip: rect(0 0 0 0); 
+  clip-path: inset(50%);
+  height: 1px;
+  overflow: hidden;
+  position: absolute;
+  white-space: nowrap; 
+  width: 1px;
+}
+</style>
+<script type="text/javascript">
+/*
+// Polyfill for nextElementSibling
+function nextElementSibling( el ) {
+    do { el = el.nextSibling } while ( el && el.nodeType !== 1 );
+    return el;
+}
+*/
+function flip( clicked_obj )
+{
+  var toggleStyle = "visually-hidden"; // the class-name of CSS class to flip
+  var obj = clicked_obj.nextElementSibling;
+
+  obj.classList.toggle( toggleStyle ); // toggle the class of the selected element
+  return false;
+}
+</script>
+
+</head><body>
+
+<h3 class="darkhead">VICTORY BY STAR FLEET</h3>
+
+<a href="#SUMMARY">SUMMARY</a>
+<br>&bull; Comparisons to VBAM
+<br>&bull; Campaign Description
+<br>&bull; Sequence of Play
+<br><a href="#SETUP">SETUP</a>
+<br>&bull; Allowed Empires
+<br>&bull; Starting Conditions
+<br>&bull; Empire Special Conditions
+<br><a href="#3.1">Income Phase</a>
+<br><a href="#3.2">Turn Orders Phase</a>
+<br><a href="#3.3">Tech Phase</a>
+<br><a href="#3.4">Intel Phase</a>
+<br>&bull; <a href="#3.4.5">Non-Player Entities</a>
+<br><a href="#3.5">Movement Phase</a>
+<br>&bull; <a href="#3.5.8">Sector-Based Movement</a>
+<br><a href="#3.6">Combat Phase</a>
+<br>&bull; <a href="#3.6.1">Supply Phase</a>
+<br>&bull; <a href="#3.6.2">Encounters Phase</a>
+<br>&bull; <a href="#3.6.3">Space Combat Phase</a>
+<br>&bull; <a href="#3.6.5">Invasion Phase</a>
+<br>&bull; &bull; Transport ships can embark or disembark
+<br>&bull; &bull; Supply units can load or unload
+<br><a href="#3.7">Construction Completion Phase</a>
+<br><a href="#3.8">Update Asset Phase</a>
+<br>End of Turn Phase</a>
+<br><a href="#UNITS">UNITS</a>
+<br>&bull; Abilities
+<br><a href="#SAMPLE">Sample Game</a>
+
+<a name="SUMMARY"></a>
+<h3 class="darkhead">SUMMARY</h3>
+<p>This game is an attempt to run a Star Fleet Battles, published by <a href="http://www.starfleetgames.com/" target="_BLANK">ADB</a>, campaign under the rules given by the Victory By Any Means (v1e) ruleset, published by <a href="http://www.vbamgames.com/" target="_BLANK">VBAM Games</a>.
+</p><p>We recognize that these two companies are currently engaged in creating a product, named <a href="http://www.starfleetgames.com/FederationAdmiral.shtml" target="_BLANK">Federation Admiralty</a>. However, that game been in development since 2008 and still no known release date. It appears that Federation Admiralty is a missions-based campaign game, rather than an adaptation of Victory by Any Means to the Star Fleet Universe. This document is intended to provide that adaptation.
+
+</p><div class="lighthead">CAMPAIGN DESCRIPTION</div>
+<p>This is a "4X" style of campaign, where each player takes on the role of an entire empire in their efforts to "eXplore", "eXpand", "eXploit", and "eXterminate". Each player may achieve their goals by a variety of methods, from full scale war to economic domination to diplomatic unification to technological superiority.
+
+</p><div class="lighthead">SEQUENCE OF PLAY</div>
+<br>Income Phase
+<br>Turn Orders Phase
+<br>Tech Phase
+<br>Intel Phase
+<br>Movement Phase
+<br>Combat Phase
+<br>&bull; Supply Phase
+<br>&bull; Encounters Phase
+<br>&bull; Space Combat Phase
+<br>&bull; Orbital Bombardment Phase
+<br>&bull; Troop Combat Phase
+<br>Construction Completion Phase
+<br>Update Asset Phase
+<br>End of Turn Phase
+
+<a name="SETUP"></a>
+<h3 class="darkhead">SETUP</h3>
+<h3 class="lighthead">ALLOWED EMPIRES</h3>
+<p>The allowed empires to start with are those who have the infrastructure to take and hold territory, plus have a logistics network that can service that territory. Primarily it is those empires that have bases, have freighters, and have warships. This removes the empires such as the Jindarians (R16.0), the Orions (R8.0), and most of the simulator races of Module C4. Also, the intent is to remove those empires that have limitations on them in the source material that cannot be properly modelled with an effective "same start" as the other positions. This leaves out the Neo-Tholians (R7.60), the WYN (R14.0), the LDR (R14.0), and the Seltorians (R15.0).
+</p><p>The following empires are allowed:
+<br>&bull; The <a href="./units.html#federation" target="_BLANK">Federation</a> (R2.0)
+<br>&bull; The <a href="./units.html#klingon" target="_BLANK">Klingon Empire</a> (R3.0)
+<br>&bull; The <a href="./units.html#romulan" target="_BLANK">Romulan Empire</a> (R4.0)
+<br>&bull; The <a href="./units.html#kzinti" target="_BLANK">Kzinti Hegemony</a> (R5.0)
+<br>&bull; The <a href="./units.html#gorn" target="_BLANK">Gorn Confederation</a> (R6.0)
+<br>&bull; The <a href="./units.html#tholian" target="_BLANK">Tholian Holdfast</a> (R7.0)
+<br>&bull; The <a href="./units.html#hydran" target="_BLANK">Hydran Kingdom</a> (R9.0) (Module C1)
+<br>&bull; The <a href="./units.html#andromedan" target="_BLANK">Andromedan Invasion</a> (R10.0) (Module C2)
+<br>&bull; The <a href="./units.html#lyran" target="_BLANK">Lyran Empire</a> (R11.0) (Module C1)
+<br>&bull; The <a href="./units.html#isc" target="_BLANK">Interstellar Concordium</a> (R13.0) (Module C2)
+<br>&bull; The <a href="./units.html#vudar" target="_BLANK">Vudar Enclave</a> (R17.0) (Module F2)
+<br>&bull; The <a href="./units.html#paravian" target="_BLANK">Paravian Mauraders</a> (R18.0) (Module C6)
+<br>&bull; The <a href="./units.html#carnivon" target="_BLANK">Carnivon Hordes</a> (R19.0) (Module C6)
+<br>&bull; The <a href="./units.html#frax" target="_BLANK">Frax Battle Line</a> (R51.0) (Module C4)
+<br>&bull; The <a href="./units.html#quari" target="_BLANK">Quari</a> (R52.0) (Module C4)
+
+</p><h3 class="lighthead">STARTING CONDITIONS</h3>
+<p>Each player has a list of ships they could build. As their technology advances, this list will change to include more effective ships and ships with wider variety of roles. In most campaigns, this list of ships is public, so that other players can identify what ships they are encountering in each meeting of fleets.
+</p><p>Each player may start with a certain number of spaces "owned", and perhaps a further number of spaces "explored". There may be non-player positions, which are run by moderator.
+</p><p>As an optional rule, players may not be in complete control of their empire: The signing and breaking of treaties may instead be handled by the moderator. However, players are not wholly out of control: they can influence their governments into better or worse relations with their neighbors.
+<!--
+</p><h3 class="lighthead">EMPIRE SPECIAL CONDITIONS</h3>
+<p>Not every empire has the same operational parameters. Here is were those differences are addressed.
+-->
+<a name="3.1"></a>
+<h3 class="darkhead">INCOME PHASE</h3>
+<p>The Income Phase is where the Empire calculates its revenues, subtracts expenses, and adds profits to the point pools for spending in the Turn Orders Phase. The income for the turn is calculated using the formula: Total Domestic Product + Trade/Misc. Income - Maintenance/Misc. Costs = Income. The income value is added to the player's Point Pool, which can be used during the current turn's Turn Orders Phase.</p>
+<p>To calculate the Total Domestic Product, each system or planet in the empire can use up to its Census worth in Productivity to generate output. The output of each planet is calculated by multiplying the Utilized Productivity by the planet's RAW. The output of all planets is added together to calculate the Total Domestic Product.</p>
+<p>Commerce Income is generated by Trade Fleets, which generate income equal to 10% of the output of the systems on their route. Only Trade Fleets that survived until this phase and visited systems on their route in the previous Movement Phase contribute to the income. The income from all Trade Fleets owned by the empire is added up to determine the Commerce Income.</p>
+<p>Maintenance costs are incurred for ships, ground units, bases, and other built items. The maintenance costs are provided in the source materials and can be given as a number of points or in fractional notation. The maintenance costs are evaluated for each specific class of unit in service, not by hull type. Additionally, there is a maintenance cost for Intel points. The total maintenance costs for units and Intel points are calculated separately.</p>
+<p>Miscellaneous income or expenses may occur due to random events or one-time payments of economic points. These items are added or subtracted from the Total Domestic Product as appropriate.</p>
+<p>The Point Pool is updated by adding the Total Domestic Product, Commerce Income, and miscellaneous items, and subtracting the maintenance costs. The resulting income determines the economic points available for spending in the Turn Orders Phase. Income or costs that accumulate during the turn from random events or other causes are applied in the next turn's Income Phase as a miscellaneous income or expense item.</p>
+<a name="3.2"></a>
+<h3 class="darkhead">Turn Orders Phase</h3>
+<p>In this game, players are required to enter all their orders for each turn. These orders encompass various actions such as constructing new ships, investing in technology, moving fleets, launching ground assaults, and more. It is important to note that all recorded orders must be legal at the time they are performed. Any illegal orders will be canceled and not executed.</p>
+<p>Players can spend economic points to invest in technology or improve the productivity of a system. These investments are recorded in the turn orders sheet and their benefits are resolved in later phases. Additionally, players can purchase Intel points which can be used for diplomatic actions and Intel missions. Diplomatic actions are recorded in the Intel Missions area, specifying treaty names or the breaking of treaties. Intel missions require a target system, staging system, mission details, and the allocation of Intel points. The total Intel points spent on missions from a system cannot exceed the system's Census rating. Any unassigned Intel points are placed in the Military Intel Pool.</p>
+<p>Movement orders for ships, ground units, and other mobile units are also recorded by players. However, it should be noted that events during the movement and combat phases can render some or all movement orders impossible to execute. In such cases, the orders will be canceled when the ordered movement becomes unfeasible.</p>
+<p>Players are responsible for recording purchases, repairs, and activations/deactivations of units, specifying their location. The costs for these actions are deducted from the Point Pool during the Turn Orders Phase, even if the events of the turn prevent their completion.</p>
+<p>There are limitations on purchasing ships based on their in-service date and the player's tech level. Powers can only purchase units of their own racial origin or generic units specified in the source materials.</p>
+
+<a name="3.3"></a>
+<h3 class="darkhead">Tech Phase</h3>
+<p>Technological investment is of utmost importance for a power, providing potential advantages over neighboring powers. The process of tech investment involves players increasing their tech investment pools during the Turn Orders Phase. Annually, during the Tech Phase, a d100 roll is compared to the tech investment pool percentage to determine tech advancement.</p>
+<p>To calculate the required tech investment, it is set at 50% of the total domestic product of the last turn, rounded up. For example, if the total domestic product in the 12th turn is 214, the required investment would be 107. Suppose a player has invested 52 over 12 turns. In this case, their chance of advancement would be 48% (52 / 107).</p>
+<p>Failed tech advancements carry over the tech investment to the next cycle. Moreover, players have the option to overpay their tech investments. They can invest up to 200% of the required amount to secure a second tech advancement. However, the chance for the second advancement is halved. For instance, if the required investment is 22 and a player invested 30 over 12 turns, the first advancement is guaranteed. The remaining 8 invested (30 - 22) provides an 18% chance for a second tech advancement (8 / 22, halved).</p>
+<p>Tech advancements result in the increase of the Tech Year and introduce new technologies in chronological order. Accelerated tech advancement occurs during the Tech Phase of the sixth and twelfth turns of each game year. A maximum of two tech advancements is allowed per campaign year, with the second advancement having a maximum 50% chance. If achieved on turn six, the empire's tech advancement requirement is subtracted from the tech investment pool. Failure on turn six allows the current tech investment pool to carry over to turn twelve. If both possible tech advancements are achieved on turn six, no further tech advancement is possible. Tech investments made on turns seven through twelve are carried over into the next year.</p>
+<a name="3.4"></a>
+<h3 class="darkhead">Intel Phase</h3>
+<p>The Intel phase includes both Diplomatic and Intelligence activities. Diplomatic actions can sometimes require the use of Intel points, and the Diplomatic status between two powers affects the difficulty of completing certain Intel missions.</p>
+<p>Intel Points are abstract units representing the potential use of intelligence. They are used for offensive and defensive purposes, such as Intel Missions, Diplomatic Actions, and defensive deployments. Intel points have a cost of 1 economic point to create and 1 economic point per 10 Intel points to maintain. The maximum number of Intel points per system is limited by the Census.</p>
+<p>Diplomacy is an integral part of the Intel phase as it often intersects with and supports intelligence work. The primary focus of diplomacy is establishing the desired level of relations with other powers.</p>
+<p>Diplomatic Relations start from a state of no contact between powers. To establish contact with another power, the player must trace a path of systems that includes systems explored and claimed by their own empire or systems controlled by powers they already have relations with. Once contact is established, diplomatic actions and Intel missions can be initiated.</p>
+<p><b>Normal Relations</b> are established once contact is made. Normal relations do not recognize power boundaries, allowing free movement of ships into or out of systems controlled by the other power. However, military actions such as generating encounter scenarios or invading systems controlled by the other power are restricted. There are exceptions to this rule when a power at normal relations attacks any of your forces or if you previously or currently control a system.</p>
+<p>Different Diplomatic States have prerequisites and varying effects. Treaties require the consent of all involved powers and include Non-Aggression Treaty, Peace Treaty, Trade Treaty, Mutual Defense Treaty, and Alliance Treaty. Declarations, on the other hand, can be made without consent and include Declaration of Hostilities and Declaration of War. Armistice Treaty can be signed to end Declarations of Hostilities or War between powers.</p>
+<p>Diplomatic Actions include signing, withdrawing/breaking, and declaring. Signing a treaty is a free action with no cost or chance of failure. Withdrawing or breaking a treaty has a chance of failure, depending on the type of treaty and other factors. Declaring requires a check for success, as it may be challenging to convince internal groups to support the declaration.</p>
+<p>Certain rules apply when breaking or withdrawing from treaties, and the base percentage chance to break or withdraw is listed for each treaty. Modifiers may apply based on specific conditions or factors. Non-cumulative bonuses or penalties do not stack, and the highest applicable bonus or penalty should be used.</p>
+<p>When taking action against a treaty, penalties specific to that treaty should not be applied. For example, attempting to break a Trade Treaty with an Alliance Partner incurs a penalty, but breaking the Alliance Treaty itself incurs a different penalty related to the Mutual Defense Treaty. The success of diplomatic actions is determined by rolling a d100 under the percentage chance to succeed.</p>
+<div style="background-color:#ddd; float:right; width:50%">
+<h3>Exhibit B: Diplomatic Action Modifiers</h3>
+<b>Modifiers to Breaking a Treaty</b>
+<p> &bull; Power implicated in successful sabotage/insurgency mission +100%*
+<br>&bull; Power has declared hostilities/war on a mutual defense treaty member +90% (Non-cumulative)
+<br>&bull; Power was caught running an insurgency mission on one of your systems +80%*
+<br>&bull; Power has generated an encounter scenario against your ships +75%*
+<br>&bull; Power was caught running a sabotage mission on one of your systems +60%*
+<br>&bull; Power has declared hostilities/war on a peace treaty member +50% (Non-cumulative)
+<br>&bull; Power was caught running an espionage mission on one of your systems +25%*
+<br>&bull; Power has broken a treaty with you +25% per treaty*
+<br>&bull; Successfully withdrawn or broken a treaty with power +10%*
+<br>&bull; Per Intel Point spent +5%
+<br>&bull; Last attempt to break a treaty with power failed -10%
+<br>&bull; Power has a Peace Treaty with you -20% (Non-cumulative)
+<br>&bull; Power is a Mutual Defense Treaty partner -30% (Non-cumulative)
+<br>&bull; Power is an Alliance partner -50% (Non-cumulative)
+<p>A successful Declaration of Hostilities or War against a power will break all existing treaties
+and agreements immediately. All modifiers apply if they occurred since the last successful diplomatic
+action.
+<p><b>Modifiers to Declaring Hostilities/War</b>
+<br>&bull; Power Implicated in successful sabotage/insurgency mission +50%*
+<br>&bull; Power has generated an encounter scenario against your ships +40%*
+<br>&bull; Power was caught running an insurgency mission on one of your systems +35%*
+<br>&bull; Power has declared war on a mutual defense treaty member +30% (Non-cumulative)
+<br>&bull; Power is currently under a Declaration of Hostilities +25% (Non-cumulative)
+<br>&bull; Power was caught running a sabotage mission on one of your systems +25%*
+<br>&bull; Power has broken a treaty with you +10% per treaty*
+<br>&bull; Power was caught running an espionage mission on one of your systems +10%*
+<br>&bull; Power has declared hostilities/war on a peace treaty member +10% (Non-cumulative)
+<br>&bull; Successfully withdrawn from an agreement or broken a treaty with power +5% per treaty *
+<br>&bull; Per Intel Point spent +5%
+<br>&bull; Power has a Trade Agreement with you -10% (Non-cumulative)
+<br>&bull; Power has a Non-Aggression Treaty with you -20% (Non-cumulative)
+<br>&bull; Last attempt to break a treaty with power or declare against a power failed -25%
+<br>&bull; Power has a Peace Treaty with you -40% (Non-cumulative)
+<br>&bull; Power has a Mutual Defense Treaty with you -60% (Non-cumulative)
+<br>&bull; Power has an Alliance Treaty with you: Impossible
+<p>* These modifiers are used as listed if action occurred last turn and are reduced by 10% per each turn thereafter until they reach 0%.
+</div>
+<p>The following is a list of treaties that can be signed and declarations that can be made. The number in parentheses is used when attempting to break that kind of treaty and is detailed in the next section.</p>
+<p><b>Non-Aggression Treaty (60):</b> This treaty ensures that two governments agree not to destroy each other's assets. It prohibits the movement of units through each other's systems. If units from one government accidentally enter the system of the other government, they can be held temporarily or allowed to leave. The internment costs are covered by the nation holding the units. Encountering units from the treaty partner in other systems restricts generating encounter scenarios or invading those systems.</p>
+<p><b>Peace Treaty (10):</b> Building upon the non-aggression treaty, the peace treaty establishes a mutual border and requires non-aggression towards each other's assets. It allows the movement of non-military units such as trade, colony, and transport fleets through each other's systems. It is more difficult to withdraw from a peace treaty without the other power's consent compared to a non-aggression treaty. Units from a power with a peace treaty are considered friendly for all purposes.</p>
+<p><b>Trade Treaty (50):</b> This treaty enables trade fleets from one power to visit the systems of another power for trading purposes. It is a reciprocal agreement that allows all powers' trade fleets to access any other power's systems covered by the treaty. A non-aggression treaty must be in place to sign a trade treaty.</p>
+<p><b>Mutual Defense Treaty (40):</b> This treaty goes beyond acknowledging each other and includes an agreement to come to each other's defense if attacked. It requires a peace treaty to be in place. Military ships can travel through each other's systems, but ground forces cannot be moved to other treaty powers' systems and vice versa.</p>
+<p><b>Alliance Treaty (-20):</b> The alliance treaty represents the highest level of cooperation between powers. It requires a mutual defense treaty with all other alliance members. It encompasses peace, mutual defense, trade, and greater cooperation capabilities. Declaring war or hostilities against one power automatically triggers a declaration of war or hostilities against all other alliance members. All allied powers must agree on any armistice that normalizes relations with a power. A separate armistice requires a power to withdraw from or break the alliance treaty. All current members must unanimously agree to include a new alliance member. Each power can only join one alliance at a time. Declaring war by one alliance member does not automatically trigger a declaration of war by other alliance members, but all members are required to attempt a declaration of war until successful or an armistice is signed. Other alliance members can use Intel Points to increase the chance of a successful declaration of war by another member.</p>
+<p><b>Declaration of Hostilities (20):</b> This is a statement that allows hostile actions between ships of two governments. Ships can cross borders, seize cargo, and engage in hostile activities short of conquering systems. Destruction of bases and bombardment of colonies are permitted, but ground troops cannot be committed for invasion. The power declared hostilities against automatically gains the same benefits. Signing an armistice restores normal relations.</p>
+<p><b>Declaration of War (-20):</b> This formal declaration indicates a state of war between two powers until one is conquered or peace is established. It includes all the effects of a declaration of hostilities and allows the commitment of ground troops. The power declared war against automatically gains the same benefits. Signing an armistice restores normal relations.</p>
+<p><b>Armistice Treaty (N/A):</b> This treaty is used to end declarations of hostilities or war between powers. It requires a declaration of hostilities or war to exist. Its only purpose is to halt hostilities and restore normal relations among the signatory powers.</p>
+<p><b>Treaty of Co-Belligerence (20):</b> This treaty is established under unique circumstances when two or more powers have a non-aggression pact with each other. The signatory powers agree on a mutual enemy or enemies they are at war with. It allows the signatory powers to operate together as if they were members.</p>
+<a name="3.5"></a>
+<h3 class="darkhead">Movement Phase</h3>
+<p>Each grid square or hex on the map is considered a sector and can have at most one star system or none at all. Sectors are connected to adjacent sectors through minor jump lanes.</p>
+<p>Controlled sectors are completely controlled by a single empire or a group of allied empires. They offer security and allow for faster movement. A sector is considered Controlled if one of three conditions is met: the controlling power or its allies have units or colonies in the sector, or the sector is within the controlling power's supply range but not within the supply range of any opposing non-allied power.</p>
+<p>If none of these conditions are met, the sector is considered Neutral. Ownership of a Controlled sector can be determined diplomatically, but it often falls under the dominion of the allied power with the nearest colony. The most populous colony takes precedence in case of ties.</p>
+<p>Movement through Controlled sectors owned by your empire, allies, or mutual defense pact members is twice as fast as normal.</p>
+<p>Contested sectors have assets from two or more non-allied, non-mutual defense pact powers present. As long as a foreign fleet or colony not belonging to you, your allies, or a mutual defense partner is in a sector, it is considered Contested. Movement within Contested sectors occurs at the normal rate.</p>
+<p>Controlled sectors are completely dominated by a single empire or a coalition of allied empires. They offer advantages such as faster movement through the galaxy. Three conditions determine if a sector is Controlled: the presence of units, colonies, or being within the supply range of an empire or its ally but not within the supply range of opposing non-allied powers. When moving within Controlled sectors owned by an empire, an ally, or a mutual defense pact member, the movement speed is doubled compared to normal sectors.</p>
+<p>Contested sectors are characterized by the presence of assets from two or more non-allied, non-mutual defense pact powers. In Contested sectors, movement is limited to one sector per turn until the sector is converted into a Controlled sector by one of the factions.</p>
+<p>Neutral sectors are uninhabited or not aligned with any major empires. Normal movement rate, allowing movement of one sector per turn, applies to these sectors. However, Neutral sectors can be converted into Controlled sectors by placing units, colonies, or by expanding supply ranges. </p>
+<p>If ships from non-friendly powers move along the same path in opposite directions, both sets of ships will be stopped. Non-friendly ships trying to pass through a stopped fleet will also be stopped. Ships starting between sectors cannot be stopped before reaching their destination system and they prevent non-friendly ships in the destination system from using the path that they just arrived from.</p>
+<p>Military escorts, called Escorts, are assigned to protect civilian fleets. Escorts follow the civilian fleet's movement during the Movement Phase. There are limitations on the types of ships that can be assigned as Escorts, typically smaller combat ships like frigates or destroyers. Assigning Escorts to civilian fleets ensures they participate in any encounter scenarios involving the fleet.</p>
+<p>Assigning military units as Escorts means they won't be available for other scenarios at their location unless specifically included. Removing Escorts places them at the civilian fleet's current location. CMs (game moderators) should ensure players don't exploit the Escort rules for faster movement. They may also limit the number of Escorts based on a Fleet Command Rating, and larger capital ships as Escorts quickly fill the available command cost allowance.</p>
+<p>Trade routes can include up to three adjacent systems. Empty sectors will still count as one 'system' in the Trade Fleet's route despite the fact that there is nothing of value in the sector. Trade Fleets generate income along a trade route and can have their routes and escorts reassigned during the movement phase. Escorts must be placed in a system on the trade route at the beginning of the movement phase.</p>
+<p>Ships can transport ground units between systems. The size of non-marine ground units is 10. Transport Fleets have a Supply rating of 10, allowing them to carry one ground unit. Assault ships or military transports can carry a ground unit if multiple ships are involved. Marines are special ground units used for security and boarding, and they have a size of 5 for carrying capacity. Some ships can carry more Marines than other ground units.</p>
+<p>Transport Fleets or dedicated cargo carrying units are used to move units other than ground units. Cargo carrying units have a supply rating indicating their cargo capacity. The size of a unit determines the Supply rating needed to carry it. Units without a specified size have a size equal to their defense value divided by two, rounded up. Small ships can combine their supply ratings to carry larger items, but if any carrying ship is lost, the entire cargo is lost.</p>
+<p>Census, with a size of 10, can be carried on a single Transport Fleet or a combination of other supply ships. Census can only be disembarked in systems that already have Census and cannot be used to colonize new systems. Flights, such as fighters or shuttles, can be embarked on units or transports and must eventually land. Systems can base a number of squadrons of atmospheric ships equal to their Productivity statistic.</p>
+<p>Systems can contain ships, bases, and space-borne units. They can also base units on the ground, usually on a planet. Atmospheric ships can take off, travel between systems, and land. The number of squadrons of atmospheric ships a system can base is determined by its Productivity statistic. Flights need to find a place to land, and a system can base a certain number of squadrons based on its utilized Productivity statistic squared. Flights that cannot find a place to land are removed from play.</p>
+<p>Some flights cannot base on planets and can only be based on other units or specific system locations lacking atmosphere. In the future, they may be able to base on small moons or asteroid belt locations.</p>
+<h3 class="darkhead">Combat Phase</h3>
+<p>This phase involves various actions that occur simultaneously, including checking supply, resolving encounters, naval combats, ground bombardment, landings, invasions, and ground combat. It is recommended to resolve combat in each system one at a time, and the order of resolution should be randomized to prevent any advantage for players.</p>
+<h3 class="lighthead">Supply Phase</h3>
+<p>Within the Combat Phase, the Supply Phase focuses on checking the supply status of all units. Units must have a basic supply route to a supply point to be considered in supply. The route can consist of two sectors and can pass through contested or controlled systems. Certain planets or supply depots can serve as supply points. Supply depots are ground units that, when landed on a planet, convert it into a supply point. Military supply ships are used to provide supply to ships. Being out of supply can result in negative effects, such as reduced combat values or the inability to replenish units.</p>
+<p>Military supply ships have the ability to extend supply routes beyond the normal range. To achieve this, these supply ships must be positioned in two adjacent sectors, with one of them being within the supply range. This tactic enables the expansion of supply lines, thereby supporting military operations in distant or challenging regions of the galaxy.</p>
+<h3 class="lighthead">Encounters Phase</h3>
+<div style="background-color:#ddd; float:right; width:50%">
+<h3>Effects of demanded scenarios</h3>
+<p>This assumes that Diplomatic states between the empires allows for encounters to be generated. If encounters cannot be generated (e.g. Non-Aggression treaty), both fleets are treated as if they agreed to an encounter, but no encounter is actually generated.</p>
+<ol type="1">
+<li>Attacker enters sector</li>
+<li>Defender may demand a Deep Space encounter</li>
+<ol type="A">
+<li>Attacker may refuse.</li>
+<ol type="a">
+<li>Defender may demand pursuit scenario.</li>
+<li>Attacker returns to the last sector</li>
+</ol>
+<li>Attacker agrees. Resolve a Deep Space encounter</li>
+</ol>
+<li>Defender may demand a Defensive encounter
+<ol type="A">
+<li>Attacker may refuse. Attacker returns to the last sector</li>
+<li>Attacker agrees. Resolve a Defensive encounter</li>
+</ol></ol>
+<ol type="1">
+<li>Attacker and defender enters opposite sectors (meet in the middle)</li>
+<li>Attacker or defender may demand a Deep Space encounter</li>
+<ol type="A">
+<li>Both agree. Resolve a Deep Space encounter.<br>Winner remains between sectors.<br>Loser returns to the last sector.</li>
+<li>Attacker refuses.<br>Attacker returns to the last sector. Defender remains between sectors</li>
+<li>Defender refuses.<br>Defender returns to the last sector. Attacker remains between sectors</li>
+<li>Both refuse. Both return to their last sector.</li>
+</ol></ol>
+</div>
+
+<p>Encounters occur when fleets from different powers are in the same system or stumble upon each other in deep space. Encounters may lead to scenario generation but are not mandatory. Scenarios are generated if at least one force in the encounter demands it. Once encounters and naval combat scenarios are resolved, the ground portion of the Combat Phase begins.</p>
+<p>If a non-friendly fleet enters a system along a Trade Fleet's trade route, there is a chance of encountering the Trade Fleet. If the system is the only one on the trade route, the encounter happens there. If the Trade Fleet has multiple systems on its trade route, a random roll determines which system is considered for encounter purposes and other relevant actions.</p>
+<p>Raiders or pirates may attack cargo-carrying vessels. The chance of raiding attempts is determined each campaign turn based on various factors. If a raiding attempt is successful, a scenario is generated, involving trade fleets or newly arrived colony or transport fleets.</p>
+<p>After the raiding scenario is played out, the consequences are determined. If civilian fleets were targeted, they may be crippled or destroyed, impacting their functionality. When a system is raided, it temporarily stops producing income and requires a morale check as if it had been seized by an enemy force.</p>
+<p>Deep Space Encounters occur between systems and involve fleets. Fleets have the option to refuse a Deep Space scenario and return to the previous system. If any fleets remain, a scenario is generated. After resolving scenarios, fleets can choose to continue to their original destination or return to the last system.</p>
+<p>System Encounters can happen at fixed defensive points or in deep space. If a defending fleet demands a scenario at a fixed defensive point and other fleet accepts, a Defensive scenario is generated. Fleets can refuse a Defensive scenario near a planet, preventing invasion and other actions. Fleets accepting refused scenarios may demand a Pursuit scenario.</p>
+<p>Encounter Resolution occurs as long as at least one fleet demands scenarios. Scenarios are resolved in the Space Combat Phase, which can happen multiple times in a system until all scenarios are resolved. Once all scenarios are resolved, the encounter is considered resolved, and the game moves on to the next phase.</p>
+<p>When assigning units that participate in a combat, trade fleets, colony fleets, and transport fleets are required to be included in the combat if they are part of the fleet involved. In the case of a defensive scenario, all fixed units in that sector must participate. At the time that the combat is set up, use the rules for fleet composition in (S8.0) to determine which ships participate. Do not use the Command Limits (S8.2) section, instead use the "BPV Capacity" system to determine which ships may be involved.</p>
+<p>Trade fleets, Transport fleets, and colony fleets represent several freighters as a single campaign. Once battle is joined, these "fleets" are represented by their individual ships. The fleet is considered crippled when all of the ships are crippled. The unit is considered destroyed when 3/4th (round up) of the units are destroyed. Destroyed units count as two crippled units. Crippled units count as half a destroyed unit.</p>
+<table>
+<tr><td>Trade Fleet</td><td>4x FT</td></tr>
+<tr><td>Transport Fleet</td><td>7x FT</td></tr>
+<tr><td>Colony Fleet</td><td>3x F-LS, 3x F-AL (PH)</td></tr>
+</table>
+
+<p>Example fleet composition systems follow:</p>
+<a class='clickMore' onclick='flip(this)'>[BPV Capacity System]</a>
+<div class='visually-hidden'>
+<p><div class='lighthead'>BPV Capacity</div>
+<p>Compare the Command Rating (CR) of the ship commanding the fleet with the below chart. This is the BPV capacity of the flagship. The total combat BPV of all units present, including the flagship itself and any attrition units, cannot exceed this amount. Note that these numbers are not intended to reflect the size of fleets that can be achieved with (S8.2) fleets. These numbers have been chosen to reduce the number of ships in fleets with larger flagships.</p>
+
+<!--
+CR 3, 4, 5, & 6 values chosen by taking max CBPV of one unit of that CR and adding the average CBPV of units of that CR x [CR-1]
+EXAMPLE: CR 6 - Max CBPV=500, Avg CBPV=116, value = 500 [max] + ( 116 [avg] x 5 [CR-1] ) = 1081
+CR 7 & 8 values chosen by the average CBPV of units of that CR x [CR]. Round down to nearest hundred
+EXAMPLE: CR 8 - Avg CBPV=130, value = 130 [avg] x 8 [CR] = 1047
+CR 9 & 10 values chosen by the max CBPV of units of that CR + 1000. Round down to nearest hundred
+	<120	<180	>180
+10	112,280	300,768	294,711
+9	68,185	181,400	209,312
+8	67,180	135,405	160,292
+7	113,148	124,272	191,270
+6	55,160	114,235	145,500
+5	54,110	90,142	122,210
+4	51,110	81,142	100,182
+3	44,88	63,145	74,151
+Maximum and average BPVs do not include attrition units or drone costs. Including those costs will likely allow these numbers to approach the fleets seen with (S8.2)
+-->
+
+<table class="tableBorder">
+<tr style="border:solid;"><th>CR</th><th>Up to<br>Y120</th><th>Y120 to<br>Y180</th><th>After<br>Y180</th></tr>
+<tr class='odd'><td>10</td><td>1200</td><td>1700</td><td>1700</td></tr>
+<tr class='even'><td>9</td><td>1100</td><td>1400</td><td>1400</td></tr>
+<tr class='odd'><td>8</td><td>1000</td><td>1000</td><td>1200</td></tr>
+<tr class='even'><td>7</td><td>800</td><td>800</td><td>1200</td></tr>
+<tr class='odd'><td>6</td><td>400</td><td>800</td><td>1200</td></tr>
+<tr class='even'><td>5</td><td>300</td><td>500</td><td>700</td></tr>
+<tr class='odd'><td>4</td><td>250</td><td>350</td><td>500</td></tr>
+<tr class='even'><td>3</td><td>175</td><td>250</td><td>300</td></tr>
+</table>
+
+<p>Total the Combat BPV of the units in the fleet. This includes the BPV cost of the commanding unit, any attrition units, any civilian vessels, and any fixed units. Use the Economic BPV of scouts and civilian ships (FT, Freighters, Auxilliaries, etc..) instead of the combat BPV. All fixed installations must be included in the fleet. In the event of a scenario where nothing better is present, inhabited planets (with some EPs activated) are assumed to have a "flag" rating of 3.</p>
+<p>If the BPV exceeds the BPV cap of the flagship, the flagship owner chooses units to be removed before the scenario is set up until what remains will fit in the capacity of the flagship. This can include removing attrition units (see <a href='#carriers'>Carriers</a>). Fixed units (units that cannot move themselves on the campaign map) that cannot fit the BPV capacity are made inactive (as per (D18.1), but with no chance of activation).</p>
+<p>For each different size-class 4 or larger base-hull-type (DD, CA, etc... See <a href='http://www.starfleetgames.com/federationandempire.shtml'>the F&E Ship Information Tables</a> (SITs) ) that is included in the fleet, add 50 BPV to the capacity of the fleet. Only mobile naval warships give this bonus: Defsats, civilian ships (APT, FT, etc), police ships, Bases, attrition units, and so on, do not. Also note that it must be a different base-hull-type to qualify for this bonus. So (for example) a Romulan fleet cannot gain this bonus several times for having a SeaHawk, a K4, and a Snipe (all three are frigate hulls). Such a case would count as having three frigates and worth (at most) one bonus. PF flotillas may be included in a battle without their "home" ship, unlike fighters. In that case the BPV of the PFs count against the flagship's CR, but the home ship would not.</p>
+<p>So a fleet commanded by a Federation CC (CR 9, BPV cap of 1400) that includes several DWs and several DDs would gain this bonus twice, for a total BPV cap of 1500.  Whereas a fleet commanded by the same Federation CC that contains only CAs would have not gain this bonus at all, leaving the BPV cap at 1400 (the Federation CC is listed as a CA hull, thus not a distinct hull from the Federation CA).</p>
+<p>In the case of mixed-empire fleets, one player must provide the flagship for the other player(s). In those cases where ships from more than one player are engaging the ships of another player (such as the case where two or more fleets are allied together to attack another player's system), the empire providing the flagship must also contain at least 50% of the fleet's BPV. This applies to fleets containing captured units and to fleets which are operating as part of a combined (i.e. multi-player) fleet. It helps the moderator if the players are clear on their orders who is providing the flagship and which ships are being excluded from thier portion of the final fleet.</p>
+<p>Pre-laid web counts at 5 BPV per hex and begins the scenario at strength 0. Web laid during a scenario costs no BPV for the duration of the scenario, but is removed once the scenario is done. This rule is in place to prevent player from laying web during a scenario to avoid paying for it on the strategic scale.</p>
+<p>Additionally, web may not be laid during the first turn of an encounter nor may web be reinforced during the first turn of an encounter. Web Casters may cast web (E12.21) normally on the first turn, but are limited when functioning as Web Generators per above.</p>
+</div>
+
+<br><a class='clickMore' onclick='flip(this)'>[Big Ships System]</a>
+
+<div class='visually-hidden'>
+<p><div class='lighthead'>Big Ships</div>
+<ul>
+<li>Ignore the Heavy Ships (S8.33) clauses. The amount of Dreadnaughts, Battleships, or BCHs are not limited to 1 per fleet, unless reduced by other rules. Additionally, they do not need consorts (e.g. they may be alone in a battle.)</li>
+<li>However Leader ships variants still need consorts (S8.36) before more may be added. The ships in (S8.33) are not noted as "leader" variants (S8.363).</li>
+<li>Ignore (S8.31). Carriers do not need escorts. </li>
+</ol>
+Ships have a command-rating equal to thier size-class. Ships may not lead ships of a larger size-class than themselves.
+<ol>
+<li>Example: A size-class 2 Dreadnaught may command itself and two other ships of any size equal to itself or smaller. So it's fleet may contain (as an example) itself, another DN, and a CA.</li>
+<li>Example: A size-class 4 War Destroyer may command itself and four other ships of size class 4. So it's fleet may contain (as an example) itself, another pair of DWs, and a pair of FFs.</li>
+<li>As an extreme example the Seltorian Hive Ship with the mech-link refit could still have a single other ship in the battle (though, not one with fighters or PFs.)</li>
+<li>"Civilian" ships and fixed installations count half (round up) against your command rating.</li>
+</ol>
+</div>
+
+<br><a class='clickMore' onclick='flip(this)'>[Flexible Command System]</a>
+
+<div class='visually-hidden'>
+<p><div class='lighthead'>Flexible Command System</div>
+<p>Choose a flagship for your fleet. To figure this ship’s Flexible Command Rating (FCR), multiply the F&E command rating shown on the Master Ship Chart by 4.  The resulting FCR is subject to the following modifiers:</p>
+<table>
+<tr><td>Each Flag Bridge* box:</td><td>+1</td></tr>
+<tr><td>Legendary Captain present on the ship:</td><td>+3</td></tr>
+<tr><td>Ship has an Outstanding Crew:</td><td>+2</td></tr>
+<tr><td>Ship has a Poor Crew:</td><td>-5</td></tr>
+</table>
+<p>* for Klingon ships without flag bridges, use the number of flag bridge boxes on the nearest Federation equivalent ship; e.g., the C8 or C9 dreadnoughts would use the flag bridge count from the Federation DN (or DNG depending on the year).</p>
+<p>In the case of mixed-Empire Fleets, the Fleet must consist of at least 50% (by FCR cost) ships of the same race as the Flagship.</p>
+<p>The final FCR value determines the maximum amount of Flexible Command Points (FCPs) which can be present in the scenario. The flagship itself does not cost any FCPs (exception: battleships cost 4), but all other ships, fighters, PFs, ground bases and DefSats have an FCP value as shown on the chart below.</p>
+<table>
+<tr><td>BB, SB, DN:</td><td>N/A</td></tr>
+<tr><td>Super-Heavy Cruiser:</td><td>15</td></tr>
+<tr><td>BCH:</td><td>14</td></tr>
+<tr><td>CC, CCH, BATS:</td><td>12</td></tr>
+<tr><td>CA, NCA, CWH, HCW, CF, MON:</td><td>10</td></tr>
+<tr><td>CW, CWL:</td><td>9</td></tr>
+<tr><td>CL, CLC, BS, F-H:</td><td>8</td></tr>
+<tr><td>DW, DWL, HDW, MB, F-OL:</td><td>7</td></tr>
+<tr><td>DD, DDL, F-L, SAM:</td><td>6</td></tr>
+<tr><td>FF, FFL, FH, FLG, CPL:</td><td>5</td></tr>
+<tr><td>POL, F-S:</td><td>4</td></tr>
+<tr><td>Each Battle Pod:</td><td>+2</td></tr>
+<tr><td>Each 6 PFs/INTs/Bombers (9 for Lyrans*):</td><td>1 each</td></tr>
+<tr><td>Each 12 Fighters (each 18 for Hydrans):</td><td>&frac12; each</td></tr>
+<tr><td>Each 5 DefSats:</td><td>1 each</td></tr>
+<tr><td>Each 12 hexes of web:</td><td>&frac12; each</td></tr>
+<tr><td>Each 3 Small or Medium ground bases:</td><td>1 each</td></tr>
+<tr><td>Large ground base:</td><td>N/A</td></tr>
+<tr><td>“Auxiliary” Freighter:</td><td>+2</td></tr>
+</table>
+<p>* This applies only to Lyran PFs/INTs, not Bombers.</p>
+<p>Because this Campaign does not include SC2 ships, there are no DN, BB or SB classes, and as such, no FCR cost are included.</p>
+<p>Auxiliaries are any Freighter that is named or listed as such on their SSD or G3; these include (but not limited to) Auxiliary Cruisers and Auxiliary PFTs, which do the job of warships but are built on Freighter hulls.  WYN ships do not pay this penalty.</p>
+
+<br><b>DUPLICATE CLASSES:</b>
+<p>If more than one unit from any given row is present, except freighters (but not excepting auxiliaries), add 1 to the cost of each additional unit after the first (exception: fighters add &frac12;).  For example, if you have one CA, one NCA and one CWH in your fleet, the first costs 10 FCPs, the second 11 and the third 12. As another example, if you have 10 PFs in your fleet, the first six cost 1 each and the other four cost 2 each for a total of 14 FCPs.</p>
+<p>For ships, this penalty is lifted if a leader is present. One leader can be designated being “in command” of two other ships of its size, the resulting trio being termed a “squadron”. Leaders cannot be used in any fleet unless they have a two-ship squadron to command; if they appear without a squadron or with a partial one, they pay a penalty of 2 additional FCPs for the first such leader, 4 for the second, 6 for the third, and so on.</p>
+<p>Some races do not possess leaders for their frigate, destroyer, war destroyer, light cruiser or war cruiser classes.  This puts any such race at a disadvantage when fighting races which have such leaders.  These races may “refit” a ship to leader status.  This refit adds nothing to the SSD but costs 3 EPV for frigates, 4 EPV for destroyers and war destroyers, and 5 EPV for light cruisers or war cruisers.  Leader status cannot be deactivated once bought to avoid the “lack of squadron” penalties listed above, and is detectable.  These are annotated by (L); example: DD(L).  There are no leaders for X-ships; X-ships cannot purchase the above “leader refits”.</p>
+<p>This refit is available to any class that does not have their Leader design available (example – the Federation and Hydran Destroyers).  When those specific ships become available, the players will be given a grace period as set by the GM where they can return those ships to be properly converted into a Leader, or lose the Leader Refit.</p>
+<p>Note that Command Cruisers can lead Heavy Cruisers into battle, but pay no FCR penalty for appearing without Heavy Cruisers to lead (the “penalty” is the higher cost of the CC).</p>
+</div>
+
+<h3 class="darkhead">Space Combat Phase</h3>
+<p>Players may prefer to use <a href="http://www.starfleetgames.com" target="_BLANK">Star Fleet Battles</a> to resolve the battles. <a href="http://www.sfbonline.com" target="_BLANK">Star Fleet Battles Online</a> is very likely to be the medium of choice to resolve these.
+<p>Failing that, the SIDCORS system from Federation and Empire can generate very quick (if somewhat bloody) results.
+<h3>SIDCORS EXTRACT</h3>
+<a class='clickMore' onclick='flip(this)'>Optional Rule [Click]</a>
+<span class='visually-hidden'>
+<h3 class="lighthead">COMBAT IN ROUNDS</h3>
+<p>Combat is resolved in rounds. Each round consists of:
+<UL><LI>Select battle intensity</LI>
+<LI>Determine damage</LI>
+<LI>Resolve damage</LI></UL>
+<BR>Combat continues until one or both sides retreat or are destroyed. 
+<H3 class="lighthead">BATTLE INTENSITY</H3>
+<p>In some cases, the fleet commanders have instructions to take greater risks in order to increase enemy losses. In other cases, they might minimize their own losses, even if this also reduces enemy losses. This is reflected by the Battle Intensity System.
+<BR><B>DETERMINING BATTLE INTENSITY</B>
+<BR>In this step of the Combat System, each player selects a Battle Intensity Factor (BIF), which can be no less than 1 and no more than 4. The two factors are then added, the result being the Battle Intensity Rating. 
+<BR>A new Battle intensity Rating is required for each round of combat. In some cases (of prolonged but important battles), players may find it more convenient to simply agree to a given intensity rating and use it until one player announces that he wants to change his rating. This will, however, reveal that the player plans to change his rating. 
+<BR><B>USE OF THE BATTLE INTENSITY RATING</B>
+<BR>The Advanced Combat Coefficient Table is used instead of the Standard Combat Coefficient Table if the players are using the Battle Intensity System. The Advanced Combat Coefficient Table provides several lines of results, each of which correspond to a different Battle intensity rating. 
+<BR>Note that the selection system given for Battle Intensity Ratings cannot produce a BIR less than 2 or greater than 8. The chart goes from 0 to 10 for purposes of the optional system below. 
+<BR><TABLE class="tableBorder">
+<TR><TH COLSPAN=7>COMBAT COEFFICIENT TABLE</TH></TR>
+<TR><TH>DIE ROLL</TH><TH>1</TH><TH>2</TH><TH>3</TH><TH>4</TH><TH>5</TH><TH>6</TH></TR>
+<TR><TH>BIR:2</TH><TD>15%</TD><TD>15%</TD><TD>20%</TD><TD>20%</TD><TD>25%</TD><TD>25%</TD></TR>
+<TR><TH>BIR:3</TH><TD>15%</TD><TD>20%</TD><TD>20%</TD><TD>25%</TD><TD>25%</TD><TD>30%</TD></TR>
+<TR><TH>BIR:4</TH><TD>20%</TD><TD>20%</TD><TD>25%</TD><TD>25%</TD><TD>30%</TD><TD>30%</TD></TR>
+<TR><TH>BIR:5</TH><TD>20%</TD><TD>25%</TD><TD>25%</TD><TD>30%</TD><TD>30%</TD><TD>35%</TD></TR>
+<TR><TH>BIR:6</TH><TD>25%</TD><TD>25%</TD><TD>30%</TD><TD>30%</TD><TD>35%</TD><TD>35%</TD></TR>
+<TR><TH>BIR:7</TH><TD>25%</TD><TD>30%</TD><TD>30%</TD><TD>35%</TD><TD>35%</TD><TD>40%</TD></TR>
+<TR><TH>BIR:8</TH><TD>30%</TD><TD>30%</TD><TD>35%</TD><TD>35%</TD><TD>40%</TD><TD>40%</TD></TR>
+</TABLE>
+<BR><B>INTENSITY AGAINST NON-MOBILE DEFENSES</B>
+<BR>If one player has only units that cannot retreat (for example: a base, planet, FRD, convoy, or some combination of these), the other player selects both of the numbers (1-4) for the Battle Intensity Rating. Variable intensity can still be used. 
+<BR><B>TACTICS: SELECTING BATTLE INTENSITY</B>
+<BR>The art of selecting a Battle Intensity Factor is more involved than simply wanting to cause more damage or to receive less. Examine the conditions carefully. If you are trying to destroy a battle station with a typical 83-point Klingon fleet and Directed Damage, you will need a 30% Combat Coefficient to score the required 24 points of damage. There is a 50% chance of this happening at a BIR of 5, which results from your selection of a 4 and the Defender's selection of a 1. On the other hand, a typical 103-point Kzinti carrier strike fleet needs only a 25% rating, which is a 5/6 probability. The defender might also select a 4, hoping to get enough points to crack a carrier group.
+<H3 class="lighthead">DAMAGE DETERMINATION</H3>
+<p>This step is performed simultaneously by both players. Each player calculates the total attack factors of all units within his Battle Force; this is the Combat Potential. <a href='http://www.starfleetgames.com/federationandempire.shtml' target='_BLANK'>The MSIT PDF files</a> for each race describe the 'factors' for each ship. Not all ships are in the MSITs, but enough are that the moderator should be able to reasonably extrapolate where needed.
+<BR>Following this, each player rolls one die and determines from the Combat Coefficient Table the Damage Coefficient. Then, each player multiplies the Combat Potential by the Damage Coefficient to produce the Combat Damage Result, which is expressed in a number of Damage Points. (Drop fractions of 0.49 or less, round fractions of 0.50 or more to the next higher number.) Note that as this step is simultaneous; units damaged or destroyed in a round still count toward scoring damage on enemy units. Players may use a calculator or the table below to speed these calculations. 
+<P><a class='clickMore' onclick='flip(this)'><B>COMBAT DAMAGE RESULTS TABLE</B>
+<br>(Click to show/remove)</a>
+<span class='visually-hidden'>
+<TABLE CLASS='zebra'>
+<TR><TH>ComPot</TH><TH>10%</TH><TH>15%</TH><TH>20%</TH><TH>25%</TH><TH>30%</TH><TH>35%</TH><TH>40%</TH><TH>45%</TH><TH>50%</TH></TR>
+<TR><TD>1</TD><TD>0</TD><TD>0</TD><TD>0</TD><TD>0</TD><TD>0</TD><TD>0</TD><TD>0</TD><TD>0</TD><TD>1</TD></TR>
+<TR><TD>2</TD><TD>0</TD><TD>0</TD><TD>0</TD><TD>1</TD><TD>1</TD><TD>1</TD><TD>1</TD><TD>1</TD><TD>1</TD></TR>
+<TR><TD>3</TD><TD>0</TD><TD>0</TD><TD>1</TD><TD>1</TD><TD>1</TD><TD>1</TD><TD>1</TD><TD>1</TD><TD>2</TD></TR>
+<TR><TD>4</TD><TD>0</TD><TD>1</TD><TD>1</TD><TD>1</TD><TD>1</TD><TD>1</TD><TD>2</TD><TD>2</TD><TD>2</TD></TR>
+<TR><TD>5</TD><TD>1</TD><TD>1</TD><TD>1</TD><TD>1</TD><TD>2</TD><TD>2</TD><TD>2</TD><TD>2</TD><TD>3</TD></TR>
+<TR><TD>6</TD><TD>1</TD><TD>1</TD><TD>1</TD><TD>2</TD><TD>2</TD><TD>2</TD><TD>2</TD><TD>3</TD><TD>3</TD></TR>
+<TR><TD>7</TD><TD>1</TD><TD>1</TD><TD>1</TD><TD>2</TD><TD>2</TD><TD>2</TD><TD>3</TD><TD>3</TD><TD>4</TD></TR>
+<TR><TD>8</TD><TD>1</TD><TD>1</TD><TD>2</TD><TD>2</TD><TD>2</TD><TD>3</TD><TD>3</TD><TD>4</TD><TD>4</TD></TR>
+<TR><TD>9</TD><TD>1</TD><TD>1</TD><TD>2</TD><TD>2</TD><TD>3</TD><TD>3</TD><TD>4</TD><TD>4</TD><TD>5</TD></TR>
+<TR><TD>10</TD><TD>1</TD><TD>2</TD><TD>2</TD><TD>3</TD><TD>3</TD><TD>4</TD><TD>4</TD><TD>5</TD><TD>5</TD></TR>
+<TR><TD>11</TD><TD>1</TD><TD>2</TD><TD>2</TD><TD>3</TD><TD>3</TD><TD>4</TD><TD>4</TD><TD>5</TD><TD>6</TD></TR>
+<TR><TD>12</TD><TD>1</TD><TD>2</TD><TD>2</TD><TD>3</TD><TD>4</TD><TD>4</TD><TD>5</TD><TD>5</TD><TD>6</TD></TR>
+<TR><TD>13</TD><TD>1</TD><TD>2</TD><TD>3</TD><TD>3</TD><TD>4</TD><TD>5</TD><TD>5</TD><TD>6</TD><TD>7</TD></TR>
+<TR><TD>14</TD><TD>1</TD><TD>2</TD><TD>3</TD><TD>4</TD><TD>4</TD><TD>5</TD><TD>6</TD><TD>6</TD><TD>7</TD></TR>
+<TR><TD>15</TD><TD>2</TD><TD>2</TD><TD>3</TD><TD>4</TD><TD>5</TD><TD>5</TD><TD>6</TD><TD>7</TD><TD>8</TD></TR>
+<TR><TD>16</TD><TD>2</TD><TD>2</TD><TD>3</TD><TD>4</TD><TD>5</TD><TD>6</TD><TD>6</TD><TD>7</TD><TD>8</TD></TR>
+<TR><TD>17</TD><TD>2</TD><TD>3</TD><TD>3</TD><TD>4</TD><TD>5</TD><TD>6</TD><TD>7</TD><TD>8</TD><TD>9</TD></TR>
+<TR><TD>18</TD><TD>2</TD><TD>3</TD><TD>4</TD><TD>5</TD><TD>5</TD><TD>6</TD><TD>7</TD><TD>8</TD><TD>9</TD></TR>
+<TR><TD>19</TD><TD>2</TD><TD>3</TD><TD>4</TD><TD>5</TD><TD>6</TD><TD>7</TD><TD>8</TD><TD>9</TD><TD>10</TD></TR>
+<TR><TD>20</TD><TD>2</TD><TD>3</TD><TD>4</TD><TD>5</TD><TD>6</TD><TD>7</TD><TD>8</TD><TD>9</TD><TD>10</TD></TR>
+<TR><TD>21</TD><TD>2</TD><TD>3</TD><TD>4</TD><TD>5</TD><TD>6</TD><TD>7</TD><TD>8</TD><TD>9</TD><TD>11</TD></TR>
+<TR><TD>22</TD><TD>2</TD><TD>3</TD><TD>4</TD><TD>6</TD><TD>7</TD><TD>8</TD><TD>9</TD><TD>10</TD><TD>11</TD></TR>
+<TR><TD>23</TD><TD>2</TD><TD>3</TD><TD>5</TD><TD>6</TD><TD>7</TD><TD>8</TD><TD>9</TD><TD>10</TD><TD>12</TD></TR>
+<TR><TD>24</TD><TD>2</TD><TD>4</TD><TD>5</TD><TD>6</TD><TD>7</TD><TD>8</TD><TD>10</TD><TD>11</TD><TD>12</TD></TR>
+<TR><TD>25</TD><TD>3</TD><TD>4</TD><TD>5</TD><TD>6</TD><TD>8</TD><TD>9</TD><TD>10</TD><TD>11</TD><TD>13</TD></TR>
+<TR><TH>ComPot</TH><TH>10%</TH><TH>15%</TH><TH>20%</TH><TH>25%</TH><TH>30%</TH><TH>35%</TH><TH>40%</TH><TH>45%</TH><TH>50%</TH></TR>
+<TR><TD>26</TD><TD>3</TD><TD>4</TD><TD>5</TD><TD>7</TD><TD>8</TD><TD>9</TD><TD>10</TD><TD>12</TD><TD>13</TD></TR>
+<TR><TD>27</TD><TD>3</TD><TD>4</TD><TD>5</TD><TD>7</TD><TD>8</TD><TD>9</TD><TD>11</TD><TD>12</TD><TD>14</TD></TR>
+<TR><TD>28</TD><TD>3</TD><TD>4</TD><TD>6</TD><TD>7</TD><TD>8</TD><TD>10</TD><TD>11</TD><TD>13</TD><TD>14</TD></TR>
+<TR><TD>29</TD><TD>3</TD><TD>4</TD><TD>6</TD><TD>7</TD><TD>9</TD><TD>10</TD><TD>12</TD><TD>13</TD><TD>15</TD></TR>
+<TR><TD>30</TD><TD>3</TD><TD>5</TD><TD>6</TD><TD>8</TD><TD>9</TD><TD>11</TD><TD>12</TD><TD>14</TD><TD>15</TD></TR>
+<TR><TD>31</TD><TD>3</TD><TD>5</TD><TD>6</TD><TD>8</TD><TD>9</TD><TD>11</TD><TD>12</TD><TD>14</TD><TD>16</TD></TR>
+<TR><TD>32</TD><TD>3</TD><TD>5</TD><TD>6</TD><TD>8</TD><TD>10</TD><TD>11</TD><TD>13</TD><TD>14</TD><TD>16</TD></TR>
+<TR><TD>33</TD><TD>3</TD><TD>5</TD><TD>7</TD><TD>8</TD><TD>10</TD><TD>12</TD><TD>13</TD><TD>15</TD><TD>17</TD></TR>
+<TR><TD>34</TD><TD>3</TD><TD>5</TD><TD>7</TD><TD>9</TD><TD>10</TD><TD>12</TD><TD>14</TD><TD>15</TD><TD>17</TD></TR>
+<TR><TD>35</TD><TD>4</TD><TD>5</TD><TD>7</TD><TD>9</TD><TD>11</TD><TD>12</TD><TD>14</TD><TD>16</TD><TD>18</TD></TR>
+<TR><TD>36</TD><TD>4</TD><TD>5</TD><TD>7</TD><TD>9</TD><TD>11</TD><TD>13</TD><TD>14</TD><TD>16</TD><TD>18</TD></TR>
+<TR><TD>37</TD><TD>4</TD><TD>6</TD><TD>7</TD><TD>9</TD><TD>11</TD><TD>13</TD><TD>15</TD><TD>17</TD><TD>19</TD></TR>
+<TR><TD>38</TD><TD>4</TD><TD>6</TD><TD>8</TD><TD>10</TD><TD>11</TD><TD>13</TD><TD>15</TD><TD>17</TD><TD>19</TD></TR>
+<TR><TD>39</TD><TD>4</TD><TD>6</TD><TD>8</TD><TD>10</TD><TD>12</TD><TD>14</TD><TD>16</TD><TD>18</TD><TD>20</TD></TR>
+<TR><TD>40</TD><TD>4</TD><TD>6</TD><TD>8</TD><TD>10</TD><TD>12</TD><TD>14</TD><TD>16</TD><TD>18</TD><TD>20</TD></TR>
+<TR><TD>41</TD><TD>4</TD><TD>6</TD><TD>8</TD><TD>10</TD><TD>12</TD><TD>14</TD><TD>16</TD><TD>18</TD><TD>21</TD></TR>
+<TR><TD>42</TD><TD>4</TD><TD>6</TD><TD>8</TD><TD>11</TD><TD>13</TD><TD>15</TD><TD>17</TD><TD>19</TD><TD>21</TD></TR>
+<TR><TD>43</TD><TD>4</TD><TD>6</TD><TD>9</TD><TD>11</TD><TD>13</TD><TD>15</TD><TD>17</TD><TD>19</TD><TD>22</TD></TR>
+<TR><TD>44</TD><TD>4</TD><TD>7</TD><TD>9</TD><TD>11</TD><TD>13</TD><TD>15</TD><TD>18</TD><TD>20</TD><TD>22</TD></TR>
+<TR><TD>45</TD><TD>5</TD><TD>7</TD><TD>9</TD><TD>11</TD><TD>14</TD><TD>16</TD><TD>18</TD><TD>20</TD><TD>23</TD></TR>
+<TR><TD>46</TD><TD>5</TD><TD>7</TD><TD>9</TD><TD>12</TD><TD>14</TD><TD>16</TD><TD>18</TD><TD>21</TD><TD>23</TD></TR>
+<TR><TD>47</TD><TD>5</TD><TD>7</TD><TD>9</TD><TD>12</TD><TD>14</TD><TD>16</TD><TD>19</TD><TD>21</TD><TD>24</TD></TR>
+<TR><TD>48</TD><TD>5</TD><TD>7</TD><TD>10</TD><TD>12</TD><TD>14</TD><TD>17</TD><TD>19</TD><TD>22</TD><TD>24</TD></TR>
+<TR><TD>49</TD><TD>5</TD><TD>7</TD><TD>10</TD><TD>12</TD><TD>15</TD><TD>17</TD><TD>20</TD><TD>22</TD><TD>25</TD></TR>
+<TR><TD>50</TD><TD>5</TD><TD>8</TD><TD>10</TD><TD>13</TD><TD>15</TD><TD>18</TD><TD>20</TD><TD>23</TD><TD>25</TD></TR>
+<TR><TH>ComPot</TH><TH>10%</TH><TH>15%</TH><TH>20%</TH><TH>25%</TH><TH>30%</TH><TH>35%</TH><TH>40%</TH><TH>45%</TH><TH>50%</TH></TR>
+<TR><TD>51</TD><TD>5</TD><TD>8</TD><TD>10</TD><TD>13</TD><TD>15</TD><TD>18</TD><TD>20</TD><TD>23</TD><TD>26</TD></TR>
+<TR><TD>52</TD><TD>5</TD><TD>8</TD><TD>10</TD><TD>13</TD><TD>16</TD><TD>18</TD><TD>21</TD><TD>23</TD><TD>26</TD></TR>
+<TR><TD>53</TD><TD>5</TD><TD>8</TD><TD>11</TD><TD>13</TD><TD>16</TD><TD>19</TD><TD>21</TD><TD>24</TD><TD>27</TD></TR>
+<TR><TD>54</TD><TD>5</TD><TD>8</TD><TD>11</TD><TD>14</TD><TD>16</TD><TD>19</TD><TD>22</TD><TD>24</TD><TD>27</TD></TR>
+<TR><TD>55</TD><TD>6</TD><TD>8</TD><TD>11</TD><TD>14</TD><TD>17</TD><TD>19</TD><TD>22</TD><TD>25</TD><TD>28</TD></TR>
+<TR><TD>56</TD><TD>6</TD><TD>8</TD><TD>11</TD><TD>14</TD><TD>17</TD><TD>20</TD><TD>22</TD><TD>25</TD><TD>28</TD></TR>
+<TR><TD>57</TD><TD>6</TD><TD>9</TD><TD>11</TD><TD>14</TD><TD>17</TD><TD>20</TD><TD>23</TD><TD>26</TD><TD>29</TD></TR>
+<TR><TD>58</TD><TD>6</TD><TD>9</TD><TD>12</TD><TD>15</TD><TD>17</TD><TD>20</TD><TD>23</TD><TD>26</TD><TD>29</TD></TR>
+<TR><TD>59</TD><TD>6</TD><TD>9</TD><TD>12</TD><TD>15</TD><TD>18</TD><TD>21</TD><TD>24</TD><TD>27</TD><TD>30</TD></TR>
+<TR><TD>60</TD><TD>6</TD><TD>9</TD><TD>12</TD><TD>15</TD><TD>18</TD><TD>21</TD><TD>24</TD><TD>27</TD><TD>30</TD></TR>
+<TR><TD>61</TD><TD>6</TD><TD>9</TD><TD>12</TD><TD>15</TD><TD>18</TD><TD>21</TD><TD>24</TD><TD>27</TD><TD>31</TD></TR>
+<TR><TD>62</TD><TD>6</TD><TD>9</TD><TD>12</TD><TD>16</TD><TD>19</TD><TD>22</TD><TD>25</TD><TD>28</TD><TD>31</TD></TR>
+<TR><TD>63</TD><TD>6</TD><TD>9</TD><TD>13</TD><TD>16</TD><TD>19</TD><TD>22</TD><TD>25</TD><TD>28</TD><TD>32</TD></TR>
+<TR><TD>64</TD><TD>6</TD><TD>10</TD><TD>13</TD><TD>16</TD><TD>19</TD><TD>22</TD><TD>26</TD><TD>29</TD><TD>32</TD></TR>
+<TR><TD>65</TD><TD>7</TD><TD>10</TD><TD>13</TD><TD>16</TD><TD>20</TD><TD>23</TD><TD>26</TD><TD>29</TD><TD>33</TD></TR>
+<TR><TD>66</TD><TD>7</TD><TD>10</TD><TD>13</TD><TD>17</TD><TD>20</TD><TD>23</TD><TD>26</TD><TD>30</TD><TD>33</TD></TR>
+<TR><TD>67</TD><TD>7</TD><TD>10</TD><TD>13</TD><TD>17</TD><TD>20</TD><TD>23</TD><TD>27</TD><TD>30</TD><TD>34</TD></TR>
+<TR><TD>68</TD><TD>7</TD><TD>10</TD><TD>14</TD><TD>17</TD><TD>20</TD><TD>24</TD><TD>27</TD><TD>31</TD><TD>34</TD></TR>
+<TR><TD>69</TD><TD>7</TD><TD>10</TD><TD>14</TD><TD>17</TD><TD>21</TD><TD>24</TD><TD>28</TD><TD>31</TD><TD>35</TD></TR>
+<TR><TD>70</TD><TD>7</TD><TD>11</TD><TD>14</TD><TD>18</TD><TD>21</TD><TD>25</TD><TD>28</TD><TD>32</TD><TD>35</TD></TR>
+<TR><TD>71</TD><TD>7</TD><TD>11</TD><TD>14</TD><TD>18</TD><TD>21</TD><TD>25</TD><TD>28</TD><TD>32</TD><TD>36</TD></TR>
+<TR><TD>72</TD><TD>7</TD><TD>11</TD><TD>14</TD><TD>18</TD><TD>22</TD><TD>25</TD><TD>29</TD><TD>32</TD><TD>36</TD></TR>
+<TR><TD>73</TD><TD>7</TD><TD>11</TD><TD>15</TD><TD>18</TD><TD>22</TD><TD>26</TD><TD>29</TD><TD>33</TD><TD>37</TD></TR>
+<TR><TD>74</TD><TD>7</TD><TD>11</TD><TD>15</TD><TD>19</TD><TD>22</TD><TD>26</TD><TD>30</TD><TD>33</TD><TD>37</TD></TR>
+<TR><TD>75</TD><TD>8</TD><TD>11</TD><TD>15</TD><TD>19</TD><TD>23</TD><TD>26</TD><TD>30</TD><TD>34</TD><TD>38</TD></TR>
+<TR><TH>ComPot</TH><TH>10%</TH><TH>15%</TH><TH>20%</TH><TH>25%</TH><TH>30%</TH><TH>35%</TH><TH>40%</TH><TH>45%</TH><TH>50%</TH></TR>
+<TR><TD>76</TD><TD>8</TD><TD>11</TD><TD>15</TD><TD>19</TD><TD>23</TD><TD>27</TD><TD>30</TD><TD>34</TD><TD>38</TD></TR>
+<TR><TD>77</TD><TD>8</TD><TD>12</TD><TD>15</TD><TD>19</TD><TD>23</TD><TD>27</TD><TD>31</TD><TD>35</TD><TD>39</TD></TR>
+<TR><TD>78</TD><TD>8</TD><TD>12</TD><TD>16</TD><TD>20</TD><TD>23</TD><TD>27</TD><TD>31</TD><TD>35</TD><TD>39</TD></TR>
+<TR><TD>79</TD><TD>8</TD><TD>12</TD><TD>16</TD><TD>20</TD><TD>24</TD><TD>28</TD><TD>32</TD><TD>36</TD><TD>40</TD></TR>
+<TR><TD>80</TD><TD>8</TD><TD>12</TD><TD>16</TD><TD>20</TD><TD>24</TD><TD>28</TD><TD>32</TD><TD>36</TD><TD>40</TD></TR>
+<TR><TD>81</TD><TD>8</TD><TD>12</TD><TD>16</TD><TD>20</TD><TD>24</TD><TD>28</TD><TD>32</TD><TD>36</TD><TD>41</TD></TR>
+<TR><TD>82</TD><TD>8</TD><TD>12</TD><TD>16</TD><TD>21</TD><TD>25</TD><TD>29</TD><TD>33</TD><TD>37</TD><TD>41</TD></TR>
+<TR><TD>83</TD><TD>8</TD><TD>12</TD><TD>17</TD><TD>21</TD><TD>25</TD><TD>29</TD><TD>33</TD><TD>37</TD><TD>42</TD></TR>
+<TR><TD>84</TD><TD>8</TD><TD>13</TD><TD>17</TD><TD>21</TD><TD>25</TD><TD>29</TD><TD>34</TD><TD>38</TD><TD>42</TD></TR>
+<TR><TD>85</TD><TD>9</TD><TD>13</TD><TD>17</TD><TD>21</TD><TD>26</TD><TD>30</TD><TD>34</TD><TD>38</TD><TD>43</TD></TR>
+<TR><TD>86</TD><TD>9</TD><TD>13</TD><TD>17</TD><TD>22</TD><TD>26</TD><TD>30</TD><TD>34</TD><TD>39</TD><TD>43</TD></TR>
+<TR><TD>87</TD><TD>9</TD><TD>13</TD><TD>17</TD><TD>22</TD><TD>26</TD><TD>30</TD><TD>35</TD><TD>39</TD><TD>44</TD></TR>
+<TR><TD>88</TD><TD>9</TD><TD>13</TD><TD>18</TD><TD>22</TD><TD>26</TD><TD>31</TD><TD>35</TD><TD>40</TD><TD>44</TD></TR>
+<TR><TD>89</TD><TD>9</TD><TD>13</TD><TD>18</TD><TD>22</TD><TD>27</TD><TD>31</TD><TD>36</TD><TD>40</TD><TD>45</TD></TR>
+<TR><TD>90</TD><TD>9</TD><TD>14</TD><TD>18</TD><TD>23</TD><TD>27</TD><TD>32</TD><TD>36</TD><TD>41</TD><TD>45</TD></TR>
+<TR><TD>91</TD><TD>9</TD><TD>14</TD><TD>18</TD><TD>23</TD><TD>27</TD><TD>32</TD><TD>36</TD><TD>41</TD><TD>46</TD></TR>
+<TR><TD>92</TD><TD>9</TD><TD>14</TD><TD>18</TD><TD>23</TD><TD>28</TD><TD>32</TD><TD>37</TD><TD>41</TD><TD>46</TD></TR>
+<TR><TD>93</TD><TD>9</TD><TD>14</TD><TD>19</TD><TD>23</TD><TD>28</TD><TD>33</TD><TD>37</TD><TD>42</TD><TD>47</TD></TR>
+<TR><TD>94</TD><TD>9</TD><TD>14</TD><TD>19</TD><TD>24</TD><TD>28</TD><TD>33</TD><TD>38</TD><TD>42</TD><TD>47</TD></TR>
+<TR><TD>95</TD><TD>10</TD><TD>14</TD><TD>19</TD><TD>24</TD><TD>29</TD><TD>33</TD><TD>38</TD><TD>43</TD><TD>48</TD></TR>
+<TR><TD>96</TD><TD>10</TD><TD>14</TD><TD>19</TD><TD>24</TD><TD>29</TD><TD>34</TD><TD>38</TD><TD>43</TD><TD>48</TD></TR>
+<TR><TD>97</TD><TD>10</TD><TD>15</TD><TD>19</TD><TD>24</TD><TD>29</TD><TD>34</TD><TD>39</TD><TD>44</TD><TD>49</TD></TR>
+<TR><TD>98</TD><TD>10</TD><TD>15</TD><TD>20</TD><TD>25</TD><TD>29</TD><TD>34</TD><TD>39</TD><TD>44</TD><TD>49</TD></TR>
+<TR><TD>99</TD><TD>10</TD><TD>15</TD><TD>20</TD><TD>25</TD><TD>30</TD><TD>35</TD><TD>40</TD><TD>45</TD><TD>50</TD></TR>
+<TR><TD>100</TD><TD>10</TD><TD>15</TD><TD>20</TD><TD>25</TD><TD>30</TD><TD>35</TD><TD>40</TD><TD>45</TD><TD>50</TD></TR>
+<TR><TH>ComPot</TH><TH>10%</TH><TH>15%</TH><TH>20%</TH><TH>25%</TH><TH>30%</TH><TH>35%</TH><TH>40%</TH><TH>45%</TH><TH>50%</TH></TR>
+</TABLE>
+
+<BR><B>EXAMPLE:</B> The Klingon has a D7C (9 attack factors), three D7s (each 8 attack factors), and an F5 (5 attack factors). This is a total of 38 attack factors, giving a Combat Potential of 38. The die roll is (for this example) a 2, giving a Damage Coefficient of 25% with a BIR of 5. Multiplying 38 by 25% produces a Combat Casualty Result of 9.50 (rounded up to 10). 
+<BR>The Combat Damage Result indicates the number of enemy units (expressed in terms of their Defense Factors) which have been damaged or destroyed.
+<BR><B>READING THE SHIP FACTORS</B>
+<BR>Ship factors are in the form A-D(F)/CA-CD(CF). These numbers are:
+<BR>A - Attack Factor
+<BR>D - Defense Factor, if this is missing then use the Attack Factor number
+<BR>F - Fighter Factors, if this is missing, then it is zero. This value does not have a 1:1 relationship with the number of fighters
+<BR>CA - Attack Factor when crippled
+<BR>CD - Defense Factor when crippled
+<BR>CF - Fighter Factors when crippled 
+<H3 class="lighthead">DIRECTED DAMAGE</H3>
+<p>Directed Damage represents a decision by the Battle Force commander to select a specific enemy unit as a priority target. This will usually be a scout, planet, flagship, PF tender, or some other key unit, rather than just a randomly selected cruiser. A player is not required to use this procedure in every battle or any battle. 
+<BR>The Attacking Player may, at his option, select one unit from the Defender Player's Battle Force. Note that by definition he must select a unit which he has sufficient Damage Points to damage by the procedure below.
+<BR>The Attacking Player then deducts from his Damage Points a number equal to double the Defense Factor of the selected unit. The selected unit is crippled. It the unit was already crippled, then it is considered destroyed. 
+<BR>If the targeted unit was crippled by the Directed Damage, the Attacking Player can repeat the procedure to destroy the crippled target unit, using a number of Damage Points equal to double the Defense Factor of the crippled unit. He cannot, however, switch to a second target unit. 
+<BR>The player using Directed Damage must have the full number of points required (i.e. double the Defense Factor), not simply half as many. 
+<BR>The Defending Player can then repeat the procedure with one unit from the Attacking Battle Force. 
+<BR> A player using Directed Damage against a unit is not required to destroy its fighters or PFs. However, any fighters or PFs remaining when their support unit was destroyed or crippled can be transferred to other units able to carry them, or can be used to satisfy further damage requirements in that combat round. In effect, it is '"transfer or die." A player designating Directed Damage against fighters or PFs may do so against any or all such units in the opposing Battle Force, not merely against one such factor or "ship-equivalent" group of factors. 
+<H3 class="lighthead">DAMAGE ALLOCATION</H3>
+<p>After resolving Directed Damage (if any), each player must resolve the remaining damage against the units of his Battle Force. The Defender does this first. 
+<BR>The Defending Player must give up (by crippling or destroying them) enough of his units to resolve the remaining Damage Points scored by the Attacking Player. This is based on the Defense Factors of the units he selects. 
+<BR>Crippling an uncrippled unit resolves a number of Damage Points equal to the Defense Factor shown on when undamaged. Removing a crippled unit (i.e. destroying it) resolves a number of Damage Points equal to the Defense Factor shown on the crippled side. Destroying an undamaged unit (i.e. crippling it, then destroying the crippled unit) resolves a number of Damage Points equal to the sum of the Defense Factors on both sides. Note that some units (convoys, FRDs) do not have a crippled status and are destroyed when damaged.
+<BR>The Attacking Player then resolves the Damage Points scored by the Defending Player against the attacking Battle Force by crippling/destroying some of his units. 
+<BR> The owning player selects which of his units will be crippled or destroyed to satisfy the Damage Points scored by his opponent. He may select these units in any order, but selects them one at a time. When the remaining number of unresolved Damage Points is less than half of the smallest Defense Factor of the remaining units in the Battle Force, these Damage Points are ignored. (Note that as each fighter factor is a unit, points cannot be left over as long as the target units have fighters remaining.) If the remaining unresolved Damage Points are equal to half or more of the smallest Defense Factor of the remaining units, the owning player must damage a unit (cripple a unit or destroy a crippled unit) even if in doing so he gives up more Defense Factors than the other player has remaining unresolved Damage Points. 
+<BR> Damage Points scored in one battle cannot be transferred to another battle or used in subsequent battle in the same area.
+<BR>It all units belonging to one player are destroyed, the battle has been resolved. Proceed to another battle. 
+<BR><B>PLUS AND MINUS POINTS</B>
+<BR>In the normal Damage Allocation process, the number of damage points actually scored may not correspond exactly to the number removed. Under this procedure, records are kept of the differences between the actual and required losses, and any discrepancies are resolved on the next combat round IN THE SAME BATTLE during the same turn. It cannot be carried over to another battle or a future battle in the same area. 
+<BR>For example, a player is required to give up 6 damage points and cripples a 7-point war cruiser. He has given up one more point than he was required to, and gets credit for that point, which is deducted from the points scored against him on the next combat round in that battle. 
+<BR>His opponent crippled a 7-point war cruiser to resolve 8 damage points, the one remaining point being too small to damage any other units. This remaining point is recorded and added to the damage scored against him on the next combat round in that battle. 
+<BR>Any adjustments for plus/minus points are made BEFORE Directed Damage is resolved.
+<P>&nbsp;
+<H3 class="lighthead">SPECIAL UNITS</H3>
+<p><B>CLOAKED SHIPS</B>
+<BR>A player commanding a force consisting entirely of Romulan or Orion ships (which have cloaking devices) may use the device offensively:
+<BR>Roll two dice. It the result is 5 or less, the enemy player has a -1 shift on the Combat Coefficient Table for the first round only. It the result is 11 or 12, something went wrong (the force was discovered while in a vulnerable position) and the enemy gets a +1 shift for the first round only. Any other result is normal combat. 
+<BR><B>MAULERS</B>
+<BR>These are special ships carrying the extremely powerful Mauler Cannon. The weapon fires a directed energy beam so powerful it can pierce shields and wreck ships. More importantly, the damage can be increased by the ship by the proper use of its energy. This is reflected in this game by the following special rules.
+<BR>It an uncrippled mauler is included in the Battle Force, the owning player can use a number of points equal to the mauler's attack factor (usually 10) at their full value (i.e. not discounted by half) for Directed Damage. Note, this does not mean that the mauler attacks as a separate 10-point battle force, using the 2 or 3 point result. The full attack factor is used, even though other ships contributed much of it. 
+<BR><B>EXAMPLE:</B> A Battle Force including a mauler needs 12 points to destroy a battle station. The mauler can provide 10 points, which are deducted from the total damage points scored against the target force. The remaining 2 points, being Directed Damage without benefit of a mauler, requires the expenditure of 4 damage points. 
+<BR> Maulers are vulnerable to "excessive shock," that is, the ship's own powerful weapons shaking it apart. 
+<BR>To reflect this, after every combat round in which a mauler is used for Directed Damage, roll one die. It the result is 5-6, the mauler is crippled. Maulers crippled voluntarily or by Directed Damage do not roll.
+<BR> Maulers are not designed to operate alone. 
+<BR>There must be two non-mauler ships in the Battle Force for each mauler; any mauler not so accompanied has an attack factor of 1/2 of the printed value AND cannot be used for Directed Damage.
+<BR>No more than one mauler can be used for Directed Damage in a given Battle Force. 
+<BR><B> SCOUTS</B>
+<BR>If one Battle Force includes a unit with scout capabilities (scout ship, battle station, mobile base, starbase) and the other does not, the force without the scout must subtract one from its die roll in Step Four of the Combat Procedure. Crippled scouts cannot use their capabilities.
+<BR>Some units provide more than one die roll shift. These are noted in the SIT as having an EW greater than one (e.g. "EW=2"). These units shift the die roll by the given amount.
+<BR><B>DIE ROLL SHIFTS</B>
+<BR>This rule is required when certain other rules are used. Several conditions (scouts, cloaks, and others) can produce a die roll shift. No die roll shift can increase a die roll of "6" or reduce a die roll of "1". If several shifts are involved, combine them all (a -1 shift cancelling a +1 shift) and apply the final result to the die roll within the restriction given above.
+</p></span>
+<h3 class="darkhead">Invasion Phase</h3>
+<p>Bombing can only go so far and, in the end, it's the ground troops that have to settle the issue. The Troop Combat Phase includes rules for invading, ground combat, tactical support and landings. This is where the conquest of a planet is ultimately decided. The conquest of systems is dependant on conquering all the planets. And the conquest of a power requires the conquest of its systems.</p>
+<p>Other cargo (including units that may be carried as cargo) are embarked, disembarked or deployed in this step. Cargo cannot be embarked and disembarked or deployed on the same turn. Ships in reserve may not embark, disembark, or deploy units.</p>
+<p>A planet is conquered when all ground units of the planet owner are eliminated. At this time, the ownership of the planet is transferred to the power that controls the largest amount of ground forces by attrition value. The planet will remain contested if any non-allied ground forces remain on the planet. Conquest of a planet can have a very negative effect on morale.
+<p>The conquest of a system occurs when all disembarked ground units of the system owner are eliminated throughout the system. At this time the ownership of the system is transferred to the power that controls the largest amount of disembarked ground forces by attrition value. The system will remain contested if any non-allied, disembarked ground units remain in the system. Conquest of a system can have a very negative effect on morale.</p>
+<h3 class="darkhead">Construction Completion Phase</h3>
+<p>The Construction Completion Phase is a stage in a game or simulation where new unit purchases or repairs ordered in a previous phase are completed. During this phase, newly constructed units are deployed to the designated location on the map, and both ground and air units regain their strength.</p>
+<p>Construction capacity and dock space are important factors in the construction process. Construction capacity refers to the economic ability to finance and carry out large-scale ship construction projects. It is determined by the number of points generated each turn by a planet, which is equal to the planet's utilized Productivity multiplied by its raw economic value.</p>
+<p>Dock space represents the number of available construction slots at a planet or shipyard for building ships. Each dock space can accommodate one ship of any size. The dock space of a planet is determined by its utilized Productivity. Similarly, shipyards have dock spaces equal to their utilized Productivity. Flights, on the other hand, do not require dock space for construction.</p>
+<p>If a player lacks sufficient construction capacity or dock spaces at their shipyards or planets to complete all the scheduled work, some construction projects will be delayed. The player can choose which projects are delayed, and they will be completed in the next Construction Completion Phase if possible. This includes ships, bases, DEFSATS, mines and flights. Ground units cannot be partially constructed. Full payment of the unit's cost is not required for construction to begin.</p>
+<p>Construction at planets involves factories and assembly yards on the planet's surface. Flights are always constructed at planets and do not occupy dock spaces.</p>
+<p>Orbital shipyards, also known as "shipyards," are the primary locations for constructing ships. They allow for zero-gravity construction of large starships and are more cost-effective for non-atmospheric ship types than planetary sites. Each shipyard has its own construction capacity and dock spaces, which are determined by its economic output and utilized Productivity.</p>
+<p>Bases, including defensive satellites (DEFSATS) and mines, have a different construction process than ships. Planets can use their construction capacity to build bases in orbit around them, reducing their capacity for other construction projects. Building bases elsewhere in the system requires the use of Transport Fleets, with one fleet needed for every 10 economic points spent on base construction. If a planet contributes to base construction in another system, Transport Fleets must be present in each system involved in the construction.</p>
+<p>In case Transport Fleets are not in place during the Construction Completion Phase, the points spent and carried by those fleets are lost. The owning player can choose which points are lost if such a situation occurs.</p>
+<p>Flight units can be purchased at planets, planetary shipyards, or orbital shipyards. The number of flights that can be built at a location is limited by the available construction capacity. Flight construction does not affect dock space.</p>
+<p>The number of ground units that can be raised each turn is limited by the Census of the planet. Larger planets can raise more ground units compared to sparsely populated frontier planets.</p>
+<p>Completed ships are placed in the system of the shipyard or planet that built them. Non-atmospheric ships must be built at a shipyard, while atmospheric ships can be based off a planet if it has basing capacity. DEFSATs and mines are built in orbit but can be moved later. Bases remain in the system where they were created.</p>
+<p>Units can be placed in special maintenance statuses like Reserve or Mothballing. Reserve status allows units to be deactivated, reducing their maintenance cost. Activating a reserve unit requires an order and incurs full maintenance cost. Mothballing puts a ship out of active duty temporarily without maintenance cost, but reactivation requires paying full maintenance cost. Mothballing a ship keeps it inactive but available for future use. Ships can be mothballed at a shipyard or, in the case of atmospheric ships, at a capable planet. Mothballed units do not incur maintenance costs. To restore a mothballed ship, the full maintenance cost must be paid, and it requires dock space. Inactive units can also be scrapped.</p>
+<p>Ships can become damaged and require repairs. They can be repaired at a shipyard by paying 25% of the ship's original cost. The repair cost counts against the shipyard's construction capacity, and each ship requires one dock space during repairs.</p>
+<p>Bases, atmospheric ships, and fixed defenses can also be repaired using the construction capacity of planets or other sources of productivity. The repair cost is 25% of the unit's original cost per base damage level. Atmospheric ships cost the same to repair on planets as they do at a shipyard. Flight units do not need to be repaired as they do not cripple.</p>
+<p>Military supply ships can perform field repairs. Each point of supply rating allows the ship to provide 1 economic point worth of repairs. Multiple supply ships in the same system can combine their ratings. Transport fleets cannot perform field repairs.</p>
+<p>Newly purchased flights can be transported to a fleet or planet to replace combat losses as long as they are in supply. They can be transported using the empire's logistical network and do not require transport fleets.</p>
+<p>Crippled units and planets with interdicted basing or suppressed productivity cannot base flights but can replenish with newly built fighters once capacity is restored or the vessel is repaired.</p>
+<p>Units can be scrapped to recover 50% of their original economic cost. Scrapping can be done where the unit could be constructed, and it does not count against the construction capacity. If construction has begun, 50% of the spent economic points can be regained by canceling the unit's construction.</p>
+<p>Units placed in special maintenance status (e.g., Reserve or Mothballed) during the turn orders phase will assume their new status during the construction completion phase. The effects of these special maintenance states will take effect in the next campaign turn's income phase.</p>
+<h3 class="darkhead">Update Asset Phase</h3>
+<p>The "Update Asset Phase" is where players update their Asset Sheets to reflect changes that have occurred in the current turn. This includes adding new builds to the empire's maintenance costs, removing assets, and checking for system improvements or problems.</p>
+<p>In order to increase productivity in the game, players need to make a capital investment. Productivity points can be purchased at a cost equal to ten times the new planetary Productivity value. Each planet can only increase productivity by one point per turn.</p>
+<p>Morale and system loyalty play a crucial role in the game. Each system has a morale number, representing the support from that system. The morale of a system can impact its prosperity or lead to insurrection. Checks are made to verify a system's loyalty, taking into account various factors. If the morale drops below half of the Census (population) number, the utilized productivity from that planet is halved. If morale reaches zero, the colony stops producing and is considered to be in rebellion. Troops can be used to control the population, but there is a risk of rebellion, and ground combat may occur.</p>
+<h3>Morale Check Chart</h3>
+<table style="padding:5px;background-color:#ddd;min-width:50%;border-collapse:collapse;">
+<tr><th>Condition</th><th>Target Number</th><th>Effect</th></tr>
+<tr style="border:1px solid;"><td>System is more than 3 jumps away from a friendly colony and has a census of 5 or greater</td><td>1</td><td>-1 to Morale</td></tr>
+<tr style="border:1px solid;"><td>System is cut off from homeworld (i.e. no continuous path through controlled or friendly territory can be traced)</td><td>2</td><td>-1 to Morale</td></tr>
+<tr style="border:1px solid;"><td>Hostile force seized system last turn</td><td>3</td><td>-3 to Morale</td></tr>
+<tr style="border:1px solid;"><td>System is held by twice as many ground units as Census</td><td>Automatic</td><td>+1 to Morale</td></tr>
+<tr style="border:1px solid;"><td>Productivity is at 0 and Census is greater than 3 (representing lack of jobs and self sufficiency) - Cumulative</td><td>Automatic</td><td>-1 to Morale</td></tr>
+<tr style="border:1px solid;"><td>Full employment (Productivity = Census)</td><td>Automatic</td><td>+1 to Morale</td></tr>
+<tr style="border:1px solid;"><td>Empire's homeworld is attacked</td><td>1</td><td>-1 to Morale</td></tr>
+<!--
+<tr style="border:1px solid;"><td>Orbital bombardment</td><td>Varies</td><td>See <a href="#3.6.4">3.6.4 Orbital Bombardment</a></td></tr>
+-->
+<tr style="border:1px solid;"><td>Use of Intel</td><td>Varies</td><td>See Intel Missions</td></tr>
+<tr style="border:1px solid;"><td>Event from Random Event table</td><td>Varies</td><td></td></tr>
+<tr style="border:1px solid;"><td>(CM Only) Government takes unpopular action</td><td>Varies</td><td></td></tr>
+</table>
+
+<p>The Census value of a system can increase over time. Every 12 turns, each system rolls a d10 and adds its Census value. If the roll exceeds 15, the Census increases by 1. If the value doesn't increase, a +1 modifier is added to the next population increase roll. This modifier accumulates if the Census hasn't increased in previous checks. The Census cannot exceed the system's Carrying Capacity.</p>
+<p>To colonize a system, players need to move citizens from an existing system to the new one. This is done by creating a Colony Fleet, consisting of approximately ten passenger liners or colony vessels capable of carrying a large number of people. The Colony Fleet, along with any assigned escorts, can move one Census from the current system to the fleet, making it a loaded Colony Fleet.</p>
+<p>The Colony Fleet then moves to its destination. On the next "Update Assets Phase," the Census from the fleet is moved to the planet, establishing the colony. During this turn, the colony cannot build or perform any actions as they are focused on establishing their presence. The colony starts with Morale equal to its Census, and both Intel and Productivity are initially set to 0, unless there is pre-existing infrastructure on the planet.</p>
+<h3 class="darkhead">End of Turn Phase</h3>
+<p>The turn ends in this phase. Optional rules like the Random Events option take place in this phase and all results are applied in the next campaign turn. If they are one-time events they occur in their appropriate phase next turn. If they are permanent effects, they take effect immediately and are treated as if they occurred during the turn just ending, in the appropriate phase.
+<a name="UNITS"></a>
+</p><h3 class="darkhead">UNITS</h3>
+<h3 class="lighthead">Unit Abilities</h3>
+<p>Many units, generally those who are variants of Ships-Of-The-Line, have special abilities. These abilities usually give that unit some small advantage in certain circumstances. (<a href="./units.html" target="_BLANK">Unit Lists</a>)</p>
+<br>&nbsp; <b>Assault</b> - These units are able to perform Planetary Assaults. They can carry a number of ground units equal to the unit's cost (rounded down). A ground unit is roughly 10 Boarding Parties in size.
+<br>&nbsp; <b>Ballistic</b> - Ballistic units rely on their long-range seeking weapons (usually drones) as their main armorment. They benifit from being able to engage their opponents from extreme range or from outside of the normal engagement distance, but require more logistical attention. These units are generally called "Drone Bombardment" ships in SFB.
+<br>&nbsp; <b>Carrier</b> - Carrier ships carry fighter units. These are treated as "True Carriers" by SFB, and have fighter supplies to match. The basing number given for them are a number of "LF" units they can carry. Units with this ability may carry "MF" fighter units, but those units take twice as many spaces of Basing.
+<br>&nbsp; <b>Cloak</b> - These units have a cloaking device installed. Not only do they gain the benefits of the "Stealth" ability, but have other combat advantages.
+<br>&nbsp; <b>Command</b> - These units are designed with augmented Command &amp; Control facilities. This is represented by a larger Command Rate. This unit is considered a Leader Unit by SFB.
+<br>&nbsp; <b>Command Post</b> - Command Posts are large defensive and logistical bases that provide a bonus to morale checks made in that system. They also prevent that system from dropping to 0 Morale.
+<br>&nbsp; <b>Explorer</b> - Explorer units gain more information when enetering a new system then normal units.
+<br>&nbsp; <b>Scout</b> - Scout units have advantages when it comes to detecting stealthed or cloaked units. They also grant some advantages to the fleet they are part of, when it comes to combat.
+<br>&nbsp; <b>Slow</b> - Slow units do not move as far in a turn as normal units. Instead of two spaces, they can move only one.
+<br>&nbsp; <b>Stealth</b> - Stealthed units are harder to detect. When combat is between a fleet containing only ships with this trait, the opposing force has a reduced Weapon Status. 
+<br>&nbsp; <b>Supply Depot</b> - A unit that has this trait can act like a colony in good order, when it comes to determining supply lines.
+<a name="SAMPLE"></a>
+</p><h3 class="darkhead">SAMPLE GAME</h3>
+<p>This game is from the point of view of a <a href="./sheet/index.html?data=sample00" target="_BLANK">Frax</a> player.</p>
+</body></html>
