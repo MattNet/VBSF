@@ -12,6 +12,7 @@ TD{ vertical-align:top; }
 .horizBorder TR+TR { border-top:2px solid #000000; }
 .borderRight { border-right-style:solid; border-right-width:2px; }
 .borderBottom { border-bottom-style:solid; border-bottom-width:2px; }
+.sfbRules { color: #660000; }
 .hide{ display:none; }
 .visually-hidden:not(:focus):not(:active) {
   clip: rect(0 0 0 0); 
@@ -120,13 +121,25 @@ function flip( clicked_obj )
 <br>&bull; The <a href="./units.html#quari" target="_BLANK">Quari</a> (R52.0) (Module C4)
 
 </p><h3 class="lighthead">STARTING CONDITIONS</h3>
-<p>Each player has a list of ships they could build. As their technology advances, this list will change to include more effective ships and ships with wider variety of roles. In most campaigns, this list of ships is public, so that other players can identify what ships they are encountering in each meeting of fleets.
-</p><p>Each player may start with a certain number of spaces "owned", and perhaps a further number of spaces "explored". There may be non-player positions, which are run by moderator.
-</p><p>As an optional rule, players may not be in complete control of their empire: The signing and breaking of treaties may instead be handled by the moderator. However, players are not wholly out of control: they can influence their governments into better or worse relations with their neighbors.
-<!--
-</p><h3 class="lighthead">EMPIRE SPECIAL CONDITIONS</h3>
-<p>Not every empire has the same operational parameters. Here is were those differences are addressed.
--->
+<p>Each player has a list of ships they could build. As their technology advances, this list will change to include more effective ships and ships with wider variety of roles. In most campaigns, this list of ships is public, so that other players can identify what ships they are encountering in each meeting of fleets.</p>
+<p>Each player may start with a certain number of spaces "owned", and perhaps a further number of spaces "explored". There may be non-player positions, which are run by moderator.</p>
+<p>As an optional rule, players may not be in complete control of their empire: The signing and breaking of treaties may instead be handled by the moderator. However, players are not wholly out of control: they can influence their governments into better or worse relations with their neighbors.</p>
+<h3 class="lighthead">EMPIRE SPECIAL CONDITIONS</h3>
+<span class="sfbRules">
+<p>Not every empire has the same operational parameters. Here is were those differences are addressed.</p>
+<p><b>All</b>
+<br>Heavy War Destroyer (HDW) designations: HDWs have several designations that make certain assumptions for the optional systems. These systems have been paid for in that assumption. If not everything is designated, then those not assigned may be replaced by the player before the battle. The cost for anything replaced is paid for by the CO budget of that ship.
+<br>&bull; HDW - Nothing re-assigned. The APRs are still APRs. The NWOs are empty (void). The Option Mounts are also empty. Filling these cost CO points (as above.)
+<br>&bull; HDW-C - A command variant. The Option Mounts are filled with some common weapon to the empire and the NWOs are filled with Flag Bridge to bring the command rating of the ship up to 10.
+<br>&bull; HDW-H - A Heavy-fighter carrier. Filled with 10 additional shuttle boxes with fighter ready racks and designed for double-space fighters.
+<br>&bull; HDW-K - A "killer" variant. NWOs are un-assigned and Option Mounts are filled with the same weapon as the command variant.
+<br>&bull; HDW-P - A PF Tender. Each has 2 sensor channels, 6 mech links, and 4 repair.
+<br>&bull; HDW-S - Scout. It merely has 2 sensor channels. NWOs are void.
+<br>&bull; HDW-V - A carrier variant. Like the Heavy-carrier variant, has 10 more fighter boxes and is designed for single-space fighters.
+<br>There may be other designations, but they currently have nothing assigned.
+</p>
+
+</span>
 <a name="3.1"></a>
 <h3 class="darkhead">INCOME PHASE</h3>
 <p>The Income Phase is where the Empire calculates its revenues, subtracts expenses, and adds profits to the point pools for spending in the Turn Orders Phase. The income for the turn is calculated using the formula: Total Domestic Product + Trade/Misc. Income - Maintenance/Misc. Costs = Income. The income value is added to the player's Point Pool, which can be used during the current turn's Turn Orders Phase.</p>
@@ -239,13 +252,23 @@ action.
 <h3>Effects of demanded scenarios</h3>
 <p>This assumes that Diplomatic states between the empires allows for encounters to be generated. If encounters cannot be generated (e.g. Non-Aggression treaty), both fleets are treated as if they agreed to an encounter, but no encounter is actually generated.</p>
 <ol type="1">
-<li>Attacker enters sector</li>
+<li><b>Raid</b></li>
+<li>Raid of cargo-carrying vessels</li>
+<ol type="A">
+<li>Raider demands Deep Space encounter. Defender may not refuse.</li>
+</ol>
+<li>Raid of the system</li>
+<ol type="A">
+<li>Raider demands Defensive encounter. Defender may not refuse.</li>
+</ol></ol>
+<ol type="1">
+<li><b>Attacker enters sector</b></li>
 <li>Defender may demand a Deep Space encounter</li>
 <ol type="A">
 <li>Attacker may refuse.</li>
 <ol type="a">
 <li>Defender may demand pursuit scenario. Attacker may not refuse.</li>
-<li>Attacker returns to the last sector. Defender remains.</li>
+<li>Else attacker returns to the last sector. Defender remains.</li>
 </ol>
 <li>Attacker agrees. Resolve a Deep Space encounter</li>
 </ol>
@@ -254,17 +277,19 @@ action.
 <li>Attacker may refuse.</li>
 <ol type="a">
 <li>Defender may demand pursuit scenario. Attacker may not refuse.</li>
-<li>Attacker returns to the last sector. Defender remains.</li>
+<li>Else attacker returns to the last sector. Defender remains.</li>
 </ol>
 <li>Attacker agrees. Resolve a Defensive encounter</li>
 </ol></ol>
 <ol type="1">
-<li>Attacker and defender enters opposite sectors (meet in the middle)</li>
+<li><b>Attacker and defender enters opposite sectors (meet in the middle)</b></li>
 <li>Attacker or defender may demand a Deep Space encounter</li>
 <ol type="A">
 <li>Both agree. Resolve a Deep Space encounter.<br>Winner remains between sectors.<br>Loser returns to the last sector.</li>
-<li>Attacker refuses.<br>Attacker returns to the last sector. Defender remains between sectors</li>
-<li>Defender refuses.<br>Defender returns to the last sector. Attacker remains between sectors</li>
+<li>Either refuses.
+<ol type="a">
+<li>The other may demand a pursuit encounter in the adjacent sector.<br>Treat the winner and loser as if a deep space encounter in that sector.</li>
+</ol>
 <li>Both refuse. Both return to their last sector.</li>
 </ol></ol>
 </div>
@@ -276,9 +301,10 @@ action.
 <p>Deep Space Encounters occur between systems and involve fleets. Fleets have the option to refuse a Deep Space scenario and return to the previous system. If any fleets remain, a scenario is generated. After resolving scenarios, fleets can choose to continue to their original destination or return to the last system.</p>
 <p>System Encounters can happen at fixed defensive points or in deep space. If a defending fleet demands a scenario at a fixed defensive point and other fleet accepts, a Defensive scenario is generated. Fleets can refuse a Defensive scenario near a planet, preventing invasion and other actions. Fleets accepting refused scenarios may demand a Pursuit scenario.</p>
 <p>Encounter Resolution occurs as long as at least one fleet demands scenarios. Scenarios are resolved in the Space Combat Phase, which can happen multiple times in a system until all scenarios are resolved. Once all scenarios are resolved, the encounter is considered resolved, and the game moves on to the next phase.</p>
+<span class="sfbRules">
 <p>When assigning units that participate in a combat, trade fleets, colony fleets, and transport fleets are required to be included in the combat if they are part of the fleet involved. In the case of a defensive scenario, all fixed units in that sector must participate. At the time that the combat is set up, use the rules for fleet composition in (S8.0) to determine which ships participate. Do not use the Command Limits (S8.2) section, instead use the "BPV Capacity" system to determine which ships may be involved.</p>
-<p>Trade fleets, Transport fleets, and colony fleets represent several freighters as a single campaign. Once battle is joined, these "fleets" are represented by their individual ships. (See the below chart.). The fleet is considered crippled when all of the ships are crippled. The unit is considered destroyed when 3/4th (round up) of the units are destroyed. Destroyed units count as two crippled units. Crippled units count as half a destroyed unit.</p>
-<table>
+<p>Trade fleets, Transport fleets, and colony fleets represent several freighters as a single campaign. Once battle is joined, these "fleets" are represented by their individual ships. (See the below chart.) The fleet is considered crippled when all of the ships are crippled. The unit is considered destroyed when 3/4th (round up) of the units are destroyed. Destroyed units count as two crippled units. Crippled units count as half a destroyed unit.</p>
+<table class="sfbRules">
 <tr><td>Trade Fleet</td><td>4x FT</td></tr>
 <tr><td>Transport Fleet</td><td>7x FT</td></tr>
 <tr><td>Colony Fleet</td><td>3x F-LS, 3x F-AL (PH)</td></tr>
@@ -321,7 +347,7 @@ Maximum and average BPVs do not include attrition units or drone costs. Includin
 </table>
 
 <p>Total the Combat BPV of the units in the fleet. This includes the BPV cost of the commanding unit, any attrition units, any civilian vessels, and any fixed units. Use the Economic BPV of scouts and civilian ships (FT, Freighters, Auxilliaries, etc..) instead of the combat BPV. All fixed installations must be included in the fleet. In the event of a scenario where nothing better is present, inhabited planets (with some EPs activated) are assumed to have a "flag" rating of 3.</p>
-<p>If the BPV exceeds the BPV cap of the flagship, the flagship owner chooses units to be removed before the scenario is set up until what remains will fit in the capacity of the flagship. This can include removing attrition units (see <a href='#carriers'>Carriers</a>). Fixed units (units that cannot move themselves on the campaign map) that cannot fit the BPV capacity are made inactive (as per (D18.1), but with no chance of activation).</p>
+<p>If the BPV exceeds the BPV cap of the flagship, the flagship owner chooses units to be removed before the scenario is set up until what remains will fit in the capacity of the flagship. This can include removing attrition units. Fixed units (units that cannot move themselves on the campaign map) that cannot fit the BPV capacity are made inactive (as per (D18.1), but with no chance of activation).</p>
 <p>For each different size-class 4 or larger base-hull-type (DD, CA, etc... See <a href='http://www.starfleetgames.com/federationandempire.shtml'>the F&E Ship Information Tables</a> (SITs) ) that is included in the fleet, add 50 BPV to the capacity of the fleet. Only mobile naval warships give this bonus: Defsats, civilian ships (APT, FT, etc), police ships, Bases, attrition units, and so on, do not. Also note that it must be a different base-hull-type to qualify for this bonus. So (for example) a Romulan fleet cannot gain this bonus several times for having a SeaHawk, a K4, and a Snipe (all three are frigate hulls). Such a case would count as having three frigates and worth (at most) one bonus. PF flotillas may be included in a battle without their "home" ship, unlike fighters. In that case the BPV of the PFs count against the flagship's CR, but the home ship would not.</p>
 <p>So a fleet commanded by a Federation CC (CR 9, BPV cap of 1400) that includes several DWs and several DDs would gain this bonus twice, for a total BPV cap of 1500.  Whereas a fleet commanded by the same Federation CC that contains only CAs would have not gain this bonus at all, leaving the BPV cap at 1400 (the Federation CC is listed as a CA hull, thus not a distinct hull from the Federation CA).</p>
 <p>In the case of mixed-empire fleets, one player must provide the flagship for the other player(s). In those cases where ships from more than one player are engaging the ships of another player (such as the case where two or more fleets are allied together to attack another player's system), the empire providing the flagship must also contain at least 50% of the fleet's BPV. This applies to fleets containing captured units and to fleets which are operating as part of a combined (i.e. multi-player) fleet. It helps the moderator if the players are clear on their orders who is providing the flagship and which ships are being excluded from thier portion of the final fleet.</p>
@@ -395,8 +421,10 @@ Ships have a command-rating equal to thier size-class. Ships may not lead ships 
 </div>
 
 <h3 class="darkhead">Space Combat Phase</h3>
-<p>Players may prefer to use <a href="http://www.starfleetgames.com" target="_BLANK">Star Fleet Battles</a> to resolve the battles. <a href="http://www.sfbonline.com" target="_BLANK">Star Fleet Battles Online</a> is very likely to be the medium of choice to resolve these.
-<p>Failing that, the SIDCORS system from Federation and Empire can generate very quick (if somewhat bloody) results.
+<p><a href="encounter_deep_space.html" target="_BLANK">Deep Space Encounter</a> &bull; <a href="encounter_defensive.html" target="_BLANK">Defensive Battle</a> &bull; <a href="encounter_pursuit.html" target="_BLANK">Pursuit Battle</a></p>
+<p>Units enter the battle with all current refits except for "optional" refits, such as the UIM refit and mech-link refit. These are added with COs. See the Setup section for more information.</p>
+<p>The results of combat will either cripple, destroy, or leave units unharmed. These results will be communicated in your orders after the combat phase. Crippled units enter combat with 60% of thier internals taken. Units cannot be repaired to an uncrippled state during combat.</p>
+<p>Players may prefer to use <a href="http://www.starfleetgames.com" target="_BLANK">Star Fleet Battles</a> to resolve the battles. <a href="http://www.sfbonline.com" target="_BLANK">Star Fleet Battles Online</a> is very likely to be the medium of choice to resolve these. Failing that, the SIDCORS system from Federation and Empire can generate very quick (if somewhat bloody) results.</p>
 <h3>SIDCORS EXTRACT</h3>
 <a class='clickMore' onclick='flip(this)'>Optional Rule [Click]</a>
 <span class='visually-hidden'>
@@ -594,6 +622,7 @@ Ships have a command-rating equal to thier size-class. Ships may not lead ships 
 <BR><B>DIE ROLL SHIFTS</B>
 <BR>This rule is required when certain other rules are used. Several conditions (scouts, cloaks, and others) can produce a die roll shift. No die roll shift can increase a die roll of "6" or reduce a die roll of "1". If several shifts are involved, combine them all (a -1 shift cancelling a +1 shift) and apply the final result to the die roll within the restriction given above.
 </p></span>
+</span>
 <h3 class="darkhead">Invasion Phase</h3>
 <p>Bombing can only go so far and, in the end, it's the ground troops that have to settle the issue. The Troop Combat Phase includes rules for invading, ground combat, tactical support and landings. This is where the conquest of a planet is ultimately decided. The conquest of systems is dependant on conquering all the planets. And the conquest of a power requires the conquest of its systems.</p>
 <p>Other cargo (including units that may be carried as cargo) are embarked, disembarked or deployed in this step. Cargo cannot be embarked and disembarked or deployed on the same turn. Ships in reserve may not embark, disembark, or deploy units.</p>
