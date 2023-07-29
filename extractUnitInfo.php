@@ -486,7 +486,7 @@ unset($database);
 # Write the output file
 ###
 // write the header
-$output = "<a name='".strtolower($EMPIRE)."'></a>\n</p><h3 class='darkhead' onclick='flip(this)'>".strtoupper($EMPIRE)."</h3>\n<table class='visually-hidden zebra'>\n<thead>\n<tr><th>Unit<br>Name</th><th>Service<br>Date</th><th>Design</th><th>Cost</th><th>Maint</th><th>Anti-Ship<br>Rate</th>";
+$output = "<a name='".strtolower($EMPIRE)."'></a>\n<h3 class='darkhead' onclick='flip(this)'>".strtoupper($EMPIRE)."</h3>\n<table class='visually-hidden zebra'>\n<thead>\n<tr><th>Unit<br>Name</th><th>Service<br>Date</th><th>Design</th><th>Cost</th><th>Maint</th><th>Anti-Ship<br>Rate</th>";
 if( ! $EXCLUDE_ANTIFTR )
   $output .= "<th>Anti-Ftr<br>Rate</th>";
 $output .= "<th>Defense<br>Value</th><th>Cmd<br>Rate</th>";
