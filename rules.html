@@ -13,7 +13,7 @@ TD{ vertical-align:top; }
 .horizBorder TR+TR { border-top:2px solid #000000; }
 .borderRight { border-right-style:solid; border-right-width:2px; }
 .borderBottom { border-bottom-style:solid; border-bottom-width:2px; }
-.sfbRules { color: #660000; }
+.sfbRules {  }
 .hide{ display:none; }
 .visually-hidden:not(:focus):not(:active) {
   clip: rect(0 0 0 0); 
@@ -63,7 +63,7 @@ function flip( clicked_obj )
 <br><a href="#combat">Combat Phase</a>
 <br>&bull; <a href="#supply">Supply Phase</a>
 <br>&bull; <a href="#encounters">Encounters Phase</a>
-<br>&bull; <a href="#combat">Space Combat Phase</a>
+<br>&bull; <a href="#space combat">Space Combat Phase</a>
 <br>&bull; <a href="#invasion">Invasion Phase</a>
 <br>&bull; &bull; Transport ships can embark or disembark
 <br>&bull; &bull; Supply units can load or unload
@@ -120,6 +120,7 @@ function flip( clicked_obj )
 <!--
 <br>&bull; The <a href="./units.html#quari" target="_BLANK">Quari</a> (R52.0) (Module C4)
 -->
+<br>&bull; The <a href="./units.html#peladine" target="_BLANK">Peladine</a> (JR1.0) (Module E4)
 </p>
 <h3 class="lighthead">STARTING CONDITIONS</h3>
 <p>Each player has a list of ships they could build. As their technology advances, this list will change to include more effective ships and ships with wider variety of roles. In most campaigns, this list of ships is public, so that other players can identify what ships they are encountering in each meeting of fleets.</p>
@@ -140,14 +141,14 @@ function flip( clicked_obj )
 <h3 class="lighthead">EMPIRE SPECIAL CONDITIONS</h3>
 <p>Not every empire has the same operational parameters. Here is were those differences are addressed.</p>
 <p><b>All</b>
-<br>Heavy War Destroyer (HDW) designations: HDWs have several designations that make certain assumptions for the optional systems. These systems have been paid for in that assumption. If not everything is designated, then those not assigned may be replaced by the player before the battle. The cost for anything replaced is paid for by the CO budget of that ship.
+<br>Heavy War Destroyer (HDW) designations: HDWs have several designations that make certain assumptions for the optional systems. The BPV of HDWs are increased by a certain amount to cover the installation of these systems. Anything not defined below may be replaced byt the player from the Commander's Option budget of that ship.
 <br>&bull; HDW - Nothing re-assigned. The APRs are still APRs. The NWOs are empty (void). The Option Mounts are also empty. Filling these cost CO points (as above.)
-<br>&bull; HDW-C - A command variant. The Option Mounts are filled with some common weapon to the empire and the NWOs are filled with Flag Bridge to bring the command rating of the ship up to 10.
-<br>&bull; HDW-H - A Heavy-fighter carrier. Filled with 10 additional shuttle boxes with fighter ready racks and designed for double-space fighters.
-<br>&bull; HDW-K - A "killer" variant. NWOs are un-assigned and Option Mounts are filled with the same weapon as the command variant.
-<br>&bull; HDW-P - A PF Tender. Each has 2 sensor channels, 6 mech links, and 4 repair.
-<br>&bull; HDW-S - Scout. It merely has 2 sensor channels. NWOs are void.
-<br>&bull; HDW-V - A carrier variant. Like the Heavy-carrier variant, has 10 more fighter boxes and is designed for single-space fighters.
+<br>&bull; HDW-C - A command variant. The Option Mounts are filled with some common weapon to the empire and the NWOs are filled with Flag Bridge to bring the command rating of the ship up to 10. (+22 BPV)
+<br>&bull; HDW-H - A Heavy-fighter carrier. Filled with 10 additional shuttle boxes with fighter ready racks and designed for double-space fighters. (+20 BPV)
+<br>&bull; HDW-K - A "killer" variant. NWOs are un-assigned and Option Mounts are filled with the same weapon as the command variant. (+10 BPV)
+<br>&bull; HDW-P - A PF Tender. Each has 2 sensor channels, 6 mech links, and 4 repair. (+30 BPV)
+<br>&bull; HDW-S - Scout. It merely has 2 sensor channels. NWOs are void. (+20 BPV)
+<br>&bull; HDW-V - A carrier variant. Like the Heavy-carrier variant, has 10 more fighter boxes and is designed for single-space fighters. (+20 BPV)
 <br>There may be other designations, but they currently have nothing assigned.
 </p>
 </span>
@@ -330,7 +331,7 @@ action.
 <tr><td>Transport Fleet</td><td>7x FT</td></tr>
 <tr><td>Colony Fleet</td><td>3x F-LS, 3x F-AL (PH)</td></tr>
 </table>
-
+<p>The type of defsat is decided by the owner during setup of a combat where the defsat is used. The type of defsat can change between turns, but not between battles at the same location on the same turn.</p>
 <a class='clickMore' onclick='flip(this)'>[BPV Capacity System]</a>
 <div class='visually-hidden'>
 <p><div class='lighthead'>BPV Capacity</div>
@@ -440,7 +441,7 @@ Ships have a command-rating equal to thier size-class. Ships may not lead ships 
 <p>Note that Command Cruisers can lead Heavy Cruisers into battle, but pay no FCR penalty for appearing without Heavy Cruisers to lead (the “penalty” is the higher cost of the CC).</p>
 </div>
 -->
-<a name="combat"></a>
+<a name="space combat"></a>
 <h3 class="darkhead">Space Combat Phase</h3>
 <p><a href="encounter_deep_space.html" target="_BLANK">Deep Space Encounter</a> &bull; <a href="encounter_defensive.html" target="_BLANK">Defensive Battle</a> &bull; <a href="encounter_pursuit.html" target="_BLANK">Pursuit Battle</a></p>
 <p>Units enter the battle with all current refits except for "optional" refits, such as the UIM refit and mech-link refit. These optional refits are added with COs. See the <a href="#SETUP">Empire Specific section</a> for more information.</p>
@@ -662,8 +663,8 @@ Ships have a command-rating equal to thier size-class. Ships may not lead ships 
 <p>A planet is conquered when all ground units of the planet owner are eliminated. At this time, the ownership of the planet is transferred to the attacking power if there are no defending ground units remaining on the planet. Conquest of a planet can have a very negative effect on morale.</p>
 <p>Ground units and other cargo are embarked, disembarked or deployed in this step. Cargo cannot be embarked and disembarked or deployed on the same turn. Ships in reserve may not embark, disembark, or deploy units.</p>
 <p>Cargo carrying units have a supply rating indicating their cargo capacity. The size of a unit determines the Supply rating needed to carry it. Units without a specified size have a size equal to their defense value divided by two, rounded up. Small ships can combine their supply ratings to carry larger items, but if any carrying ship is lost, the entire cargo is lost.</p>
-<p>The size of ground units is 5. Transport Fleets have a Supply rating of 10, allowing them to carry two ground units. Ships with an "Assault" designation also have a Supply rating, but this may only be used for ground units.</p>
-<p>Transport Fleets or dedicated cargo carrying units are used to move units other than ground units (e.g. fighters and defense satellites). Flights of fighters or PFs can be embarked on units or transports and must eventually land. Systems can base a number of flights equal to twice their Productivity statistic. Note that attrition units need to be shipped out to their home carrier: the carrier does not recieve them from behind-the-scenes shipments.</p>
+<p>The size of ground units is 5. Transport Fleets have a Supply rating of 10, allowing them to carry two ground units. Ships with an "Assault" designation also have a Supply rating, but this may only be used for ground units. Flights of fighters have a size of 1/4. Heavy fighters and super-heavy fighters (i.e. PFs) have a size of 1/2.</p>
+<p>Transport Fleets or dedicated cargo carrying units are used to move units other than ground units (e.g. fighters and defense satellites). Flights of fighters or PFs can be embarked on units or transports but cannot use them in combat. Systems can base a number of flights equal to twice their Productivity statistic. Note that attrition units need to be shipped out to their home carrier: the carrier does not recieve them from behind-the-scenes shipments.</p>
 <p>Census, with a size of 10, can be carried on a single Transport Fleet or a combination of other supply ships. Census can only be disembarked in systems that already have Census and cannot be used to colonize new systems. See <a href="#update assets">Update Assets phase</a> for colonization.</p>
 <a name="construction"></a>
 <h3 class="darkhead">Construction Completion Phase</h3>
@@ -710,14 +711,25 @@ Ships have a command-rating equal to thier size-class. Ships may not lead ships 
 </table>
 </div>
 <p>The Census value of a system can increase over time. At the end of the year, each system rolls a d10 and adds its Census value. If the roll exceeds 15, the Census increases by 1. If the value doesn't increase, a +1 modifier is added to the next population increase roll. This modifier accumulates if the Census hasn't increased in previous checks. The Census cannot exceed the system's Carrying Capacity.</p>
-<p>To colonize a system, players need to move citizens from an existing system to the new one. This is done by creating a Colony Fleet, consisting of several passenger liners and cargo vessels (see <a href="units.html" target="_BLANK">the unit list</a> for colony fleets.) The Colony Fleet, along with any assigned escorts, can load one Census from the current system to the fleet. The Colony Fleet then moves to its destination. On the next "Update Assets Phase," the Census from the fleet is unloaded to the planet and the colony fleet is removed, establishing the colony. During this turn, the colony cannot build or perform any actions as they are focused on establishing their presence. The colony starts with Morale equal to its Census, and Productivity are initially set to 0 unless there is pre-existing infrastructure on the planet.</p>
+<p>To colonize a system, players need to move citizens from an existing system to the new one. This is done by creating a Colony Fleet, consisting of several passenger liners and cargo vessels (see <a href="units.html" target="_BLANK">the unit list</a> for colony fleets.) The Colony Fleet is considered to have loaded one Census from the current system to the fleet when the Colony Fleet is built. The Colony Fleet then moves to its destination. On the next "Update Assets Phase," the Census from the fleet is unloaded to the planet and the colony fleet is removed, establishing the colony. During this turn, the colony cannot build or perform any actions as they are focused on establishing their presence. The colony starts with Morale equal to its Census, and Productivity are initially set to 0 unless there is pre-existing infrastructure on the planet.</p>
 <h3 class="darkhead">End of Turn Phase</h3>
 <p>The turn ends in this phase. Optional rules like the Random Events option take place in this phase and all results are applied in the next campaign turn. If they are one-time events they occur in their appropriate phase next turn. If they are permanent effects, they take effect immediately and are treated as if they occurred during the turn just ending, in the appropriate phase.
 <a name="UNITS"></a>
 </p><h3 class="darkhead">UNITS</h3>
 <h3 class="lighthead">Unit Abilities</h3>
-<p>Many units, generally those who are variants of Ships-Of-The-Line, have special abilities. These abilities usually give that unit some small advantage in certain circumstances. (<a href="./units.html" target="_BLANK">Unit Lists</a>)</p>
-<br>&nbsp; <b>Assault</b> - These units are able to perform Planetary Assaults. The number in parenthesis acts like the Supply trait, but only for ground units. See <a href="#invasion">the invasion phase</a>.
+<p>The <a href="./units.html" target="_BLANK">unit lists</a> have several columns to describe each unit:</p>
+    &nbsp; <b>Unit Name</b> - This is the SFB designation of the unit. Note that this is the earliest form of the unit. Refits are treated in <a href="#space combat">the space combat phase</a>.
+<br>&nbsp; <b>Service Date</b> - This is the first technology-year that the unit may be built.
+<br>&nbsp; <b>Design</b> - This is the type of hull that the unit is. This trait may be used in <a href="#encounters">the BPV Capacity system</a> for determining base-hull-types.
+<br>&nbsp; <b>Cost</b> - This is the amount of economic points needed to build this unit.
+<br>&nbsp; <b>Maint</b> - This is the amount of economic points needed to maintain all units of this class, round up. See <a href="#income">the income phase</a>.
+<br>&nbsp; <b>Anti-Ship</b> - This value is used in the SIDCORS combat system.
+<br>&nbsp; <b>Anti-Ftr</b> - This value is used in the SIDCORS combat system.
+<br>&nbsp; <b>Defense Value</b> - This value is used in the SIDCORS combat system.
+<br>&nbsp; <b>Command Rate</b> - This rates how well the unit functions as a flagship. This number is used in <a href="#encounters">the encounters phase</a>.
+<br>&nbsp; <b>Basing</b> - This is the number of fighter flights that the unit can carry and launch. A regular number is how many Light Fighter (LF) flights that it can carry. A number with an "H" is the number of Heavy Fighter (HF) flights that can carry. A number with a "SH" is the number of Super Heavy flights (SHF) (i.e. PFs) that it can carry.
+<p>Many units have special abilities. These abilities usually give that unit some small advantage in certain circumstances.</p>
+    &nbsp; <b>Assault</b> - These units are able to perform Planetary Assaults. The number in parenthesis acts like the Supply trait, but only for ground units. See <a href="#invasion">the invasion phase</a>.
 <br>&nbsp; <b>Ballistic</b> - Ballistic units rely on their long-range seeking weapons (usually drones) as their main armorment. They benifit from being able to engage their opponents from extreme range or from outside of the normal engagement distance, but require more logistical attention. These units are generally called "Drone Bombardment" ships in SFB.
 <br>&nbsp; <b>Carrier</b> - Carrier ships carry fighter units. These are treated as "True Carriers" by SFB, and have fighter supplies to match. The basing number given for them are a number of "LF" units they can carry. Units with this ability may carry "MF" fighter units, but those units take twice as many spaces of Basing.
 <br>&nbsp; <b>Cloak</b> - These units have a cloaking device installed. Not only do they gain the benefits of the "Stealth" ability, but have other combat advantages.
@@ -730,6 +742,7 @@ Ships have a command-rating equal to thier size-class. Ships may not lead ships 
 <br>&nbsp; <b>Stealth</b> - Stealthed units are harder to detect. When combat is between a fleet containing only ships with this trait, the opposing force has a reduced Weapon Status. 
 <br>&nbsp; <b>Supply</b> - A unit that has this trait can carry cargo. See <a href="#invasion">the invasion phase</a>.
 <br>&nbsp; <b>Supply Depot</b> - A unit that has this trait can act like a colony in good order, when it comes to determining supply lines.
+<br>&nbsp; <b>Trade</b> - This unit can generate commerce income. See <a href="#income">the income phase</a>.
 <a name="SAMPLE"></a>
 </p><h3 class="darkhead">SAMPLE GAME</h3>
 <p>This game is from the point of view of a <a href="./sheet/index.html?data=sample00" target="_BLANK">Frax</a> player.</p>
