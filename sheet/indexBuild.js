@@ -419,7 +419,7 @@ orderTable['unmothball'] = [ unitsInMothballs, [], '', 'Unmothball a unit' ];
   ElementFind('researchNeeded').innerHTML = Math.floor( empire.planetaryIncome / 2);
   ElementFind('map').src = empire.mapFile;
   ElementFind('mapLink').href = empire.mapFile;
-  ElementFind('UnitListDoc').href= "../units.html#"+String(empire.empire).toLowerCase(); // Edit the units link
+  ElementFind('UnitListDoc').href= "../docs/units.html#"+String(empire.empire).toLowerCase(); // Edit the units link
 
   // Write the Orders section
   var ordersOut = "";
