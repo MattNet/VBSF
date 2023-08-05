@@ -335,7 +335,8 @@ action.
 <a class='clickMore' onclick='flip(this)'>[BPV Capacity System]</a>
 <div class='visually-hidden'>
 <p><div class='lighthead'>BPV Capacity</div>
-<p>Compare the Command Rating (CR) of the ship commanding the fleet with the below chart. This is the BPV capacity of the flagship. The total combat BPV of all units present, including the flagship itself and any attrition units, cannot exceed this amount. Note that these numbers are not intended to reflect the size of fleets that can be achieved with (S8.2) fleets. These numbers have been chosen to reduce the number of ships in fleets with larger flagships.</p>
+<p>Compare the Command Rating (CR) of the ship commanding the fleet with the below chart. This is the BPV capacity of the flagship. The total combat BPV of all units present, including the flagship itself and any attrition units, cannot exceed this amount.</p>
+<p>Note that these numbers are not intended to reflect the size of fleets that can be achieved with (S8.2) fleets. Instead, the BPV capacities have been chosen to reflect the size of fleets that players are willing to field and complete battles in a reasonable time-frame. For purposes of the present campaign, the BPVs have been severely curtailed.</p>
 
 <!--
 CR 3, 4, 5, & 6 values chosen by taking max CBPV of one unit of that CR and adding the average CBPV of units of that CR x [CR-1]
@@ -357,6 +358,8 @@ Maximum and average BPVs do not include attrition units or drone costs. Includin
 
 <table class="tableBorder">
 <tr style="border:solid;"><th>CR</th><th>Up to<br>Y120</th><th>Y120 to<br>Y180</th><th>After<br>Y180</th></tr>
+<!--
+This is the real BPV values
 <tr class='odd'><td>10</td><td>1200</td><td>1700</td><td>1700</td></tr>
 <tr class='even'><td>9</td><td>1100</td><td>1400</td><td>1400</td></tr>
 <tr class='odd'><td>8</td><td>1000</td><td>1000</td><td>1200</td></tr>
@@ -365,6 +368,18 @@ Maximum and average BPVs do not include attrition units or drone costs. Includin
 <tr class='even'><td>5</td><td>300</td><td>500</td><td>700</td></tr>
 <tr class='odd'><td>4</td><td>250</td><td>350</td><td>500</td></tr>
 <tr class='even'><td>3</td><td>175</td><td>250</td><td>300</td></tr>
+-->
+<!--
+These values are halved of the above in order to reduce fleet BPVs in play. However, CR3 BPV are judged to be too small and have been pegged to the values of CR4.
+-->
+<tr class='odd'><td>10</td><td>600</td><td>850</td><td>850</td></tr>
+<tr class='even'><td>9</td><td>550</td><td>700</td><td>700</td></tr>
+<tr class='odd'><td>8</td><td>500</td><td>500</td><td>600</td></tr>
+<tr class='even'><td>7</td><td>400</td><td>400</td><td>600</td></tr>
+<tr class='odd'><td>6</td><td>200</td><td>400</td><td>600</td></tr>
+<tr class='even'><td>5</td><td>150</td><td>250</td><td>350</td></tr>
+<tr class='odd'><td>4</td><td>125</td><td>175</td><td>250</td></tr>
+<tr class='even'><td>3</td><td>125</td><td>175</td><td>250</td></tr>
 </table>
 
 <p>Total the Combat BPV of the units in the fleet. This includes the BPV cost of the commanding unit, any attrition units, any civilian vessels, and any fixed units. Use the Economic BPV of scouts and civilian ships (FT, Freighters, Auxilliaries, etc..) instead of the combat BPV. All fixed installations must be included in the fleet. In the event of a scenario where nothing better is present, inhabited planets (with some EPs activated) are assumed to have a "flag" rating of 3.</p>
