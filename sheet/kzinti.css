@@ -1,0 +1,22 @@
+:root {
+  --body-color: black;
+  --button-color-bottom: #944;
+  --button-color-text: white;
+  --button-color-top: #944;
+  --card-background-color: ghostwhite;
+  --card-border-color: #57C;
+  --card-text-color: black;
+  --error-text-color: lightskyblue;
+  --footer-text-color: white;
+  --header-image: url('');
+  --heading-color-bottom: #888;
+  --heading-color-text: white;
+  --heading-color-top: #333;
+  --summary-color-bottom: #A33;
+  --summary-color-text: white;
+  --summary-color-top: #C66;
+}
+
+.header {
+  min-height: 10px;
+}

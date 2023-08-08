@@ -6,7 +6,7 @@ var filePath = document.location.origin+document.location.pathname+"?data=";
 
 // names of the themes to allow the player to select 
 // format is: displayed, filename, displayed, filename, ...
-var themeNames = [ "Default", "", "Federation", "federation", "Frax", "frax", "Gorn", "gorn", "Klingon", "klingon", "Peladine", "peladine", "Quari", "quari" ];
+var themeNames = [ "Default", "", "Federation", "federation", "Frax", "frax", "Gorn", "gorn", "Klingon", "klingon", "Kzinti", "kzinti", "Peladine", "peladine", "Quari", "quari", "Romulan", "romulan", "Tholian", "tholian", "Vudar","vudar" ];
 // The prefix name for each permenant order input 
 var namePrefix = 'OrderEntry';
 
@@ -137,13 +137,13 @@ for( var i=0; i<unitList.length; i++ )
 orderTable = [];
 orderTable['break'] = [ [], [], '', 'Break a treaty' ];
 orderTable['build_unit'] = [ allBuildableUnits, colonyNames, 'New fleet name', 'Build unit' ];
-orderTable['build_intel'] = [ colonyNames, [], 'Amount of Intel Points', 'Build intel points' ];
+//orderTable['build_intel'] = [ colonyNames, [], 'Amount of Intel Points', 'Build intel points' ]; // disable intel
 orderTable['colonize'] = [ otherSystems, [], '', 'Colonize system' ];
 orderTable['convert'] = [ currentUnits, buildableShips, '', 'Convert Unit' ];
 orderTable['cripple'] = [ currentUnits, [], '', 'Cripple unit' ];
 orderTable['destroy'] = [ currentUnits, [], '', 'Destroy unit' ];
 orderTable['flight'] = [ currentFlights, allBasablePlaces, '', 'Assign flights' ];
-orderTable['intel'] = [ allIntelProjects, allKnownPlaces, 'Amount of Points to Use', 'Perform an intel action' ];
+//orderTable['intel'] = [ allIntelProjects, allKnownPlaces, 'Amount of Points to Use', 'Perform an intel action' ]; // disable intel
 orderTable['load'] = [ unitsWithCarry, allLoadableUnits, 'Amount to Load', 'Load units' ];
 orderTable['mothball'] = [ currentUnits, [], '', 'Mothball a unit' ];
 orderTable['move'] = [ currentFleets, allMovablePlaces, '', 'Move fleet' ];
@@ -154,7 +154,7 @@ orderTable['productivity'] = [ colonyNames, [], '', 'Increase productivity' ];
 orderTable['repair'] = [ unitsNeedingRepair, [], '', 'Repair unit' ];
 orderTable['research'] = [ [], [], 'Amount to Invest', 'Invest into research' ];
 orderTable['sign'] = [ offeredTreaties, otherEmpires, '', 'Sign a treaty' ];
-orderTable['trade_route'] = [ currentFleets, allKnownPlaces, '', 'Set a trade route' ];
+orderTable['trade_route'] = [ currentFleets, allKnownPlaces, 'Third system of trade route', 'Set a trade route' ];
 orderTable['unload'] = [ unitsWithCarry, [], 'Amount to unload', 'Unload units' ];
 orderTable['unmothball'] = [ unitsInMothballs, [], '', 'Unmothball a unit' ];
 

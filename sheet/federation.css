@@ -1,5 +1,8 @@
 :root {
-  --body-color: #000;
+  --body-color: black;
+  --button-color-bottom: #338;
+  --button-color-text: white;
+  --button-color-top: #338;
   --card-background-color: #35A;
   --card-border-color: #57C;
   --card-text-color: white;

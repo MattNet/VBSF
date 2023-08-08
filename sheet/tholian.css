@@ -1,22 +1,23 @@
 :root {
   --body-color: black;
   --button-color-bottom: #D33;
-  --button-color-text: white;
+  --button-color-text: black;
   --button-color-top: #D33;
-  --card-background-color: ghostwhite;
+  --card-background-color: #933;
   --card-border-color: crimson;
-  --card-text-color: black;
+  --card-text-color: white;
   --error-text-color: lightskyblue;
   --footer-text-color: white;
-  --header-image: url('./gorn_back.png');
-  --heading-color-bottom: #D88;
+  --header-image: url('');
+  --heading-color-bottom: #C66;
   --heading-color-text: white;
   --heading-color-top: #D33;
-  --summary-color-bottom: #F33;
+  --summary-color-bottom: #D33;
   --summary-color-text: white;
-  --summary-color-top: #F88;
+  --summary-color-top: #CC6;
 }
 
 .header {
-  min-height: 250px;
+  min-height: 10px;
 }
+

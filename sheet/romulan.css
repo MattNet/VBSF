@@ -1,0 +1,23 @@
+:root {
+  --body-color: black;
+  --button-color-bottom: #D33;
+  --button-color-text: black;
+  --button-color-top: #D33;
+  --card-background-color: #C44;
+  --card-border-color: crimson;
+  --card-text-color: black;
+  --error-text-color: lightskyblue;
+  --footer-text-color: white;
+  --header-image: url('');
+  --heading-color-bottom: #D99;
+  --heading-color-text: black;
+  --heading-color-top: #D33;
+  --summary-color-bottom: #F99;
+  --summary-color-text: black;
+  --summary-color-top: #D66;
+}
+
+.header {
+  min-height: 10px;
+}
+

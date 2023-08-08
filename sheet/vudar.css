@@ -1,0 +1,22 @@
+:root {
+  --body-color: #000;
+  --button-color-bottom: #333;
+  --button-color-text: white;
+  --button-color-top: #333;
+  --card-background-color: #555;
+  --card-border-color: #775;
+  --card-text-color: white;
+  --error-text-color: yellow;
+  --footer-text-color: white;
+  --header-image: url('/sheet/vudar_back.png');
+  --heading-color-bottom: #DD4;
+  --heading-color-text: black;
+  --heading-color-top: #AA3;
+  --summary-color-bottom: #AA6;
+  --summary-color-text: white;
+  --summary-color-top: #886;
+}
+
+.header {
+  min-height: 300px;
+}

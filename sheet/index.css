@@ -5,6 +5,9 @@ declare the reusable colors
 :root {
 /* define a very vanilla default look. Based on the "General Units" colors */
   --body-color: black;
+  --button-color-bottom: royalblue;
+  --button-color-text: white;
+  --button-color-top: royalblue;
   --card-background-color: ghostwhite;
   --card-border-color: gray;
   --card-text-color: black;
@@ -83,10 +86,10 @@ th {
 /* Neato Background */
   border-top: 1px solid var(--heading-color-bottom);
   background: #000000;
-  background: linear-gradient(180deg, var(--heading-color-top), var(--heading-color-bottom));
+  background: linear-gradient(180deg, var(--button-color-top), var(--button-color-bottom));
   box-shadow: rgba(0,0,0,1) 1px 1px 1px;
   text-shadow: rgba(0,0,0,.4) 0 1px 0;
-  color: var(--heading-color-text);
+  color: var(--button-color-text);
 }
 
 /***
