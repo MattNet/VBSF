@@ -115,17 +115,23 @@ for( var i=0; i<unitList.length; i++ )
 
   // Assemble the list of buildable units
   if( unitList[i].design.indexOf('Ground') !== -1 )
-    // List of Ground Units, because notes contain 'Ground'
+    // List of Ground Units, because design contain 'Ground'
     buildableGround.push( unitList[i].ship );
-  else if( unitList[i].notes.indexOf('Flight') !== -1 )
-    // List of Fighter Units, because notes contain 'Flight'
+  else if( unitList[i].design.indexOf('LF') == 0 ||
+           unitList[i].design.indexOf('HF') == 0 ||
+           unitList[i].design.indexOf('SHF') == 0 )
+    // List of Fighter Units, because the design is some sort of flight
     buildableFlights.push( unitList[i].ship );
   else
-    // List of Orbital Units, because it is remaining
+    // List of Orbital Units and mobile units, because they are remaining
     buildableShips.push( unitList[i].ship );
 }
+// Sort the buildable units
+buildableFlights.sort();
+buildableGround.sort();
+buildableShips.sort();
 
- allBuildableUnits = JsonConcatArrays(buildableShips, buildableGround, buildableFlights);
+ allBuildableUnits = JsonConcatArrays(buildableShips, buildableFlights, buildableGround);
  allLoadableUnits = JsonConcatArrays(buildableGround, ['Census']);
  allMovablePlaces = JsonConcatArrays(colonyNames, otherSystems, unknownMovementPlaces);
  allKnownPlaces = JsonConcatArrays(colonyNames, otherSystems);
