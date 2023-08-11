@@ -350,7 +350,7 @@ orderTable['unmothball'] = [ unitsInMothballs, [], '', 'Unmothball a unit' ];
   for( var i=0; i<purchases.length; i++)
   {
     purchaseOut += "<tr><td>"+purchases[i].name+"</td><td>"+purchases[i].cost+"</td></tr>";
-    purchaseTotal += purchases[i].cost; // running total of funds spent on purchases
+    purchaseTotal += Number(purchases[i].cost); // running total of funds spent on purchases
   }
   purchaseTotal = newRound( purchaseTotal, 3 ); // Round purchaseTotal to 3 places
   purchaseOut += "<tr><td class='summation'>Total Purchases</td><td class='summation'>"+purchaseTotal+"</td></tr>";
