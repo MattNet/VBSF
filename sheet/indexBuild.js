@@ -155,6 +155,7 @@ orderTable['mothball'] = [ currentUnits, [], '', 'Mothball a unit' ];
 orderTable['move'] = [ currentFleets, allMovablePlaces, '', 'Move fleet' ];
 orderTable['move_unit'] = [ currentUnits, currentFleets, 'New Fleet Name', 'Move unit' ];
 orderTable['name'] = [ colonyNames, [], '', '(Re) name a place' ];
+orderTable['name_fleet'] = [ currentFleets, [], 'New fleet name', 'Rename a fleet' ];
 orderTable['offer'] = [ otherEmpires, allTreatyTypes, '', 'Offer a treaty' ];
 orderTable['productivity'] = [ colonyNames, [], '', 'Increase productivity' ];
 orderTable['repair'] = [ unitsNeedingRepair, [], '', 'Repair unit' ];
