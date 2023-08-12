@@ -150,7 +150,7 @@ foreach( array_keys($_REQUEST) as $key )
 
   // get the order to affect with this $key
   $orderNum = intval( substr( $key, 10, 2 ) );
-  $orderPos = strtolower( substr( $key, 11, 1 ) );
+  $orderPos = strtolower( substr( $key, 10+strlen($orderNum), 1 ) );
 
   // skip if we failed to get the location inside the order from the $key
   if( $orderNum === false || $orderPos === false )
