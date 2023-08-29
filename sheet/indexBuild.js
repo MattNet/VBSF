@@ -22,6 +22,7 @@ var buildableShips = [];
 var buildableGround = [];
 var buildableFlights = [];
 var otherSystems = [];
+var repairUnits = [];
 var unitsWithBasing = [];
 var unitsWithCarry = [];
 // groups of data collections
@@ -126,6 +127,13 @@ for( var i=0; i<unitList.length; i++ )
     // List of Orbital Units and mobile units, because they are remaining
     buildableShips.push( unitList[i].ship );
 }
+// fill repairUnits from unitsNeedingRepair
+for( var i=0; i<unitsNeedingRepair.length; i++ )
+{
+  var mid = unitsNeedingRepair[i].search(/ w\/ /);
+  repairUnits.push( [ unitsNeedingRepair[i].substring( 0, mid ),unitsNeedingRepair[i].substring( mid+4 ) ] );
+}
+
 // Sort the buildable units
 buildableFlights.sort();
 buildableGround.sort();
@@ -228,6 +236,8 @@ orderTable['unmothball'] = [ unitsInMothballs, [], '', 'Unmothball a unit' ];
     ElementFind('PrevDoc').parentElement.classList.remove("button");
   }
 
+  // Create the add-back-in variables for units being loaded/unloaded
+  // This is to keep the accounting of planetary income what it is at turn-start
   for (var a = 0; a < orders.length; a++)
   {
     var order = orders[a], fleetKey = -1, colonyKey = -1;
@@ -238,7 +248,6 @@ orderTable['unmothball'] = [ unitsInMothballs, [], '', 'Unmothball a unit' ];
         fleetKey = b;
         break;
       }
-
     if (fleetKey == -1)
       continue;
 
@@ -248,7 +257,6 @@ orderTable['unmothball'] = [ unitsInMothballs, [], '', 'Unmothball a unit' ];
         colonyKey = b;
         break;
       }
-
     if (colonyKey == -1)
       continue;
 
@@ -315,24 +323,45 @@ orderTable['unmothball'] = [ unitsInMothballs, [], '', 'Unmothball a unit' ];
   for( var a=0; a<fleets.length; a++ )
   {
     var unitCount = []; // format is [ ['designation','count', 'index'], ... ]
+    var seperateRepairs = []; // list of units in this fleet that are crippled
+
+    // count the units
+    unitCount = UnitCounts( fleets[a].units );
+    // exclude those units needing repairs
+    for( var b=0; b<repairUnits.length; b++ )
+      if( repairUnits[b][1] == fleets[a].name )
+        seperateRepairs.push( repairUnits[b][0] );
 
     FleetOut += "\n<table class='fleetEntry'>";
 
     FleetOut += "<tr><th>Fleet Name</th><td>"+fleets[a].name+"</td><th>Location</th><td>"+fleets[a].location+"</td></tr>";
     FleetOut += "<tr><th># of Units</th><th>Class</th><th colspan=2>Notes</th></tr>";
 
-    // count the units
-    unitCount = UnitCounts( fleets[a].units );
-
     // list the units
     for( var b=0; b<unitCount.length; b++ )
     {
+//      while()
+      {
+        c = seperateRepairs.indexOf(unitCount[b][0]);
+        if( c >= 0 )
+        {
+          unitCount[b][1]--;
+          seperateRepairs.splice(c,1);
+          FleetOut += "<tr><td>1</td><td>"+unitCount[b][0]+"</td><td colspan=2>";
+          if( isNaN(unitCount[b][2]) )
+            FleetOut += unitCount[b][2];
+          else
+            FleetOut += unitList[ unitCount[b][2] ].notes;
+          FleetOut += " (Crippled)</td></tr>";
+        }
+      }
       FleetOut += "<tr><td>"+unitCount[b][1]+"</td><td>"+unitCount[b][0]+"</td><td colspan=2>";
       if( isNaN(unitCount[b][2]) )
         FleetOut += unitCount[b][2];
       else
         FleetOut += unitList[ unitCount[b][2] ].notes;
       FleetOut += "</td></tr>";
+
     }
     // Add the fleet notes
     if( fleets[a].notes )
