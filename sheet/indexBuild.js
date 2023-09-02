@@ -355,6 +355,8 @@ orderTable['unmothball'] = [ unitsInMothballs, [], '', 'Unmothball a unit' ];
           FleetOut += " (Crippled)</td></tr>";
         }
       }
+      if( unitCount[b][1] == 0 )
+        continue;
       FleetOut += "<tr><td>"+unitCount[b][1]+"</td><td>"+unitCount[b][0]+"</td><td colspan=2>";
       if( isNaN(unitCount[b][2]) )
         FleetOut += unitCount[b][2];
