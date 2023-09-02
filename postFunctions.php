@@ -304,7 +304,15 @@ function getLeftover( $dataArray )
 
   // deduct purchases
   foreach( $dataArray["purchases"] as $item )
-    $out -= $item["cost"];
+    // convert fractional notation to decimal
+    if( strpos($item["cost"],"/" ) )
+    {
+      $top = substr( stripslashes($item["cost"]),0,1 );
+      $bottom = substr( stripslashes($item["cost"]),2 );
+      $out -= round( ($top / $bottom), 3);
+    }
+    else
+      $out -= (float) $item["cost"];
 
   // deduct fleet maintenance
   foreach( $dataArray["fleets"] as $item )

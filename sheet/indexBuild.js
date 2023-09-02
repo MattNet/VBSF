@@ -379,8 +379,19 @@ orderTable['unmothball'] = [ unitsInMothballs, [], '', 'Unmothball a unit' ];
   var purchaseTotal = 0;
   for( var i=0; i<purchases.length; i++)
   {
+    // show fractional value in the purchase list
     purchaseOut += "<tr><td>"+purchases[i].name+"</td><td>"+purchases[i].cost+"</td></tr>";
-    purchaseTotal += Number(purchases[i].cost); // running total of funds spent on purchases
+
+    // convert fractional notation to decimal
+    if( String(purchases[i].cost).includes("/") )
+    {
+      purchases[i].cost = String(purchases[i].cost).replace( /\//g, '/' ); // strip slashes
+      $top = purchases[i].cost.substring( 0, 1 );
+      $bottom = purchases[i].cost.substring( 2 );
+      purchaseTotal += newRound(($top / $bottom),3);
+    }
+    else
+      purchaseTotal += Number(purchases[i].cost); // running total of funds spent on purchases
   }
   purchaseTotal = newRound( purchaseTotal, 3 ); // Round purchaseTotal to 3 places
   purchaseOut += "<tr><td class='summation'>Total Purchases</td><td class='summation'>"+purchaseTotal+"</td></tr>";
