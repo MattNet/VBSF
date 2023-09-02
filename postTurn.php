@@ -14,7 +14,7 @@
 
 if( ! isset($argv[1]) )
 {
-  echo "\nCreates a data file for a player position\n\n";
+  echo "\nCreates a data file for a player position\nThis is used after the second turn segment.\n\n";
   echo "Called by:\n";
   echo "  ".$argv[0]." OLD_TURN_DATA_FILE [NEW_FILE_NAME]\n\n";
   exit(1);
@@ -30,6 +30,7 @@ $newFileName = ""; // save file filename
 $checklist = array(); // list of things that need to be done
 $MAKE_CHECKLIST = false; // if true, adds a turn checklist to the events
 $ACCELLERATED_RESEARCH = false; // If true, do research every half year. *Is Buggy*
+$BUILD_LOADED_COLONY_FLEETS = true; // If true, load colony fleets on the turn they are built
 
 if( isset($argv[2]) )
   $newFileName = $argv[2];

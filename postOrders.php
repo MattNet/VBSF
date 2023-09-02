@@ -14,7 +14,7 @@
 
 if( ! isset($argv[1]) )
 {
-  echo "\nHandles post-orders items for a player position\n\n";
+  echo "\nHandles post-orders items for a player position\nThis is used after the first turn segment.\n\n";
   echo "Called by:\n";
   echo "  ".$argv[0]." DATA_FILE [NEW FILE NAME]\n";
   exit(1);
@@ -24,7 +24,7 @@ if( ! isset($argv[1]) )
 # Configuration
 ###
 $AUTO_ROLL_EMPTY_SYSTEMS = true; // if true, calls $SYSTEM_ROLLER for any new explorations
-$EXPLAIN_RAIDS = true; // if true, explains the chances of a successful raid
+$EXPLAIN_RAIDS = false; // if true, explains the chances of a successful raid
 $MAKE_CHECKLIST = false; // if true, adds a turn checklist to the events
 $MAPPOINTS_NAME = 3; // Index in mapPoints array of datafile for the location name
 $MAPPOINTS_OWNER = 2; // Index in mapPoints array of datafile for the owning position (empire type)
