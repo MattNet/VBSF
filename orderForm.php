@@ -61,6 +61,7 @@ $orderTable['mothball'] 	= [ true, false, false, 'Mothball a unit' ];
 $orderTable['move'] 		= [ true, true, false, 'Move fleet' ];
 $orderTable['move_unit'] 	= [ true, false, true, 'Move unit' ];
 $orderTable['name'] 		= [ true, false, false, '(Re) name a place' ];
+$orderTable['name_fleet']	= [ true, false, true, 'Rename a fleet' ];
 $orderTable['offer'] 		= [ true, true, false, 'Offer a treaty' ];
 $orderTable['productivity'] 	= [ true, false, false, 'Increase productivity' ];
 $orderTable['repair'] 		= [ true, false, false, 'Repair unit' ];
