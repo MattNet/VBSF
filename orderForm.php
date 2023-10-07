@@ -59,7 +59,7 @@ $orderTable['intel'] 		= [ true, true, true, 'Perform an intel action' ];
 $orderTable['load'] 		= [ true, true, true, 'Load units' ];
 $orderTable['mothball'] 	= [ true, false, false, 'Mothball a unit' ];
 $orderTable['move'] 		= [ true, true, false, 'Move fleet' ];
-$orderTable['move_unit'] 	= [ true, true, true, 'Move unit' ];
+$orderTable['move_unit'] 	= [ true, false, true, 'Move unit' ];
 $orderTable['name'] 		= [ true, false, false, '(Re) name a place' ];
 $orderTable['offer'] 		= [ true, true, false, 'Offer a treaty' ];
 $orderTable['productivity'] 	= [ true, false, false, 'Increase productivity' ];
@@ -232,6 +232,6 @@ $fileContents["orders"] = array_values( $fileContents["orders"] );
 writeJSON( $fileContents, $dataFileName );
 
 // go back to the player-page
-header( "location: http://".$EXIT_PAGE."?data=".$_REQUEST["dataFile"]."&e=".$errorStrings."&t=".time(), true, 302 );
+header( "location: http://".$EXIT_PAGE."?data=".$_REQUEST["dataFile"]."&e=".urlencode($errorStrings)."&t=".time(), true, 302 );
 exit;
 ?>
