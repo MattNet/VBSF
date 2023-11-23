@@ -390,7 +390,7 @@ orderTable['unmothball'] = [ unitsInMothballs, [], '', 'Unmothball a unit' ];
       purchases[i].cost = String(purchases[i].cost).replace( /\//g, '/' ); // strip slashes
       $top = purchases[i].cost.substring( 0, 1 );
       $bottom = purchases[i].cost.substring( 2 );
-      purchaseTotal += newRound(($top / $bottom),3);
+      purchaseTotal += newRound(($top / $bottom),4); // Round to 4 digits to remove some rounding errors later
     }
     else
       purchaseTotal += Number(purchases[i].cost); // running total of funds spent on purchases
