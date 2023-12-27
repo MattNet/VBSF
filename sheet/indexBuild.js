@@ -318,29 +318,36 @@ orderTable['unmothball'] = [ unitsInMothballs, [], '', 'Unmothball a unit' ];
   MaintOut += "<tr><td colspan=2 class='summation'>Total Maintenance Expense</td><td class='summation'>"+empire.maintExpense+"</td></tr>";
   ElementFind('maintData').innerHTML = ElementFind('maintData').innerHTML + MaintOut;
 
+  // Prepare the mothballs for display
+  for( var a=0; a<unitsInMothballs.length; a++ )
+  {
+    unitsInMothballs[a].name="Mothballs";
+    unitsInMothballs[a].notes="Mothballed";
+  }
+
   // Assemble the Fleet Assets area
   var FleetOut = '';
-  for( var a=0; a<fleets.length; a++ )
+  var assetOut = fleets.concat( unitsInMothballs );
+  for( var a=0; a<assetOut.length; a++ )
   {
     var unitCount = []; // format is [ ['designation','count', 'index'], ... ]
     var seperateRepairs = []; // list of units in this fleet that are crippled
 
     // count the units
-    unitCount = UnitCounts( fleets[a].units );
+    unitCount = UnitCounts( assetOut[a].units );
     // exclude those units needing repairs
     for( var b=0; b<repairUnits.length; b++ )
-      if( repairUnits[b][1] == fleets[a].name )
+      if( repairUnits[b][1] == assetOut[a].name )
         seperateRepairs.push( repairUnits[b][0] );
 
     FleetOut += "\n<table class='fleetEntry'>";
 
-    FleetOut += "<tr><th>Fleet Name</th><td>"+fleets[a].name+"</td><th>Location</th><td>"+fleets[a].location+"</td></tr>";
+    FleetOut += "<tr><th>Fleet Name</th><td>"+assetOut[a].name+"</td><th>Location</th><td>"+assetOut[a].location+"</td></tr>";
     FleetOut += "<tr><th># of Units</th><th>Class</th><th colspan=2>Notes</th></tr>";
 
     // list the units
     for( var b=0; b<unitCount.length; b++ )
     {
-//      while()
       {
         c = seperateRepairs.indexOf(unitCount[b][0]);
         if( c >= 0 )
@@ -366,10 +373,10 @@ orderTable['unmothball'] = [ unitsInMothballs, [], '', 'Unmothball a unit' ];
 
     }
     // Add the fleet notes
-    if( fleets[a].notes )
+    if( assetOut[a].notes )
     {
       FleetOut += "<tr><td colspan=2>&nbsp;</td><td colspan=2>";
-      FleetOut += fleets[a].notes;
+      FleetOut += assetOut[a].notes;
       FleetOut += "</td></tr>";
     }
     FleetOut += "</table>";
