@@ -270,11 +270,23 @@ orderTable['unmothball'] = [ unitsInMothballs, [], '', 'Unmothball a unit' ];
   }
 
   // Assemble the System Assets area
+  var fixedOut = [];
   var SystemOut = '';
+  var unitCount = []; // format is [ ['designation','count', 'index'], ... ]
   for( var i=0; i<colonies.length; i++ )
   {
-    var colony = colonies[i];
-    var fixedUnits = colony.fixed.join(', ');
+    var colony = colonies[i]; // convenience variable
+    fixedOut = []; // clear this between loops
+    unitCount = UnitCounts( colony.fixed ); // count the units at the colony
+    // Assemble the list of units
+    for( var b=0; b<unitCount.length; b++ )
+    {
+      if( unitCount[b][1] == 1 )
+        fixedOut.push( unitCount[b][0] );
+      else
+        fixedOut.push( unitCount[b][1]+"x "+unitCount[b][0] );
+    }
+    var fixedUnits = fixedOut.join(', ');
     var censusLoad = colony.censusLoad < 0 ? `(${colony.censusLoad})` : colony.censusLoad > 0 ? `(+${colony.censusLoad})` : '';
     SystemOut += `<tr>
       <td>${colony.name}</td>
@@ -327,7 +339,7 @@ orderTable['unmothball'] = [ unitsInMothballs, [], '', 'Unmothball a unit' ];
 
   // Assemble the Fleet Assets area
   var FleetOut = '';
-  var assetOut = fleets.concat( unitsInMothballs );
+  var assetOut = fleets.concat( unitsInMothballs ); // show the mothballs as fleets
   for( var a=0; a<assetOut.length; a++ )
   {
     var unitCount = []; // format is [ ['designation','count', 'index'], ... ]
@@ -507,8 +519,6 @@ orderTable['unmothball'] = [ unitsInMothballs, [], '', 'Unmothball a unit' ];
         case "research":
           ordersOut += "Order to do research for \""+orders[i].note+"\" EP";
           break;
-//        case "":
-//          break;
         default:
           ordersOut += "Order \""+orders[i].reciever+"\" to do \""+orders[i].type+"\"";
           if( orders[i].target != '' )
