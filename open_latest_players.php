@@ -14,8 +14,9 @@ if( ! isset($argv[1]) )
 
 $FILE_DIR = "./files/";
 $BROWSER_PROGRAM = "firefox";
+$LOCAL_DOMAIN = "vbsf.local";
 
-include( "./postFunctions.php" );
+include( "./objects/DataSheet.php" ); // So that we can get the function that decodes the data sheets
 
 $files = scandir( $FILE_DIR );
 $turn = (int) $argv[1];
@@ -30,16 +31,25 @@ foreach( $files as $key => $value )
   }
 
   // remove those files where their ["game"]["turn"] does not match the input argument
-  $fileData = extractJSON( $FILE_DIR.$value );
-  if( ! is_array($fileData) || $fileData["game"]["turn"] != $turn )
+
+  $obj = new DataSheet( $FILE_DIR.$value, "", true ); // open the data file (read-only)
+  if( $obj === false )
   {
-    unset( $files[$key] );
+    echo "Could not open '".$FILE_DIR.$value."' for reading.\n";
+    unset( $files[$key], $obj );
+    continue;
+  }
+  $gameData = $obj->ReadGame ();
+  if( ! is_array($gameData) || $gameData["turn"] != $turn )
+  {
+    unset( $files[$key], $obj );
     continue;
   }
 
   // reference each file to it's sheet
-  $files[$key] = "http://vbsf.local/sheet/index.html?data=".substr( $value, 0, -3 );
+  $files[$key] = "http://$LOCAL_DOMAIN/sheet/index.html?data=".substr( $value, 0, -3 );
 
+  unset( $obj ); // clean up the DataSheet object
 }
 
 shell_exec( $BROWSER_PROGRAM." ".implode( " ", $files ).' > /dev/null 2>&1 &' );
