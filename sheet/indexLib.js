@@ -3,65 +3,6 @@ This file provides all of the functions referenced by the client-side code.
 */
 
 /*
-Starts up whatever function on the complete load of the page (after images are 
-finished).  Cross-browser
-
-PARAMS: Function callback to be executed on window load
-RETURN: None
-*/
-function onLoadStartUp( startupFunc )
-{
-  if( document.addEventListener ){
-    document.addEventListener('readystatechange', event => {
-      if(document.readyState == "complete")
-        startupFunc();
-      });
-//  window.addEventListener("load",startupFunc,false);
-  } else if( window.attachEvent ){
-    window.attachEvent("onload",startupFunc);
-  } else {
-    window.onload = startupFunc;
-  }
-}
-
-/***
-# Fakes a nextElementSibling method call
-# A functional equivilent to the firefox method.
-###
-# Takes in an object (e.g. 'this') and returns the next (non-text, non-comment)
-# element in the DOM
-***/
-function nextElementSibling( el )
-{
-    do { el = el.nextSibling } while ( el && el.nodeType !== 1 );
-    return el;
-}
-
-/***
-# Finds within the document a named element or an element with the given ID
-###
-# Accepts the name string or ID string as the first element.
-# Optionally, if the second argument is a javascript object (e.g. a document 
-#   object inside a frame), will search within that object hierarchy
-***/
-function ElementFind( search_item, obj )
-{
-  if( !obj )
-    obj = top;
-  if( obj.document.getElementById && obj.document.getElementById(search_item) )
-    return obj.document.getElementById(search_item);
-  else if( obj.document.getElementsByName && obj.document.getElementsByName(search_item) )
-    return obj.document.getElementsByName(search_item);
-  else if (obj.document.all && obj.document.all[search_item])
-    return obj.document.all[search_item];
-  else if (obj.document[search_item])
-    return obj.document[search_item];
-  else if (obj.frames && obj.frames[search_item])
-    return obj.frames[search_item];
-  return false;
-}
-
-/*
 Performs a more natural rounding than Math.round()
 In that this will preserve decimal places if needed
 
@@ -80,64 +21,17 @@ PARAMS: (int) The current month. 1-based
         (int) How many turns per year
 RETURN: (string) The name of the current month
 */
-function makeFancyMonth( monthNum, monthsYear )
+function makeFancyMonth(monthNum, monthsYear)
 {
-  var placeInYear = 0; // A float representing which month
-  // return nothing if it doesn't look like this is looking for a place-in-year
-  // e.g. one turn is a week, one turn is a year, and so on.
-  if( monthsYear > 12 || monthsYear < 2 )
-    return "";
-  // error out if monthNum is less than 0
-  if( monthNum < 0 )
-    return "";
+  const monthNames = ["January","February","March","April","May","June",
+                      "July","August","September","October","November","December"];
 
-  // call out a season
-  if( monthsYear == 2 && monthNum == 1 )
-    return "Spring";
-  if( monthsYear == 2 ) // catches monthNum=2 and monthNum=0
-    return "Fall";
-  if( monthsYear == 4 )
-  {
-   switch( monthNum )
-   {
-   case 1:
-     return "Spring";
-   case 2:
-     return "Summer";
-   case 3:
-     return "Fall";
-   case 4:
-   case 0: // can only happen on the zeroth turn
-     return "Winter";
-   }
-  }
+  if (monthsYear < 2 || monthsYear > 12 || monthNum < 0) return "";
 
-  // If we are here, then we want some sort of month
-  placeInYear = monthNum / monthsYear;
-  if( placeInYear < 0.1 )
-    return "January";
-  if( placeInYear < 0.2 )
-    return "Febuary";
-  if( placeInYear < 0.275 )
-    return "March";
-  if( placeInYear < 0.35 )
-    return "April";
-  if( placeInYear < 0.45 )
-    return "May";
-  if( placeInYear < 0.55 )
-    return "June";
-  if( placeInYear < 0.6 )
-    return "July";
-  if( placeInYear < 0.7 )
-    return "August";
-  if( placeInYear < 0.775 )
-    return "September";
-  if( placeInYear < 0.85 )
-    return "October";
-  if( placeInYear < 0.95 )
-    return "November";
-  if( placeInYear < 1.1 )
-    return "December";
+  if (monthsYear === 2) return monthNum === 1 ? "Spring" : "Fall";
+  if (monthsYear === 4) return ["Spring","Summer","Fall","Winter"][monthNum % 4];
+
+  return monthNames[Math.floor((monthNum / monthsYear) * 12) % 12];
 }
 
 /***
@@ -146,22 +40,9 @@ function makeFancyMonth( monthNum, monthsYear )
 ###
 # Each argument is optional
 ***/
-function JsonConcatArrays( arA, arB, arC, arD )
+function JsonConcatArrays( ...arrays )
 {
-  var output = Array();
-  if( typeof arA !== 'undefined' && arA.length>0 )
-    for( var i=0;i<arA.length;i++ )
-      output.push(arA[i]);
-  if( typeof arB !== 'undefined' && arB.length>0 )
-    for( var i=0;i<arB.length;i++ )
-      output.push(arB[i]);
-  if( typeof arC !== 'undefined' && arC.length>0 )
-    for( var i=0;i<arC.length;i++ )
-      output.push(arC[i]);
-  if( typeof arD !== 'undefined' && arD.length>0 )
-    for( var i=0;i<arD.length;i++ )
-      output.push(arD[i]);
-  return output;
+  return arrays.flat().filter(Boolean);
 }
 
 /***
@@ -187,11 +68,10 @@ function JsonConcatArrays( arA, arB, arC, arD )
 ***/
 function changeMenu( el, indexFirst, indexSecond, indexThird, indexNote )
 {
-  var orderIndexArray = orders; // the array of objects holding the user's orders
-
-  var firstSiblingMenu = el.nextElementSibling || nextElementSibling(el);
-  var secondSiblingMenu = firstSiblingMenu.nextElementSibling || nextElementSibling(firstSiblingMenu);
-  var textMenu = secondSiblingMenu.nextElementSibling || nextElementSibling(secondSiblingMenu);
+  const orderIndexArray = orders; // the array of objects holding the user's orders
+  const firstSiblingMenu = el.nextElementSibling || nextElementSibling(el);
+  const secondSiblingMenu = firstSiblingMenu.nextElementSibling || nextElementSibling(firstSiblingMenu);
+  const textMenu = secondSiblingMenu.nextElementSibling || nextElementSibling(secondSiblingMenu);
 
   // empty the sibling menus
   while( firstSiblingMenu.firstChild )
@@ -204,30 +84,30 @@ function changeMenu( el, indexFirst, indexSecond, indexThird, indexNote )
   // quit here if no order given
   if( el.selectedIndex == 0 && isNaN(indexFirst) )
       return;
-  // fill the first sibling menu
-  for( var i = 0; i < orderTable[el.value][0].length; i++ )
-  {
-    var o = document.createElement("option");
-    o.text = orderTable[el.value][0][i];
-    if( ! isNaN(indexSecond) && orderIndexArray[indexSecond].reciever == orderTable[el.value][0][i] )
-      o.selected = true;
 
+  // fill the first sibling menu
+  for( let optionText of orderTable[el.value][0] )
+  {
+    const o = document.createElement("option");
+    o.text = optionText;
+    if( ! isNaN(indexSecond) && orderIndexArray[indexSecond].reciever === optionText )
+      o.selected = true;
     firstSiblingMenu.appendChild(o);
   }
   // fill the second sibling menu
-  for( var i = 0; i < orderTable[el.value][1].length; i++ )
+  for( let optionText of orderTable[el.value][1] )
   {
-    var o = document.createElement("option");
-    o.text = orderTable[el.value][1][i];
-    if( ! isNaN(indexThird) && orderIndexArray[indexThird].target == orderTable[el.value][1][i] )
+    const o = document.createElement("option");
+    o.text = optionText;
+    if( ! isNaN(indexThird) && orderIndexArray[indexThird].target === optionText )
       o.selected = true;
-
     secondSiblingMenu.appendChild(o);
   }
+
   // fill the placeholder text of the text menu
   textMenu.placeholder = orderTable[el.value][2];
-  if( ! isNaN(indexNote) && orderIndexArray[indexNote].target == orderTable[el.value][1][i] )
-    textMenu.textContent = orderIndexArray[indexNote].note;
+  if( ! isNaN(indexNote) )
+    textMenu.value = orderIndexArray[indexNote].note;
 }
 
 
@@ -255,64 +135,97 @@ function changeMenu( el, indexFirst, indexSecond, indexThird, indexNote )
 ***/
 function OrderOutput( orderNum, index )
 {
-  var orderIndexArray = orders; // the array of objects holding the user's orders
-  var fillArray = Object.keys( orderTable ); // The array with the initial order types
-  var orderRecieversArray = []; // The array with the order recievers
-  var orderTargetsArray = []; // The array with the order targets
-  var namePrefix = 'OrderEntry';
-  var output = '';
+  const ordersArea = document.getElementById( "ordersArea" );
+  const orderIndexArray = orders;
+  const fillArray = Object.keys( orderTable );
+  const namePrefix = "OrderEntry";
 
+  let orderRecieversArray = [];
+  let orderTargetsArray = [];
 
-  output += "<br><select name='"+namePrefix+orderNum+"A' onchange='changeMenu(this";
-  // this argument allows the drop-downs to "lock onto" the given order when
-  // they select the given order type
-  if( ! isNaN(index) )
-    output += ", "+index;
-  output += ")'><option><-- No Order --></option>"
-  for( i=0; i<fillArray.length; i++ )
+  // container fragment (can hold multiple nodes)
+  const frag = document.createDocumentFragment();
+
+  // --- Order type select (A) ---
+  const selectA = document.createElement( "select" );
+  selectA.name = namePrefix + orderNum + "A";
+
+  // No order option
+  const noOrderOpt = document.createElement( "option" );
+  noOrderOpt.textContent = "<-- No Order -->";
+  selectA.appendChild( noOrderOpt );
+
+  // Fill options
+  for( let typeKey of fillArray )
   {
-    output += "<option ";
+    const opt = document.createElement( "option" );
+    opt.value = typeKey;
+    opt.textContent = orderTable[typeKey][3];
 
-    if( ! isNaN(index) && orderIndexArray[index].type == fillArray[i] )
+    if( ! isNaN(index) && orderIndexArray[index].type === typeKey )
     {
-      output += "SELECTED ";
-
-      // populate the key lookups for the dropdowns following the initial order
-      orderRecieversArray = orderTable[ fillArray[i] ][0]; // The array with the order recievers
-      orderTargetsArray = orderTable[ fillArray[i] ][1]; // The array with the order targets
+      opt.selected = true;
+      orderRecieversArray = orderTable[typeKey][0];
+      orderTargetsArray = orderTable[typeKey][1];
     }
-
-    output += "value='"+fillArray[i]+"'>"+orderTable[ fillArray[i] ][3]+"</option>";
+    selectA.appendChild( opt );
   }
-  output += "</select><select name='"+namePrefix+orderNum+"B'>";
+
+  selectA.addEventListener( "change", function (){ changeMenu( this, index ); });
+
+  frag.appendChild( document.createElement("br") );
+  frag.appendChild( selectA );
+
+  // --- Order reciever select (B) ---
+  const selectB = document.createElement( "select" );
+  selectB.name = namePrefix + orderNum + "B";
+
   if( ! isNaN(index) )
   {
-    for( var i = 0; i < orderRecieversArray.length; i++ )
+    for( let rec of orderRecieversArray )
     {
-      output += "<option ";
-      if( orderIndexArray[index].reciever == orderRecieversArray[i] )
-        output += "SELECTED ";
-      output += "value='"+orderRecieversArray[i]+"'>"+orderRecieversArray[i]+"</option>";
+      const opt = document.createElement( "option" );
+      opt.value = rec;
+      opt.textContent = rec;
+      if( orderIndexArray[index].reciever === rec )
+        opt.selected = true;
+      selectB.appendChild( opt );
     }
   }
-  output += "</select><select name='"+namePrefix+orderNum+"C'>";
+
+  frag.appendChild( selectB );
+
+  // --- Order target select (C) ---
+  const selectC = document.createElement( "select" );
+  selectC.name = namePrefix + orderNum + "C";
+
   if( ! isNaN(index) )
   {
-    for( var i = 0; i < orderTargetsArray.length; i++ )
+    for( let tar of orderTargetsArray )
     {
-      output += "<option ";
-      if( orderIndexArray[index].target == orderTargetsArray[i] )
-        output += "SELECTED ";
-      output += "value='"+orderTargetsArray[i]+"'>"+orderTargetsArray[i]+"</option>";
+      const opt = document.createElement( "option" );
+      opt.value = tar;
+      opt.textContent = tar;
+      if( orderIndexArray[index].target === tar )
+        opt.selected = true;
+      selectC.appendChild( opt );
     }
   }
-  output += "</select><input type='text' name='";
-  output += namePrefix+orderNum+"D'";
+
+  frag.appendChild( selectC );
+
+  // --- Order note input (D) ---
+  const inputD = document.createElement( "input" );
+  inputD.type = "text";
+  inputD.name = namePrefix + orderNum + "D";
   if( ! isNaN(index) )
-    output += "value='"+orderIndexArray[index].note+"' ";
-  output += ">";
-  return output;
+    inputD.value = orderIndexArray[index].note || "";
+
+  frag.appendChild( inputD );
+
+  ordersArea.appendChild( frag );
 }
+
 
 /***
 # Figures the economic output of a colony
@@ -323,24 +236,13 @@ function OrderOutput( orderNum, index )
 #   raw
 #   prod
 ***/
-function calcColonyOutput( obj )
+function calcColonyOutput({ raw, census, prod, morale })
 {
-  var output = 0;
+  if ([raw, census, prod, morale].some(Number.isNaN)) return "??";
+  if (morale === 0) return 0;
 
-  // Skip if some values are not numbers
-  if( isNaN(obj.raw) || isNaN(obj.census) || isNaN(obj.prod) || isNaN(obj.morale) )
-    return "??";
-
-  output = obj.raw;
-  if( obj.census < obj.prod )
-    output *= obj.census;
-  else
-    output *= obj.prod;
-  if( obj.morale < (obj.census / 2) )
-    output *= 0.5;
-  else if( obj.morale == 0 )
-    output = 0;
-
+  let output = raw * Math.min(census, prod);
+  if (morale < census / 2) output *= 0.5;
   return output;
 }
 
@@ -351,10 +253,10 @@ function calcColonyOutput( obj )
 ***/
 function popitupEvent( text )
 {
-  var newwindow=window.open('','Event Description','resizable=yes,scrollbars=yes');
+  let newwindow=window.open('','Event Description','resizable=yes,scrollbars=yes');
   if(window.focus)
     newwindow.focus();
-  var tmp=newwindow.document;
+  let tmp=newwindow.document;
   tmp.write(text);
   tmp.close();
   return false;
@@ -365,34 +267,60 @@ function popitupEvent( text )
 ###
 # Output format is [ ['designation','count', 'index into unitList'], ... ]
 ***/
-function UnitCounts( unitArray, previousCounts = [] )
+function UnitCounts(units, previousCounts = [])
 {
-  var output = [];
-  // if 'previousCounts' was actually filled
-  if( previousCounts.length > 0 )
-    output = previousCounts;
+  const counts = new Map(previousCounts.map(([name, count, index]) => [name, [count, index]]));
 
-  for( var b=0; b<unitArray.length; b++ )
-  {
-    var flag = 0;
-    // increment an existing instance of an entry
-    for( var c=0; c<output.length; c++ )
-      if( flag == 0 && unitArray[b] == output[c][0] )
-      {
-        output[c][1]++;
-        flag = 1;
-      }
-    // This is for the first instance of an entry
-    if( flag == 0 )
-    {
-      var notes = '';
-      var index = "not in unit list";
-      for( var c=0; c<unitList.length; c++ )
-        if( unitList[c].ship == unitArray[b] )
-          index = c;
-      output.push( [ unitArray[b], 1, index ] );
+  for (const unit of units) {
+    if (!counts.has(unit)) {
+      const idx = unitList.findIndex(u => u.ship === unit);
+      counts.set(unit, [1, isNaN(idx) ? "not in unit list" : idx]);
+    } else {
+      counts.get(unit)[0]++;
     }
   }
-  return output;
+  return Array.from(counts, ([designation, [count, index]]) => [designation, count, index]);
+}
+
+/***
+# Builds a dropdown for the CSS theme
+###
+# Pulls the names from 'themeNames'
+# Stores the current style in LocalStorage, not in cookies
+***/
+function buildThemeDropdown()
+{
+  const themeSelect = document.getElementById( "themeSelect" );
+  const savedSheet = localStorage.getItem( "sheet" ) || themeNames[0].file;
+
+  themeSelect.innerHTML = ""; // clear any existing options
+
+  // Build the dropdown from themeNames
+  themeNames.forEach( sheet => {
+    const opt = document.createElement( "option" );
+    opt.value = sheet.file;
+    opt.textContent = sheet.name;
+    if( savedSheet === sheet.file )
+      opt.selected = true;
+    themeSelect.appendChild( opt );
+  });
+
+  // Apply saved theme on load
+  applyStyleSheet( savedSheet );
+}
+
+/***
+# Applies a style and saves to LocalStorage
+###
+# Argument is the style URL
+***/
+function applyStyleSheet( sheetName )
+{
+  const linkTag = document.getElementById( "pagestyle" );
+  if( linkTag )
+  {
+    linkTag.setAttribute( "href", "./"+sheetName+".css" );
+    localStorage.setItem( "sheet", sheetName );
+  }
 }
 

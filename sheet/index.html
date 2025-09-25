@@ -10,88 +10,43 @@
 <!--<script src="https://d3js.org/d3-hexbin.v0.2.min.js"></script>-->
 <script src="./d3.v7.min.js"></script>
 <script type="text/javascript" src='indexLib.js'></script>
-<script type="text/javascript" src='./maps.js' defer></script>
-<script type="text/javascript" src='./indexBuild.js' defer></script>
+<script type="text/javascript" src='./indexBuild.js'></script>
+
 <script type="text/javascript" >
-/***
-Change sheet theme
-***/
+const params = (new URL(document.location)).searchParams;
+var dataVal = params.get('data'); // is the filename of the data file
+var errorVal = params.get('e'); // is the error string
 
-/***
-# Various cookie functions.
-# Borrowed from https://www.quirksmode.org/js/cookies.html
-***/
-function createCookie(name,value,days) {
-   if (days) {
-      var date = new Date();
-      date.setTime(date.getTime()+(days*24*60*60*1000));
-      var expires = "; expires="+date.toGMTString();
-   }
-   else var expires = "";
-   document.cookie = name+"="+value+expires+";SameSite=Strict; path=/";
-}
+document.addEventListener("DOMContentLoaded", function() {
 
-function readCookie(name) {
-   var nameEQ = name + "=";
-   var ca = document.cookie.split(';');
-   for(var i=0;i < ca.length;i++) {
-      var c = ca[i];
-      while (c.charAt(0)==' ') c = c.substring(1,c.length);
-      if (c.indexOf(nameEQ) == 0) return c.substring(nameEQ.length,c.length);
-   }
-   return null;
-}
+  // Build the theme dropdown
+  buildThemeDropdown();
+  // Add change listener
+  document.getElementById( "themeSelect" ).addEventListener( "change", function(){ applyStyleSheet( this.value ); });
 
-var sheetName = readCookie( 'theme' ); // read the theme cookie
-// if the value is not blank, add that stylesheet
-if( sheetName != null )
-{
-  var link = document.createElement("link");
-  link.rel = "stylesheet";
-  link.type = "text/css";
-  link.href = sheetName+".css";
-  document.head.appendChild(link);
-}
-
-/***
-Receive Game Data
-***/
-
-/***
-# Loads up the JSON data file
-# Placed in this file so that the load can start before the library file is 
-# loaded. It's a timing thing.
-###
-# PARAMS: 
-#       (STRING) - the file to fetch
-# RETURN: None
-***/
-function fetchData ( url )
-{
-  if( url === void(0) || url === null )
+  if( !dataVal )
   {
     console.log( "Unable to load data file. Missing filename." );
+    document.getElementById('errorArea').innerHTML = "Unable to load data file. Missing filename.";
+
     return false;
   }
 
-  var scriptTag = document.createElement('script');
-  scriptTag.type = "text/javascript";
-  scriptTag.language = "javascript";
-  scriptTag.src = url+"?d="+Date.now();
+  // get the datafile
+  fetchData( "files/"+dataVal+".js", () => {
+    // initialization functions here
+    emitGameData();
 
-  document.head.appendChild( scriptTag );
-};
-var params = (new URL(document.location)).searchParams;
-var dataVal = params.get('data'); // is the filename of the data file
-var errorVal = params.get('e'); // is the error string
-fetchData( "../files/"+dataVal+".js" ); // get the datafile
+    document.getElementsByName("dataFile")[0].value = dataVal;
+
+  });
+});
 </script>
-
 </head><body>
 
-<div class='header'></div>
+<header><div class='header'></div></header>
 
-<div class='wrapper'>
+<main><div class='wrapper'>
 
   <span id='errorArea' class='errorArea'></span>
 
@@ -179,17 +134,15 @@ fetchData( "../files/"+dataVal+".js" ); // get the datafile
     </table>
   </div>
 
-</div> <!-- end container -->
+</div></main> <!-- end container -->
 
-<div class='footer'>
+<footer><div class='footer'>
   <br>Copyright &copy; 2022 - 2024, Matthew Potter
-  <span style="float:right;">Change Theme: <select id='themeChange'></select></span>
-</div>
 
-<!-- Last-moment declarations, now that the basic DOM is loaded -->
-<script>
-// set the value of certain hidden input to the name of the data file
-document.getElementsByName("dataFile")[0].value = dataVal;
-</script>
+<span style="float:right;">
+  <label for="themeSelect">Choose Theme:</label>
+  <select id="themeSelect"></select>
+</span>
 
+</div></footer>
 </body></html>

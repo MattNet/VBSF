@@ -122,7 +122,7 @@ declare the large sections of the page
 }
 .errorArea {
   grid-area: errorArea;
-  color: var(--error-color);
+  color: var(--error-text-color);
 }
 .events {
   grid-area: events;
