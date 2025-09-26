@@ -16,6 +16,7 @@
 const params = (new URL(document.location)).searchParams;
 var dataVal = params.get('data'); // is the filename of the data file
 var errorVal = params.get('e'); // is the error string
+var sheetDataLocation = "../files/";
 
 document.addEventListener("DOMContentLoaded", function() {
 
@@ -33,7 +34,7 @@ document.addEventListener("DOMContentLoaded", function() {
   }
 
   // get the datafile
-  fetchData( "files/"+dataVal+".js", () => {
+  fetchData( sheetDataLocation+dataVal+".js", () => {
     // initialization functions here
     emitGameData();
 
@@ -42,6 +43,8 @@ document.addEventListener("DOMContentLoaded", function() {
   });
 });
 </script>
+
+<link rel="stylesheet" type="text/css" id="pagestyle" href="" />
 </head><body>
 
 <header><div class='header'></div></header>
