@@ -36,9 +36,6 @@ document.addEventListener("DOMContentLoaded", function() {
   fetchData( "../files/"+dataVal+".js", () => {
     // initialization functions here
     emitGameData();
-
-    document.getElementsByName("dataFile")[0].value = dataVal;
-
   });
 });
 </script>
@@ -59,8 +56,10 @@ document.addEventListener("DOMContentLoaded", function() {
     <tr><td>Game Month</td><td id='gameMonth'></td></tr>
     </table>
 
+<!--
     <span class='button'><a href='../docs/rules.html' target='_BLANK'>Campaign Rules</a></span>
     <span class='button'><a href='#' id='UnitListDoc' target='_BLANK'>List of Units</a></span>
+-->
 
     <h3>Economics</h3>
     <table>

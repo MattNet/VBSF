@@ -78,7 +78,8 @@ function fetchData ( url, callback )
     const mapsScript = document.createElement( "script" );
     mapsScript.type = "text/javascript";
     mapsScript.src = "./maps.js";
-    mapsScript.defer = false;   // we want it now, not waiting for DOM
+    mapsScript.defer = false;
+    mapsScript.async = false; // make it synchronous in order
 
     mapsScript.onload = () =>
     {
@@ -364,7 +365,7 @@ Turn Selection
     prevDocEl.textContent = "";
     prevDocEl.parentElement.classList.remove("button");
   }
-  document.getElementById("UnitListDoc").href = `../docs/units.html#${String(empire.empire).toLowerCase()}`;
+//  document.getElementById("UnitListDoc").href = `../docs/units.html#${String(empire.empire).toLowerCase()}`;
 
 /***
 Month / Year
