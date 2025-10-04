@@ -1,5 +1,45 @@
 /*
 This file provides all of the functions referenced by the client-side code.
+
+newRound(number, decimal)
+Rounds a number to a specified number of decimal places.
+Returns: rounded number.
+
+makeFancyMonth(monthNum, monthsYear)
+Converts a game month index into a month or season name.
+Returns: month/season name string.
+
+JsonConcatArrays(...arrays)
+Concatenates up to four JSON arrays into one.
+Returns: merged array.
+
+changeMenu(el, indexFirst, indexSecond, indexThird, indexNote)
+Updates dropdown menus and text input based on orderTable.
+Returns: nothing (updates DOM elements).
+
+OrderOutput(orderNum, index)
+Builds and inserts HTML inputs for an order line.
+Returns: nothing (modifies DOM).
+
+calcColonyOutput({ raw, census, prod, morale })
+Computes economic output of a colony from attributes.
+Returns: number or "??" if invalid.
+
+popitupEvent(text)
+Opens a new window showing provided text.
+Returns: false.
+
+UnitCounts(units, previousCounts=[])
+Counts units in an array and compares with existing counts.
+Returns: array of [designation, count, index].
+
+buildThemeDropdown()
+Creates a theme selection dropdown from themeNames.
+Returns: nothing (updates DOM).
+
+applyStyleSheet(sheetName)
+Applies a stylesheet and saves the choice to LocalStorage.
+Returns: nothing.
 */
 
 /*
@@ -23,15 +63,14 @@ RETURN: (string) The name of the current month
 */
 function makeFancyMonth(monthNum, monthsYear)
 {
-  const monthNames = ["January","February","March","April","May","June",
-                      "July","August","September","October","November","December"];
-
   if (monthsYear < 2 || monthsYear > 12 || monthNum < 0) return "";
 
   if (monthsYear === 2) return monthNum === 1 ? "Spring" : "Fall";
-  if (monthsYear === 4) return ["Spring","Summer","Fall","Winter"][monthNum % 4];
+  if (monthsYear === 4) return ["Spring","Summer","Fall","Winter"][(monthNum - 1) % 4];
 
-  return monthNames[Math.floor((monthNum / monthsYear) * 12) % 12];
+  return ["January","February","March","April","May","June",
+          "July","August","September","October","November","December"]
+          [Math.floor(((monthNum - 1) / monthsYear) * 12 ) % 12 ];
 }
 
 /***
@@ -110,7 +149,6 @@ function changeMenu( el, indexFirst, indexSecond, indexThird, indexNote )
     textMenu.value = orderIndexArray[indexNote].note;
 }
 
-
 /***
 # Assembles the HTML inputs for the orders
 ###
@@ -128,7 +166,7 @@ function changeMenu( el, indexFirst, indexSecond, indexThird, indexNote )
 # 'orderTable' must be a multi-dimensional array of the following sample format
 #
 # orderTable['reference key'] = [
-#    ['1st drop down', '1st drop down',], 
+#    ['1st drop down', '1st drop down'], 
 #    ['2nd drop down', '2nd drop down'],
 #    'Text Input', 'Description of order'
 #  ];
@@ -156,20 +194,35 @@ function OrderOutput( orderNum, index )
   selectA.appendChild( noOrderOpt );
 
   // Fill options
-  for( let typeKey of fillArray )
-  {
-    const opt = document.createElement( "option" );
+  let currentOptgroup = null;
+  for (let typeKey of fillArray) {
+    if (typeKey.startsWith("header_")) {
+      // start a new optgroup
+      if (currentOptgroup) selectA.appendChild(currentOptgroup);
+      currentOptgroup = document.createElement("optgroup");
+      currentOptgroup.label = orderTable[typeKey][0];
+      continue;
+    }
+
+    const opt = document.createElement("option");
     opt.value = typeKey;
     opt.textContent = orderTable[typeKey][3];
 
-    if( ! isNaN(index) && orderIndexArray[index].type === typeKey )
-    {
+    // --- Disable if not in the correct turn segment ---
+    const segment = orderTable[typeKey][4]; // The pre/post note
+    if (segment.toLowerCase() !== game.turnSegment.toLowerCase()) {
+      opt.disabled = true;
+    }
+
+    if (!isNaN(index) && orderIndexArray[index].type === typeKey) {
       opt.selected = true;
       orderRecieversArray = orderTable[typeKey][0];
       orderTargetsArray = orderTable[typeKey][1];
     }
-    selectA.appendChild( opt );
+
+    (currentOptgroup || selectA).appendChild(opt);
   }
+  if (currentOptgroup) selectA.appendChild(currentOptgroup);
 
   selectA.addEventListener( "change", function (){ changeMenu( this, index ); });
 
@@ -226,7 +279,6 @@ function OrderOutput( orderNum, index )
   ordersArea.appendChild( frag );
 }
 
-
 /***
 # Figures the economic output of a colony
 ###
@@ -236,13 +288,13 @@ function OrderOutput( orderNum, index )
 #   raw
 #   prod
 ***/
-function calcColonyOutput({ raw, census, prod, morale })
+function calcColonyOutput({ raw, population, morale })
 {
-  if ([raw, census, prod, morale].some(Number.isNaN)) return "??";
+  if ([raw, population, morale].some(Number.isNaN)) return "??";
   if (morale === 0) return 0;
 
-  let output = raw * Math.min(census, prod);
-  if (morale < census / 2) output *= 0.5;
+  let output = raw * population;
+  if (morale < population / 2) output *= 0.5;
   return output;
 }
 
@@ -267,16 +319,30 @@ function popitupEvent( text )
 ###
 # Output format is [ ['designation','count', 'index into unitList'], ... ]
 ***/
-function UnitCounts(units, previousCounts = [])
-{
+function UnitCounts(units, previousCounts = []) {
   const counts = new Map(previousCounts.map(([name, count, index]) => [name, [count, index]]));
 
   for (const unit of units) {
-    if (!counts.has(unit)) {
-      const idx = unitList.findIndex(u => u.ship === unit);
-      counts.set(unit, [1, isNaN(idx) ? "not in unit list" : idx]);
+    // Check if the entry is in "NxDesignation" format
+    const match = /^(\d+)x(.+)$/.exec(unit);
+    if (match) {
+      const num = parseInt(match[1], 10);
+      const designation = match[2].trim();
+
+      if (!counts.has(designation)) {
+        const idx = unitList.findIndex(u => u.ship === designation);
+        counts.set(designation, [num, isNaN(idx) ? "not in unit list" : idx]);
+      } else {
+        counts.get(designation)[0] += num;
+      }
     } else {
-      counts.get(unit)[0]++;
+      // Normal entry
+      if (!counts.has(unit)) {
+        const idx = unitList.findIndex(u => u.ship === unit);
+        counts.set(unit, [1, isNaN(idx) ? "not in unit list" : idx]);
+      } else {
+        counts.get(unit)[0]++;
+      }
     }
   }
   return Array.from(counts, ([designation, [count, index]]) => [designation, count, index]);

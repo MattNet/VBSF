@@ -5,13 +5,20 @@
 // Width = radius × 2 × sin(π / 3)
 // Height = radius × 3 / 2
 var HexRadius = 20;
-//var FinalMapWidth = 1870;
 var FinalMapWidth = window.screen.width-40;
 var FinalMapHeight = 700;
+// Color Data
+var EmpireBackColors = d3.scaleOrdinal()
+    .domain(["","Andromedan","Barbarian","Borak","Britanian","Canadi'en","Carnivon","Deltan","Federation","Flivver","Frax","General","Gorn","Hispaniolan","Hydran","ISC","Jindarian","Klingon","Kzinti","Kzinti Faction","LDR","Lyran","Neo-Tholian","Orion","Paravian","Peladine","Quari","Romulan","Romulan Imperial","Seltorian","Sharkhunter","Tholian","Triaxian","Vudar","WYN","Maesron","Koligahr","Trobrin","Vari","Probr","Chlorophon","Drex","Alunda","Hiver","Sigvirion","Loriyill","Souldra","Iridani","Ymatrian","Worb","FRA","Singer","Juggernaught"])
+    .range(["#ccf","Green","White","","Turquoise","White","Green","Turquoise","Blue","White","Gray","White","White","","Green","Yellow","Gray","Black","White","Orange","White","Yellow","Rose","Blue","Red","Black","Tan","Red","Pink","White","Purple","Red","Purple","Black","Yellow","Red","Blue","Grey","Green","Yellow","Brown","Grey","Orange","Blue","Green","Brown","Purple","Pink","Pink","Pink","Blue","Purple","White"]);
+var EmpireTextColors = d3.scaleOrdinal()
+    .domain(["","Andromedan","Barbarian","Borak","Britanian","Canadi'en","Carnivon","Deltan","Federation","Flivver","Frax","General","Gorn","Hispaniolan","Hydran","ISC","Jindarian","Klingon","Kzinti","Kzinti Faction","LDR","Lyran","Neo-Tholian","Orion","Paravian","Peladine","Quari","Romulan","Romulan Imperial","Seltorian","Sharkhunter","Tholian","Triaxian","Vudar","WYN","Maesron","Koligahr","Trobrin","Vari","Probr","Chlorophon","Drex","Alunda","Hiver","Sigvirion","Loriyill","Souldra","Iridani","Ymatrian","Worb","FRA","Singer","Juggernaught"])
+    .range(["#33f","Black","Purple","","Black","Red","Yellow","White","Black","Turquoise","Purple","Blue","Red","","White","Black","Black","White","Black","White","Green","Green","White","White","Yellow","Blue","Black","Black","Black","Orange","Black","White","White","Yellow","Red","White","White","White","Black","Red","White","Purple","White","Grey","Yellow","Pink","Yellow","Green","White","Purple","Red","Pink","Blue"]);
+
 //###
 // NOTE: Primitives rotated so that they are flat-topped.
 // Pointy-top is the default in D3-Hexbin
-// This affects where X and Y are used, in nearly every place
+// This affects where X and Y are used in nearly every place
 //###
 
 // this message changed to reflect flat-tops
@@ -33,13 +40,6 @@ var svg = d3.select("#mapImg")
 //###
 // the Hex data
 //var mapPoints = [ [1,30,"Kzinti","Kzintar"], [35,60,"Kzinti","Rowph"], [35,90,"Klingon","Klancher"], [1,120,"","empty"], [70,150,"Romulan","Atredies"] ];
-// Color Data
-var EmpireBackColors = d3.scaleOrdinal()
-    .domain(["","Andromedan","Barbarian","Borak","Britanian","Canadi'en","Carnivon","Deltan","Federation","Flivver","Frax","General","Gorn","Hispaniolan","Hydran","ISC","Jindarian","Klingon","Kzinti","Kzinti Faction","LDR","Lyran","Neo-Tholian","Orion","Paravian","Peladine","Quari","Romulan","Romulan Imperial","Seltorian","Sharkhunter","Tholian","Triaxian","Vudar","WYN","Maesron","Koligahr","Trobrin","Vari","Probr","Chlorophon","Drex","Alunda","Hiver","Sigvirion","Loriyill","Souldra","Iridani","Ymatrian","Worb","FRA","Singer","Juggernaught"])
-    .range(["#ccf","Green","White","","Turquoise","White","Green","Turquoise","Blue","White","Gray","White","White","","Green","Yellow","Gray","Black","White","Orange","White","Yellow","Rose","Blue","Red","Black","Tan","Red","Pink","White","Purple","Red","Purple","Black","Yellow","Red","Blue","Grey","Green","Yellow","Brown","Grey","Orange","Blue","Green","Brown","Purple","Pink","Pink","Pink","Blue","Purple","White"]);
-var EmpireTextColors = d3.scaleOrdinal()
-    .domain(["","Andromedan","Barbarian","Borak","Britanian","Canadi'en","Carnivon","Deltan","Federation","Flivver","Frax","General","Gorn","Hispaniolan","Hydran","ISC","Jindarian","Klingon","Kzinti","Kzinti Faction","LDR","Lyran","Neo-Tholian","Orion","Paravian","Peladine","Quari","Romulan","Romulan Imperial","Seltorian","Sharkhunter","Tholian","Triaxian","Vudar","WYN","Maesron","Koligahr","Trobrin","Vari","Probr","Chlorophon","Drex","Alunda","Hiver","Sigvirion","Loriyill","Souldra","Iridani","Ymatrian","Worb","FRA","Singer","Juggernaught"])
-    .range(["#33f","Black","Purple","","Black","Red","Yellow","White","Black","Turquoise","Purple","Blue","Red","","White","Black","Black","White","Black","White","Green","Green","White","White","Yellow","Blue","Black","Black","Black","Orange","Black","White","White","Yellow","Red","White","White","White","Black","Red","White","Purple","White","Grey","Yellow","Pink","Yellow","Green","White","Purple","Red","Pink","Blue"]);
 //###
 
 // create a tooltip
@@ -53,7 +53,7 @@ var tooltip = d3.select("#mapImg")
     .style("border-radius", "5px")
     .style("padding", "5px")
     .style("position", "absolute");
-      // Three function that change the tooltip when user hover / move / leave a cell
+// Three function that change the tooltip when user hover / move / leave a cell
   var mouseover = function(d) {
     tooltip
       .style("opacity", 1)
@@ -73,48 +73,11 @@ var tooltip = d3.select("#mapImg")
       .style("stroke", "grey");
   }
 
-onLoadStartUp( function () {
-
 // load the hexagon data
 const hexbin = d3.hexbin()
   .radius(HexRadius);
 var hexelem = svg.selectAll("g")
   .data(hexbin(mapPoints));
-
-/*
-// Create lines that join the hexagons (used if the map is not dense)
-// create a line generator
-var lineGenerator = d3.line()
-    .x(function(d) { return d[0]; })
-    .y(function(d) { return d[1]; });
-// draw the lines connecting the hexagon centers
-svg.append("path")
-    .datum(centers)
-    .attr("d", lineGenerator)
-    .attr("stroke", "grey");
-    .style("stroke-width", "1px")
-    .style("fill", "grey");
-*/
-/*
-// create lines between hex centers
-var lineData = [];
-hexbin(mapPoints).forEach((d, i) => {
-  const neighbors = hexbin.neighbors(d);
-  neighbors.forEach(j => {
-    lineData.push([centers[i], centers[j]]);
-  });
-});
-
-svg.selectAll(".line")
-  .data(lineData)
-  .enter()
-  .append("line")
-    .attr("x1", d => d[0][0])
-    .attr("y1", d => d[0][1])
-    .attr("x2", d => d[1][0])
-    .attr("y2", d => d[1][1])
-    .attr("stroke", "grey");
-*/
 
 // draw the hexagons
 var elemEnter = hexelem.enter()
@@ -139,5 +102,117 @@ elemEnter.append("text")
     .style("fill", function(d){ return EmpireTextColors( String(d).split(',')[2] ) })
     .attr("stroke", function(d){ return EmpireTextColors( String(d).split(',')[2] ) })
     .style("font-size", function(d){ return HexRadius+"px" });
+
+
+
+// Build a lookup table from label -> [x, y]
+var pointLookup = {};
+mapPoints.forEach(d => {
+  let label = d[3];   // last element is the hex label
+  pointLookup[label] = [d[1], d[0]];
 });
+
+//console.log(mapConnections);
+// Draw the hex interconnects
+svg.selectAll("line.connection")
+   .data(mapConnections)
+   .enter()
+   .append("line")
+   .attr("x1", d => {
+       if (!pointLookup[d[0]]) {
+         console.warn("map item does not exist in connections: '"+d[0]+"'");
+         return;
+       }
+       if (!pointLookup[d[1]]) {
+         console.warn("map item does not exist in connections: '"+d[1]+"'");
+         return;
+       }
+       let [x1, y1] = pointLookup[d[0]];
+       let [x2, y2] = pointLookup[d[1]];
+       return offsetLine(x1, y1, x2, y2, 10).x1;
+   })
+   .attr("y1", d => {
+       if (!pointLookup[d[0]]) {
+         console.warn("map item does not exist in connections: '"+d[0]+"'");
+         return;
+       }
+       if (!pointLookup[d[1]]) {
+         console.warn("map item does not exist in connections: '"+d[1]+"'");
+         return;
+       }
+       let [x1, y1] = pointLookup[d[0]];
+       let [x2, y2] = pointLookup[d[1]];
+       return offsetLine(x1, y1, x2, y2, 10).y1;
+   })
+   .attr("x2", d => {
+       if (!pointLookup[d[0]]) {
+         console.warn("map item does not exist in connections: '"+d[0]+"'");
+         return;
+       }
+       if (!pointLookup[d[1]]) {
+         console.warn("map item does not exist in connections: '"+d[1]+"'");
+         return;
+       }
+       let [x1, y1] = pointLookup[d[0]];
+       let [x2, y2] = pointLookup[d[1]];
+       return offsetLine(x1, y1, x2, y2, 10).x2;
+   })
+   .attr("y2", d => {
+       if (!pointLookup[d[0]]) {
+         console.warn("map item does not exist in connections: '"+d[0]+"'");
+         return;
+       }
+       if (!pointLookup[d[1]]) {
+         console.warn("map item does not exist in connections: '"+d[1]+"'");
+         return;
+       }
+       let [x1, y1] = pointLookup[d[0]];
+       let [x2, y2] = pointLookup[d[1]];
+       return offsetLine(x1, y1, x2, y2, 10).y2;
+   })
+   .attr("stroke", d => {
+       if (d[2] === "Restricted") return "red";
+       if (d[2] === "Major") return "white";
+       if (d[2] === "Minor") return "white";
+       if (d[2] === "Unexplored") return "white";
+       return "lightgray";
+   })
+   .attr("stroke-width", d => {
+       if (d[2] === "Restricted") return 2;
+       if (d[2] === "Major") return 3;
+       if (d[2] === "Minor") return 2;
+       if (d[2] === "Unexplored") return 2;
+       return 1;
+   })
+   .attr("stroke-dasharray", d => {
+       if (d[2] === "Unexplored") return "6,4";
+       return null;
+   })
+   .attr("stroke-opacity", 0.9);
+
+// Helper: shift line endpoints inwards by `offset` pixels
+function offsetLine(x1, y1, x2, y2, offset) {
+  // short-circuit if no offset
+  if (offset == 0)
+    return { x1, y1, x2, y2 };
+
+  let dx = x2 - x1;
+  let dy = y2 - y1;
+  let len = Math.sqrt(dx * dx + dy * dy);
+
+  if (len === 0) {
+    // points are the same — just return unchanged
+    return { x1, y1, x2, y2 };
+  }
+
+  let ux = dx / len; // unit vector
+  let uy = dy / len;
+
+  return {
+    x1: x1 + ux * offset,
+    y1: y1 + uy * offset,
+    x2: x2 - ux * offset,
+    y2: y2 - uy * offset
+  };
+}
 

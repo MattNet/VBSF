@@ -15,8 +15,7 @@
 <script type="text/javascript" >
 const params = (new URL(document.location)).searchParams;
 var dataVal = params.get('data'); // is the filename of the data file
-var errorVal = params.get('e'); // is the error string
-var sheetDataLocation = "../files/";
+var errorVal = params.get('e') || ""; // is the error string
 
 document.addEventListener("DOMContentLoaded", function() {
 
@@ -34,7 +33,7 @@ document.addEventListener("DOMContentLoaded", function() {
   }
 
   // get the datafile
-  fetchData( sheetDataLocation+dataVal+".js", () => {
+  fetchData( "../files/"+dataVal+".js", () => {
     // initialization functions here
     emitGameData();
 
@@ -58,28 +57,31 @@ document.addEventListener("DOMContentLoaded", function() {
     <table>
     <tr><td>Game Turn</td><td><span class='button'><a href='#' id='PrevDoc'><</a></span> <span id='gameTurn'></span> <span class='button'><a href='#' id='NextDoc'>></a></span></td></tr>
     <tr><td>Game Month</td><td id='gameMonth'></td></tr>
-    <tr><td><a title='Aggressiveness'>Agg</a> / <a title='Integrity'>Int</a> / <a title='Xenophobia'>Xen</a></td><td id='AIX'></td></tr>
     </table>
 
     <span class='button'><a href='../docs/rules.html' target='_BLANK'>Campaign Rules</a></span>
     <span class='button'><a href='#' id='UnitListDoc' target='_BLANK'>List of Units</a></span>
 
-    <h3>Total Domestic Product</h3>
+    <h3>Economics</h3>
     <table>
     <tr><td>Previous Point Pool</td><td id='previousEPs'></td></tr>
-    <tr><td>Planetary Income</td><td id='planetaryIncome'></td></tr>
-    <tr><td>Commerce Income</td><td id='commerceIncome'></td></tr>
-    <tr><td>Misc Income</td><td id='miscIncome'></td></tr>
+    <tr><td>System Income</td><td id='systemIncome'></td></tr>
+    <tr><td>Trade Income</td><td id='tradeIncome'></td></tr>
     <tr><td>Maintenance Expense</td><td id='maintTotal'></td></tr>
+    <tr><td>Misc Income</td><td id='miscIncome'></td></tr>
     <tr><td>Misc Expense</td><td id='miscExpense'></td></tr>
     <tr><td class='summation'>Total Available Points</td><td class='summation' id='totalIncome'></td></tr>
+    <tr><td>Construction Costs</td><td id='constructionTotal'></td></tr>
+    <tr><td>Tech Investment</td><td id='techSpent'></td></tr>
+    <tr><td class='summation'>Ending Point Pool</td><td class='summation' id='nextEPs'></td></tr>
     </table>
 
     <h3>Tech Investment</h3>
     <table>
     <tr><td>Current Tech Year</td><td id='techYear'></td></tr>
-    <tr><td>Tech Investments<br>Made This Year</td><td id='researchInvested'></td></tr>
-    <tr><td>Preliminary <br>Investment Needed</td><td id='researchNeeded'></td></tr>
+    <tr><td>Tech Pool</td><td id='researchInvested'></td></tr>
+    <tr><td>Maximum Tech Per Turn </td><td id='maxTechCost'></td></tr>
+    <tr><td>Tech Advancement Cost</td><td id='techAdvCost'></td></tr>
     </table>
   </div>
 
@@ -89,8 +91,6 @@ document.addEventListener("DOMContentLoaded", function() {
     <input type='hidden' name='dataFile' value=''>
 
     <span id='ordersArea'></span>
-
-    <p><span class='button'><a href="#" onclick='document.getElementById("ordersForm").submit();'>Save Orders</a></span>
     </form>
   </div>
 
@@ -106,7 +106,7 @@ document.addEventListener("DOMContentLoaded", function() {
 
     <h3>Construction Status</h3>
     <table id='constructionData'>
-    <tr style='font-weight:bolder'><td>Location</td><td>Unit</td></tr>
+    <tr style='font-weight:bolder'><th>Location</th><th>Unit</th><th>Time</th></tr>
     </table>
   </div>
 
@@ -121,26 +121,36 @@ document.addEventListener("DOMContentLoaded", function() {
   <div class='systems'>
     <h3>System Assets</h3>
     <table style='margin:auto;'><thead>
-    <tr><th>System Name</td><th>Census</th><th>Morale</th><th>Raw</th><th>Productivity</th><th>Capacity</th><th>Output</th><th>Intel<br>Points</th><th>Special Notes</th><th>Fixed Units</th></tr>
+    <tr><th>System Name</td><th class="sysTableType">Planet Type</th><th>Capacity</th><th>Raw</th><th>Pop</th><th>Morale</th><th>Intel</th><th>Fort</th><th>Output</th><th class="sysTableNotes">Special Notes</th><th class="sysTableFixed">Fixed Units</th></tr>
     </thead><tbody id='systemData'>
     </tbody></table>
   </div>
 
-  <div class='treaties' id='treatyArea'>
+  <div class='treaties'>
     <h3>Treaties</h3>
+    <table style='margin:auto;' id='treatyArea'>
+    <tr><th>Empire</th><th>Diplomatic<br>Cooldown</th><th>Treaty</th></tr>
+    </table>
   </div>
 
   <div class='intelligence'>
     <h3>Intelligence Actions</h3>
     <table style='margin:auto;' id='IntelArea'>
-    <tr><th>Mission Type</th><th>Target</th><th>Location</th><th>Intel Pts<br>Assigned</th><th>Notes</th></tr>
+    <tr><th>Mission Type</th><th>Target</th><th>Location</th></tr>
+    </table>
+  </div>
+
+  <div class='trade'>
+    <h3>Trade Routes</h3>
+    <table style='margin:auto;' id='tradeArea'>
+    <tr><th>Fleet</th><th>System #1</th><th>Trade<br>Value</th><th>System #2</th><th>Trade<br>Value</th><th>System #3</th><th>Trade<br>Value</th></tr>
     </table>
   </div>
 
 </div></main> <!-- end container -->
 
 <footer><div class='footer'>
-  <br>Copyright &copy; 2022 - 2024, Matthew Potter
+  <br>Copyright &copy; 2022 - 2025, Matthew Potter
 
 <span style="float:right;">
   <label for="themeSelect">Choose Theme:</label>

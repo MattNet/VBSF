@@ -20,6 +20,7 @@ declare the reusable colors
   --summary-color-bottom: dodgerblue;
   --summary-color-text: white;
   --summary-color-top: steelblue;
+  --zebra-stripe-color:#CCC;
 }
 
 /***
@@ -53,6 +54,14 @@ th {
   border: 1px solid var(--card-border-color);
   border-radius: 8px;
   box-shadow: rgba(0,0,0,1) 1px 1px 2px;
+}
+
+.fleetEntry th {
+height: 1em;
+}
+
+.fleetEntry td {
+vertical-align: top;
 }
 
 .fleetTitle {
@@ -137,6 +146,9 @@ declare the large sections of the page
 .intelligence {
   grid-area: intelligence;
 }
+.trade {
+  grid-area: trade;
+}
 .orders {
   grid-area: orders;
 }
@@ -152,11 +164,14 @@ declare the large sections of the page
 /* need a smaller font-size or else the width is larger than the window */
    font-size: smaller;
 }
+.systems tr:nth-child(even) {
+  background: var(--zebra-stripe-color);
+}
 .treaties {
   grid-area: treaties;
 }
 
-.orders, .fleets, .systems, .intelligence, .events, .treaties, .summary, .economy {
+.orders, .fleets, .systems, .intelligence, .events, .treaties, .summary, .economy, .trade {
   padding: 5px;
   border-radius: 7pt;
   
@@ -184,9 +199,13 @@ declare the large sections of the page
     "fleets"
     "events"
     "systems"
+    "trade"
     "treaties"
     "intelligence";
 }
+  .sysTableType, .sysTableNotes {
+    display: none;
+  }
 
 /***
 Declare the variations for different resolutions
@@ -197,22 +216,25 @@ Declare the variations for different resolutions
 .wrapper {
   display: grid;
   gap: 9px;
-  grid-template-columns: repeat( 2, 1fr );
+  grid-template-columns: repeat( 3, 1fr );
   grid-template-areas:
-    "errorArea	errorArea"
-    "summary	economy"
-    "orders	orders"
-    "map	map"
-    "fleets	fleets"
-    "systems	systems"
-    "events	treaties"
-    "intelligence intelligence";
+    "errorArea	errorArea	errorArea"
+    "summary	economy		economy"
+    "orders	orders		orders"
+    "map	map		map"
+    "fleets	fleets		fleets"
+    "systems	systems		systems"
+    "events	events		treaties"
+    "intelligence trade 	trade";
 }
 
 .systems {
 /* Revert the font-size because now this is not larger than the window */
   font-size: revert;
 }
+  .sysTableType, .sysTableNotes {
+    display: revert;
+  }
 
 }
 
@@ -228,13 +250,17 @@ Declare the variations for different resolutions
     "map	map	map	map	map"
     "fleets	fleets	fleets	fleets	fleets"
     "systems	systems	systems	systems	systems"
-    "events	events	treaties	intelligence intelligence";
+    "events	events	events treaties  treaties"
+    "intelligence intelligence trade   trade   trade";
 }
 
 .systems {
 /* Revert the font-size because now this is not larger than the window */
   font-size: revert;
 }
+  .sysTableType, .sysTableNotes {
+    display: revert;
+  }
 
 }
 

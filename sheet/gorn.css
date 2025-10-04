@@ -15,6 +15,7 @@
   --summary-color-bottom: #F33;
   --summary-color-text: white;
   --summary-color-top: #F88;
+  --zebra-stripe-color:#CCC;
 }
 
 .header {

@@ -2,10 +2,9 @@
 This file provides specific code used to generate the client-side interface. It pulls in data given by the server, function code provided in "indexlib.js", and emits the salient interface html.
 */
 
-const filePath = document.location.origin+document.location.pathname+"?data=";
+const filePath = (document.location.origin==="null"||document.location.origin===null?"":document.location.origin)+document.location.pathname+"?data=";
 
 // names of the themes to allow the player to select 
-// format is: displayed, filename, displayed, filename, ...
 const themeNames = [
                    { name: "Default", file: ""},
                    { name: "Federation", file: "federation"},
@@ -33,6 +32,8 @@ let currentFlights = [];
 let buildableShips = [];
 let buildableGround = [];
 let buildableFlights = [];
+let BuildableCivUnits = [];
+let buildableBases = [];
 let otherSystems = [];
 let repairUnits = [];
 let unitsWithBasing = [];
@@ -43,9 +44,7 @@ let allBuildableUnits = [];
 let allIntelProjects = [];
 let allLoadableUnits = [];
 let allMovablePlaces = [];
-let allTreatyTypes = [];
-let orderTable = [];
-
+let orderTable  = {};
 
 /***
 Receive Game Data
@@ -64,7 +63,7 @@ function fetchData ( url, callback )
 {
   if( !url )
   {
-    console.log( "Unable to load data file. Missing filename." );
+    console.error( "Unable to load data file. Missing filename." );
     document.getElementById('errorArea').innerHTML = "Unable to load data file. Missing filename.";
     return false;
   }
@@ -75,8 +74,6 @@ function fetchData ( url, callback )
   scriptTag.async = false; // make it synchronous in order, but still fire onload
   scriptTag.onload = () =>
   {
-    console.log("Data file loaded:", url);
-
     // After data is ready, load maps.js
     const mapsScript = document.createElement( "script" );
     mapsScript.type = "text/javascript";
@@ -85,7 +82,6 @@ function fetchData ( url, callback )
 
     mapsScript.onload = () =>
     {
-      console.log( "Maps script loaded.", mapsScript.src );
       if( typeof callback === "function" )
         callback();
     };
@@ -113,7 +109,10 @@ function emitGameData()
 {
   const ordersArea = document.getElementById( "ordersArea" );
 
-// Colony Setup
+/***
+Build Orders Lists
+***/
+// Colonies
   for (const colony of colonies)
   {
     if (colony.owner === empire.empire)
@@ -122,8 +121,10 @@ function emitGameData()
       colonyNames.push(colony.name);
 
       // figure colony econ output
-      if (empire.planetaryIncome === 0)
-        empire.planetaryIncome += calcColonyOutput(colony);
+      if (empire.systemIncome === 0)
+        empire.systemIncome += calcColonyOutput(colony);
+      if (empire.systemIncome != calcColonyOutput(colony))
+        console.warn("*NOTE* Calculated system income ("+calcColonyOutput(colony)+") differs from data file ("+empire.systemIncome+")");
 
       // The list of fighter units
       for (const fixedUnit of colony.fixed)
@@ -138,8 +139,7 @@ function emitGameData()
     colony.censusLoad = 0; // Amt of census being loaded / unloaded
   }
 
-
-// Fleet Setup
+// Fleets
   for (const fleet of fleets) {
     // assemble the currentFleets array
     currentFleets.push(fleet.name);
@@ -155,23 +155,31 @@ function emitGameData()
       // The lists of units that can carry
       if (found.notes.includes("Supply")) unitsWithCarry.push(`${unit} w/ ${fleet.name}`);
       // The lists of units that can carry fighters
-      if (found.basing > 0) unitsWithBasing.push(`${unit} w/ ${fleet.name}`);
+      if (found.notes.includes("Carrier")) unitsWithBasing.push(`${unit} w/ ${fleet.name}`);
       // The lists of fighter units
-      if (found.notes.includes("Flight")) currentFlights.push(`${unit} w/ ${fleet.name}`);
+      if (/^(LF|HF|SHF|AB)/.test(found.design)) currentFlights.push(`${unit} w/ ${fleet.name}`);
     }
   }
   
-  // Buildable Units
+// Buildable Units
   for (const u of unitList) {
     // skip if the unit could not be built yet
     if (u.yis > empire.techYear) continue;
+    // skip if the unit is obsolete
+    if (u.yis < empire.techYear-50) continue;
 
     if (u.design.includes("Ground")) 
     { // List of Ground Units, because design contain 'Ground'
       buildableGround.push(u.ship);
-    } else if (/^(LF|HF|SHF)/.test(u.design))
+    } else if (/^(LF|HF|SHF|AB)/.test(u.design))
     { // List of Fighter Units, because the design is some sort of flight
       buildableFlights.push(u.ship);
+    } else if (u.notes.includes("Civilian")) 
+    { // List of civilian units, because specials contain 'Civilian'
+      BuildableCivUnits.push(u.ship);
+    } else if (u.notes.includes("Fixed")) 
+    { // List of bases, because specials contain 'Fixed'
+      buildableBases.push(u.ship);
     }
     else
     { // List of Orbital Units and mobile units, because they are remaining
@@ -179,22 +187,27 @@ function emitGameData()
     }
   }
 
+// Repairable units
   repairUnits = unitsNeedingRepair.map(item => {
     const [unit, fleet] = item.split(" w/ ");
     return [unit, fleet];
   });
 
+// Sort lists
   buildableShips.sort();
   buildableFlights.sort();
   buildableGround.sort();
 
-  allBuildableUnits = JsonConcatArrays(buildableShips, buildableFlights, buildableGround);
+// Build lists into super-lists
+  allBuildableUnits = JsonConcatArrays(buildableShips, buildableFlights, buildableBases);
   allLoadableUnits = JsonConcatArrays(buildableGround, ["Census"]);
   allMovablePlaces = JsonConcatArrays(colonyNames, otherSystems, unknownMovementPlaces);
   allKnownPlaces = JsonConcatArrays(colonyNames, otherSystems);
   allBasablePlaces = JsonConcatArrays(unitsWithBasing, colonyNames);
 
-  allIntelProjects = [
+
+/*
+const allIntelProjects = [
     "System Espionage", "Fleet Espionage", "Intel Espionage",
     "Tech Espionage", "Trade Espionage", "Troop Espionage",
     "Raider Espionage", "Industrial Sabotage", "Counter-Intelligence",
@@ -202,336 +215,67 @@ function emitGameData()
     "Insurgency", "Counter-Insurgency", "Reduce Raiding",
     "NPE Diplomatic Shift", "NPE Treaty Acceptance"
   ];
+*/
 
-  allTreatyTypes = [
-    "Declaration of War", "Declaration of Hostilities", "Non-Aggression Treaty",
-    "Peace Treaty", "Trade Treaty", "Mutual-Defense Treaty", "Unification Treaty"
-  ];
-
-  // Format is orderTable['internal "type" keyword'] = [ [auto-populated "reciever"], [auto-populated "target"], 'auto-populated "note"', 'external "type" phrase' ]
+    // Format is orderTable['internal "type" keyword'] = [ [auto-populated "reciever"], [auto-populated "target"], 'auto-populated "note"', 'external "type" phrase' ]
   orderTable = {
-    break:        [ [], [], '', 'Break a treaty' ],
-    build_unit:   [ allBuildableUnits, colonyNames, 'New fleet name', 'Build unit' ],
-    colonize:     [ otherSystems, [], '', 'Colonize system' ],
-    convert:      [ currentUnits, buildableShips, '', 'Convert Unit' ],
-    cripple:      [ currentUnits, [], '', 'Cripple unit' ],
-    destroy:      [ currentUnits, [], '', 'Destroy unit' ],
-    flight:       [ currentFlights, allBasablePlaces, '', 'Assign flights' ],
-    load:         [ unitsWithCarry, allLoadableUnits, 'Amount to Load', 'Load units' ],
-    mothball:     [ currentUnits, [], '', 'Mothball a unit' ],
-    move:         [ currentFleets, allMovablePlaces, '', 'Move fleet' ],
-    move_unit:    [ currentUnits, [], 'New Fleet Name', 'Move unit' ],
-    name:         [ colonyNames, [], '', '(Re) name a place' ],
-    name_fleet:   [ currentFleets, [], 'New fleet name', 'Rename a fleet' ],
-    offer:        [ otherEmpires, allTreatyTypes, '', 'Offer a treaty' ],
-    productivity: [ colonyNames, [], '', 'Increase productivity' ],
-    repair:       [ unitsNeedingRepair, [], '', 'Repair unit' ],
-    research:     [ [], [], 'Amount to Invest', 'Invest into research' ],
-    sign:         [ offeredTreaties, otherEmpires, '', 'Sign a treaty' ],
-    trade_route:  [ currentFleets, allKnownPlaces, 'Third system of trade route', 'Set a trade route' ],
-    unload:       [ unitsWithCarry, [], 'Amount to unload', 'Unload units' ],
-    unmothball:   [ unitsInMothballs, [], '', 'Unmothball a unit' ]
+    header_fleet:  [ "Fleet Deployment" ],
+    add_fleet:     [ currentUnits, [], 'New Fleet Name', 'Add to Fleet', "pre" ],
+    flight:        [ currentFlights, allBasablePlaces, '', 'Assign flights', "pre" ],
+    name_fleet:    [ currentFleets, [], 'New fleet name', 'Rename a fleet', "pre" ],
+
+    header_intel:  [ "Intelligence Orders" ],
+    covert:        [ colonyNames, allKnownPlaces, 'Mission Type', 'Perform covert mission', "pre" ],
+    special_force: [ colonyNames, allKnownPlaces, 'Mission Type', 'Perform special-forces mission', "pre" ],
+
+    header_move:   [ "Movement Orders" ],
+    convoy_raid:   [ currentFleets, allMovablePlaces, '', 'Convoy Raid', "pre" ],
+    explore_lane:  [ currentFleets, [], '', 'Explore Jump-Lane', "pre" ],
+    move:          [ currentFleets, allMovablePlaces, '', 'Move fleet', "pre" ],
+    load:          [ unitsWithCarry, allLoadableUnits, 'Amount to Load', 'Load units', "pre" ],
+    long_range:    [ currentFleets, allMovablePlaces, '', 'Long-Range Scan', "pre" ],
+    start_trade:   [ currentFleets, allKnownPlaces, 'Third system of trade route', 'Set a trade route', "pre" ],
+    sneak_attack:  [ currentFleets, [], '', 'Sneak Attack', "pre" ],
+    stop_trade:    [ currentFleets, allKnownPlaces, '', 'Stop a trade route', "pre" ],
+    unload:        [ unitsWithCarry, [], 'Amount to unload', 'Unload units', "pre" ],
+
+    header_diplomatic: [ "Diplomatic Orders" ],
+    hostile_check: [ otherEmpires, [], '', 'Declare War', "pre" ],
+    diplo_check:   [ otherEmpires, [], '', 'Offer a treaty', "pre" ],
+    sign_treaty:   [ offeredTreaties, otherEmpires, '', 'Sign a treaty', "post" ],
+
+    header_construnction: [ "Construction orders" ],
+    build_unit:    [ allBuildableUnits, colonyNames, 'New fleet name', 'Build unit at system', "pre" ],
+    convert:       [ currentUnits, buildableShips, '', 'Convert/Refit Unit', "pre" ],
+    mothball:      [ currentUnits, [], '', 'Mothball a unit', "pre" ],
+    purchase_civ:  [ BuildableCivUnits, colonyNames, 'New fleet name', 'Purchase civilian unit at system', "pre" ],
+    purchase_troop:[ buildableGround, colonyNames, 'Quantity', 'Purchase troop at system', "pre" ],
+    remote_build:  [ buildableBases, unitsWithCarry, '', 'Remote build unit', "pre" ],
+    repair:        [ unitsNeedingRepair, [], '', 'Repair unit', "pre" ],
+    scrap:         [ currentUnits, [], '', 'Scrap a unit', "pre" ],
+    unmothball:    [ unitsInMothballs, [], '', 'Unmothball a unit', "pre" ],
+
+    header_investment: [ "Investment Orders" ],
+    colonize:      [ otherSystems, [], '', 'Colonize system', "pre" ],
+    downgrade_lane:[ allKnownPlaces, allKnownPlaces, '', 'Downgrade Lane', "pre" ],
+    imp_capacity:  [ colonyNames, [], '', 'Improve capacity', "pre" ],
+    imp_pop:       [ colonyNames, [], '', 'Improve Population', "pre" ],
+    imp_intel:     [ colonyNames, [], '', 'Improve Intelligence', "pre" ],
+    imp_fort:      [ colonyNames, [], '', 'Improve Fortifications', "pre" ],
+    research:      [ [], [], 'Amount to Invest', 'Invest into research', "pre" ],
+    name_place:    [ colonyNames, [], '', '(Re) name a colony', "pre" ],
+    research_new:  [ ['Research New Unit','Upgrade Unit'], [], '', 'Research Target', "pre" ],
+    upgrade_lane:  [ allKnownPlaces, allKnownPlaces, '', 'Upgrade Lane', "pre" ],
+
+    header_combat: [ "Combat Orders" ],
+    cripple:       [ currentUnits, [], '', 'Cripple unit', "post" ],
+    destroy:       [ currentUnits, [], '', 'Destroy unit', "post" ],
+    gift:          [ currentUnits, otherEmpires, '', 'Transfer ownership of unit', "post" ]
   };
 
-
-  // Assemble the AIX line
-  document.getElementById("AIX").innerHTML = [
-    { value: empire.AIX[0], labels: ["Pacifistic","Peaceful","Calm","Belligerent","Combative","Hostile"] },
-    { value: empire.AIX[1], labels: ["Devious","Corrupt","Irresponsible","Reputable","Principled","Rigidly Honorable"] },
-    { value: empire.AIX[2], labels: ["Xenophilic","Social","Tolerant","Biased","Narrow-Minded","Very Insular"] }
-  ].map(axis => {
-    const { value, labels } = axis;
-    const thresholds = [18, 33, 50, 66, 82];
-    const label = labels[thresholds.findIndex(t => value <= t)] || labels.at(-1);
-    return `<a title="${label}">${value}</a>`;
-  }).join(" / ");
-
-  // create the previous/next document buttons
-  const nextDocEl = document.getElementById("NextDoc");
-  const prevDocEl = document.getElementById("PrevDoc");
-  if (game.nextDoc) {
-    nextDocEl.href = `${filePath}${game.nextDoc}`;
-  } else {
-    // remove the next-doc link
-    nextDocEl.textContent = "";
-    nextDocEl.parentElement.classList.remove("button");
-  }
-  if (game.previousDoc) {
-    prevDocEl.href = `${filePath}${game.previousDoc}`;
-  } else {
-    // remove the previous-doc link
-    prevDocEl.textContent = "";
-    prevDocEl.parentElement.classList.remove("button");
-  }
-
-  // Adjust colony census accounting for load/unload orders
-  for (const order of orders) {
-    const fleetIndex = fleets.findIndex(f => order.reciever.endsWith(f.name));
-    if (fleetIndex === -1) continue;
-
-    const colonyIndex = colonies.findIndex(c => c.name === fleets[fleetIndex].location);
-    if (colonyIndex === -1) continue;
-
-    if (order.target === "Census") {
-      if (order.type === "load") {
-        colonies[colonyIndex].censusLoad -= 1;
-      } else if (order.type === "unload") {
-        colonies[colonyIndex].censusLoad += 1;
-      }
-    }
-  }
-
-  // Assemble the System Assets area
-  let systemRows = colonies.map(colony => {
-    const unitCount = UnitCounts(colony.fixed);
-    const fixedUnits = unitCount
-      .map(([designation, count]) =>
-        count === 1 ? designation : `${count}x ${designation}`
-      )
-      .join(", ");
-
-    const censusLoad = colony.censusLoad < 0
-      ? `(${colony.censusLoad})`
-      : colony.censusLoad > 0
-        ? `(+${colony.censusLoad})`
-        : "";
-
-    return `
-      <tr>
-        <td>${colony.name}</td>
-        <td>${colony.census} ${censusLoad} ${colony.owner.slice(0,3)}</td>
-        <td>${colony.morale}</td>
-        <td>${colony.raw}</td>
-        <td>${colony.prod}</td>
-        <td>${colony.capacity}</td>
-        <td>${calcColonyOutput(colony)}</td>
-        <td>${colony.intel}</td>
-        <td>${colony.notes}</td>
-        <td>${fixedUnits}</td>
-      </tr>`;
-  }).join("");
-  document.getElementById("systemData").insertAdjacentHTML("beforeend", systemRows);
-
-  // Assemble the Maintenance Cost area
-  let unitCount = [];
-  colonies.forEach(c => unitCount = UnitCounts(c.fixed, unitCount));
-  fleets.forEach(f => unitCount = UnitCounts(f.units, unitCount));
-
-  let maintRows = unitCount.map(([designation, count, index]) => {
-    let unitMaintCost = 0;
-    if (!isNaN(index)) {
-      const unit = unitList[index];
-      unitMaintCost = Math.ceil(count / unit.maintNum) * unit.maintCost;
-    }
-    empire.maintExpense += unitMaintCost;
-    return `<tr><td>${designation}</td><td>${count}</td><td>${unitMaintCost}</td></tr>`;
-  }).join("");
-
-  maintRows += `
-    <tr>
-      <td colspan="2" class="summation">Total Maintenance Expense</td>
-      <td class="summation">${empire.maintExpense}</td>
-    </tr>`;
-
-  document.getElementById("maintData").insertAdjacentHTML("beforeend", maintRows);
-
-  // Prepare the mothballs for display
-  for (const unit of unitsInMothballs) {
-    unit.name = "Mothballs";
-    unit.notes = "Mothballed";
-  }
-
-  // Assemble the Fleet Assets area
-  const assetOut = [...fleets, ...unitsInMothballs]; // show the mothballs as fleets
-
-  let fleetTables = assetOut.map(fleet => {
-    let unitCount = UnitCounts(fleet.units);
-    const seperateRepairs = repairUnits
-      .filter(([unitName, fleetName]) => fleetName === fleet.name)
-      .map(([unitName]) => unitName);
-
-    let rows = `
-      <tr><th>Fleet Name</th><td>${fleet.name}</td><th>Location</th><td>${fleet.location}</td></tr>
-      <tr><th># of Units</th><th>Class</th><th colspan="2">Notes</th></tr>
-    `;
-
-    for (const unit of unitCount) {
-      const [designation, count, index] = unit;
-
-      // Handle crippled units
-      const repairIndex = seperateRepairs.indexOf(designation);
-      if (repairIndex >= 0) {
-        seperateRepairs.splice(repairIndex, 1);
-        const notes = isNaN(index) ? index : unitList[index].notes;
-        rows += `
-          <tr>
-            <td>1</td>
-            <td>${designation}</td>
-            <td colspan="2">${notes} (Crippled)</td>
-          </tr>`;
-        unit[1]--; // reduce remaining count
-      }
-
-      if (unit[1] > 0) {
-        const notes = isNaN(index) ? index : unitList[index].notes;
-        rows += `
-          <tr>
-            <td>${unit[1]}</td>
-            <td>${designation}</td>
-            <td colspan="2">${notes}</td>
-          </tr>`;
-      }
-    }
-
-    // Fleet notes, if present
-    if (fleet.notes) {
-      rows += `
-        <tr>
-          <td colspan="2">&nbsp;</td>
-          <td colspan="2">${fleet.notes}</td>
-        </tr>`;
-    }
-
-    return `<table class="fleetEntry">${rows}</table>`;
-  }).join("");
-
-  document
-    .getElementById("fleetData")
-    .insertAdjacentHTML("beforeend", fleetTables);
-
-  // Assemble the Purchases area
-  let purchaseRows = `
-    <tr><th>New Purchases</th><th>Cost</th></tr>
-  `;
-
-  let purchaseTotal = 0;
-
-  for (const item of purchases) {
-    purchaseRows += `
-      <tr>
-        <td>${item.name}</td>
-        <td>${item.cost}</td>
-      </tr>`;
-
-    // convert fractional notation to decimal
-    if (String(item.cost).includes("/")) {
-      const [top, bottom] = String(item.cost).split("/").map(Number);
-      purchaseTotal += newRound(top / bottom, 4); // Round to 4 digits
-    } else {
-      purchaseTotal += Number(item.cost);
-    }
-  }
-
-  purchaseTotal = newRound(purchaseTotal, 3);
-
-  purchaseRows += `
-    <tr>
-      <td class="summation">Total Purchases</td>
-      <td class="summation">${purchaseTotal}</td>
-    </tr>
-  `;
-
-  document
-    .getElementById("purchaseData")
-    .insertAdjacentHTML("beforeend", purchaseRows);
-
-  // Assemble the Construction area
-  const constructionRows = underConstruction.map(item => `
-    <tr>
-      <td>${item.location}</td>
-      <td>${item.unit}</td>
-    </tr>`).join("");
-
-  document
-    .getElementById("constructionData")
-    .insertAdjacentHTML("beforeend", constructionRows);
-
-  // Assemble the Events area
-  let eventRows = events.map(e => {
-    const safeText = e.text.replace(/'/g, "&apos;");
-    if (e.text.length > 300) {
-      return `<br><a onclick="popitupEvent(&quot;${safeText}&quot;)">${e.time}: ${e.event}</a>`;
-    }
-    return `<br><a title="${safeText}">${e.time}: ${e.event}</a>`;
-  }).join("");
-
-  eventRows += `<p style="font-size:smaller;">Mouseover or click on event for description</p>`;
-
-  document
-    .getElementById("eventArea")
-    .insertAdjacentHTML("beforeend", eventRows);
-
-  // Assemble the Treaty area
-  const treatyRows = treaties
-    .map(t => `<br>${t.empire} &bull; ${t.type}`)
-    .join("");
-
-  document
-    .getElementById("treatyArea")
-    .insertAdjacentHTML("beforeend", treatyRows);
-
-  // Assemble the Intel area
-  const intelRows = intelProjects.map(p => `
-    <tr>
-      <td>${p.type}</td>
-      <td>${p.target}</td>
-      <td>${p.location}</td>
-      <td>${p.points}</td>
-      <td>${p.notes}</td>
-    </tr>`).join("");
-
-  document
-    .getElementById("IntelArea")
-    .insertAdjacentHTML("beforeend", intelRows);
-
-  // Calculate the EPs spent
-  empire.totalIncome =
-    empire.planetaryIncome +
-    empire.previousEP +
-    empire.tradeIncome +
-    empire.miscIncome -
-    empire.maintExpense -
-    empire.miscExpense;
-
-  // Surplus EPs from this turn
-  const endingPoolRow = `
-    <tr>
-      <td class="summation">Ending Point Pool</td>
-      <td class="summation">${newRound(empire.totalIncome - purchaseTotal, 2)}</td>
-    </tr>`;
-  document
-    .getElementById("purchaseData")
-    .insertAdjacentHTML("beforeend", endingPoolRow);
-
-  // Determine which month of the year this turn is
-  const gameMonth =
-    game.turn % game.monthsPerYear || game.monthsPerYear;
-
-  // Write the one-liners
-  document.getElementById("empireName").textContent =
-    `${empire.name} (${empire.empire})`;
-  document.getElementById("gameTurn").textContent = game.turn;
-  document.getElementById("gameMonth").textContent =
-    `${gameMonth} (${makeFancyMonth(gameMonth, game.monthsPerYear)})`;
-  document.getElementById("previousEPs").textContent = empire.previousEP;
-  document.getElementById("planetaryIncome").textContent = empire.planetaryIncome;
-  document.getElementById("commerceIncome").textContent = empire.tradeIncome;
-  document.getElementById("miscIncome").textContent = empire.miscIncome;
-  document.getElementById("maintTotal").textContent = empire.maintExpense;
-  document.getElementById("miscExpense").textContent = empire.miscExpense;
-  document.getElementById("totalIncome").textContent = empire.totalIncome;
-  document.getElementById("techYear").textContent = empire.techYear;
-  document.getElementById("researchInvested").textContent = empire.researchInvested;
-  document.getElementById("researchNeeded").textContent =
-    Math.floor(empire.planetaryIncome / 2);
-
-  // Update map references
-  document.querySelectorAll('[name="map"]').forEach(el => el.src = empire.mapFile);
-  document.querySelectorAll('[name="mapLink"]').forEach(el => el.href = empire.mapFile);
-  document.getElementById("UnitListDoc").href =
-    `../docs/units.html#${String(empire.empire).toLowerCase()}`;
-
-  // Orders
+/***
+Orders
+***/
   ordersArea.innerHTML = ""; // clear old orders drop-downs
   // write the known orders
   orders.forEach((order, i) => {
@@ -583,8 +327,400 @@ function emitGameData()
   for (let i = 0; i < game.blankOrders; i++) {
     OrderOutput(orders.length + i, NaN);
   }
+  if (game.blankOrders > 0) {
+    const p = document.createElement("p");
+    const span = document.createElement("span");
+    span.className = "button";
 
-// emit any errors given in the URL
+    const a = document.createElement("a");
+    a.href = "#";
+    a.textContent = "Save Orders";
+    a.onclick = e => {
+        e.preventDefault();
+        document.getElementById("ordersForm").submit();
+    };
+    span.appendChild(a);
+    p.appendChild(span);
+    ordersArea.appendChild(p);
+  }
+
+/***
+Turn Selection
+***/
+  // create the previous/next document buttons
+  const nextDocEl = document.getElementById("NextDoc");
+  const prevDocEl = document.getElementById("PrevDoc");
+  if (game.nextDoc) {
+    nextDocEl.href = `${filePath}${game.nextDoc}`;
+  } else {
+    // remove the next-doc link
+    nextDocEl.textContent = "";
+    nextDocEl.parentElement.classList.remove("button");
+  }
+  if (game.previousDoc) {
+    prevDocEl.href = `${filePath}${game.previousDoc}`;
+  } else {
+    // remove the previous-doc link
+    prevDocEl.textContent = "";
+    prevDocEl.parentElement.classList.remove("button");
+  }
+  document.getElementById("UnitListDoc").href = `../docs/units.html#${String(empire.empire).toLowerCase()}`;
+
+/***
+Month / Year
+***/
+  const gameMonth =
+    game.turn % game.monthsPerYear || game.monthsPerYear;
+
+/***
+Systems
+***/
+  // Adjust colony census accounting for load/unload orders
+  for (const order of orders) {
+    const fleetIndex = fleets.findIndex(f => order.reciever.endsWith(f.name));
+    if (fleetIndex === -1) continue;
+
+    const colonyIndex = colonies.findIndex(c => c.name === fleets[fleetIndex].location);
+    if (colonyIndex === -1) continue;
+
+    if (order.target === "Census") {
+      if (order.type === "load") {
+        colonies[colonyIndex].censusLoad -= 1;
+      } else if (order.type === "unload") {
+        colonies[colonyIndex].censusLoad += 1;
+      }
+    }
+  }
+
+  let systemRows = colonies.map(colony => {
+    const unitCount = UnitCounts(colony.fixed);
+    const fixedUnits = unitCount
+      .map(([designation, count]) =>
+        count === 1 ? designation : `${count}x ${designation}`
+      )
+      .join(", ");
+
+    // adjust how population is reported when loading or unloading
+    const censusLoad = colony.censusLoad < 0
+      ? `(${colony.censusLoad}) `
+      : colony.censusLoad > 0
+        ? `(+${colony.censusLoad}) `
+        : "";
+
+    return `
+      <tr>
+        <td>${colony.name}</td>
+        <td class="sysTableType">${colony.type}</td>
+        <td>${colony.capacity}</td>
+        <td>${colony.raw}</td>
+        <td>${colony.population} ${censusLoad}${colony.owner.slice(0,3)}</td>
+        <td>${colony.morale}</td>
+        <td>${colony.intel}</td>
+        <td>${colony.fort}</td>
+        <td>${calcColonyOutput(colony)}</td>
+        <td class="sysTableNotes">${colony.notes}</td>
+        <td class="sysTableFixed">${fixedUnits}</td>
+      </tr>`;
+  }).join("");
+  document.getElementById("systemData").insertAdjacentHTML("beforeend", systemRows);
+
+/***
+Maintenance
+***/
+  let unitCount = [];
+  let totalMaintExpense = 0;
+  colonies.forEach(c => unitCount = UnitCounts(c.fixed, unitCount));
+  fleets.forEach(f => unitCount = UnitCounts(f.units, unitCount));
+
+  let maintRows = unitCount.map(([designation, count, index]) => {
+    let unitMaintCost = 0;
+    if (index != -1) {
+      const unit = unitList[index];
+      unitMaintCost = newRound(count * unit.cost * 0.1, 2);
+    }
+    totalMaintExpense += Math.ceil(unitMaintCost);
+    return `<tr><td>${designation}</td><td>x${count}</td><td>${unitMaintCost}</td></tr>`;
+  }).join("");
+
+  if (empire.maintExpense == 0)
+    empire.maintExpense = totalMaintExpense;
+  if (empire.maintExpense != totalMaintExpense)
+    console.warn("*NOTE* Calculated maintenance ("+totalMaintExpense+") differs from data file ("+empire.maintExpense+")");
+
+  maintRows += `
+    <tr>
+      <td colspan="2" class="summation">Total Maintenance Expense</td>
+      <td class="summation">${empire.maintExpense}</td>
+    </tr>`;
+
+  document.getElementById("maintData").insertAdjacentHTML("beforeend", maintRows);
+
+  // Prepare the mothballs for display
+  for (const unit of unitsInMothballs) {
+    unit.name = "Mothballs";
+    unit.notes = "Mothballed";
+  }
+
+/***
+Fleets
+***/
+  const assetOut = [...fleets, ...unitsInMothballs]; // show the mothballs as fleets
+
+  let fleetTables = assetOut.map(fleet => {
+    let unitCount = UnitCounts(fleet.units);
+    const seperateRepairs = repairUnits
+      .filter(([unitName, fleetName]) => fleetName === fleet.name)
+      .map(([unitName]) => unitName);
+
+    let rows = `
+      <tr><th>Fleet<br>Name</th><td>${fleet.name}</td><th>Location</th><td>${fleet.location}</td></tr>
+      <tr><th>Units</th><th>Class</th><th colspan="2">Notes</th></tr>
+    `;
+
+    for (const unit of unitCount) {
+      const [designation, count, index] = unit;
+
+      // Handle crippled units
+      const repairIndex = seperateRepairs.indexOf(designation);
+      if (repairIndex >= 0) {
+        seperateRepairs.splice(repairIndex, 1);
+        const notes = index == -1 ? "" : unitList[index].notes;
+        rows += `
+          <tr>
+            <td>1</td>
+            <td>${designation}</td>
+            <td colspan="2">${notes} (Crippled)</td>
+          </tr>`;
+        unit[1]--; // reduce remaining count
+      }
+
+      // Non-crippled units
+      if (unit[1] > 0) {
+        const notes = index == -1 ? "" : unitList[index].notes;
+        rows += `
+          <tr>
+            <td>${unit[1]}</td>
+            <td>${designation}</td>
+            <td colspan="2">${notes}</td>
+          </tr>`;
+      }
+    }
+
+    // Fleet notes, if present
+    if (fleet.notes) {
+      rows += `
+        <tr>
+          <td colspan="2">&nbsp;</td>
+          <td colspan="2">${fleet.notes}</td>
+        </tr>`;
+    }
+
+    return `<table class="fleetEntry">${rows}</table>`;
+  }).join("");
+
+  document
+    .getElementById("fleetData")
+    .insertAdjacentHTML("beforeend", fleetTables);
+
+/***
+Trade Fleets
+***/
+  let seen = new Set(); // track duplicates
+  let tradeFleets = fleets
+    .filter(fleet => fleet.location.toLowerCase() === "trade" && fleet.notes)
+    .map(fleet => {
+      let locations = fleet.notes.split(",").map(loc => loc.trim());
+      let row = `<tr><td>${fleet.name}<t/td>`;
+
+      locations.forEach(locName => {
+        // Try to find a colony with matching name
+        let colony = colonies.find(c => c.name.toLowerCase() === locName.toLowerCase());
+        if (!seen.has(colony.name)) {
+          row += `<td>${colony.name}</td><td>${calcColonyOutput(colony)}</td>`;
+          seen.add(colony.name);
+        } else {
+          row += `<td><em>${colony.name}</em></td><td><em>0</em></td>`;
+        }
+      });
+
+      row += "</tr>";
+      return row;
+    }).join("");
+
+  document
+    .getElementById("tradeArea")
+    .insertAdjacentHTML("beforeend", tradeFleets);
+
+/***
+Purchases
+***/
+  let purchaseRows = `
+    <tr><th>New Purchases</th><th>Cost</th></tr>
+  `;
+
+  let purchaseTotal = 0;
+
+  for (const item of purchases) {
+    purchaseRows += `
+      <tr>
+        <td>${item.name}</td>
+        <td>${item.cost}</td>
+      </tr>`;
+
+    // compare cost in data file to cost in unit list
+    const idx = unitList.findIndex(u => u.ship === item.name);
+    if (idx != -1 && unitList[idx].cost != item.cost)
+      console.warn("*NOTE* Purchase: Unit cost of '"+item.name+"' ("+item.cost+") does not match data file ("+unitList[idx].cost+")");
+
+    purchaseTotal += Number(item.cost);
+  }
+
+  empire.purchaseTotal = newRound(purchaseTotal, 2);
+
+  purchaseRows += `
+    <tr>
+      <td class="summation">Total Purchases</td>
+      <td class="summation">${empire.purchaseTotal}</td>
+    </tr>
+  `;
+
+  document
+    .getElementById("purchaseData")
+    .insertAdjacentHTML("beforeend", purchaseRows);
+
+/***
+Construction
+***/
+  let constructionTotal = 0;
+  const constructionRows = underConstruction.map(item => {
+    const idx = unitList.findIndex(u => u.ship === item.unit);
+    if (idx == -1)
+      Console.warn("Construction: Unit '"+item.unit+"' not in list");
+    else
+    {
+      constructionTotal += Number(unitList[idx].cost);
+      return `<tr>
+        <td>${item.location}</td>
+        <td>${item.unit}</td>
+        <td></td>
+      </tr>`
+    }
+  }).join("");
+
+  empire.constructionTotal = newRound(constructionTotal, 2);
+
+  document
+    .getElementById("constructionData")
+    .insertAdjacentHTML("beforeend", constructionRows);
+
+/***
+Events
+***/
+  let eventRows = events.map(e => {
+    const safeText = e.text.replace(/'/g, "&apos;");
+    if (e.text.length > 300) {
+      return `<br><a onclick="popitupEvent(&quot;${safeText}&quot;)">${e.time}: ${e.event}</a>`;
+    }
+    return `<br><a title="${safeText}">${e.time}: ${e.event}</a>`;
+  }).join("");
+
+  eventRows += `<p style="font-size:smaller;">Mouseover or click on event for description</p>`;
+
+  document
+    .getElementById("eventArea")
+    .insertAdjacentHTML("beforeend", eventRows);
+
+/***
+Treaties
+***/
+  const treatyRows = treaties.map(t => `
+    <tr>
+      <td>${t.empire}</td>
+      <td>${t.cooldown}</td>
+      <td>${t.type}</td>
+    </tr>`).join("");
+
+  document
+    .getElementById("treatyArea")
+    .insertAdjacentHTML("beforeend", treatyRows);
+
+/***
+Intel
+***/
+  const intelRows = intelProjects.map(p => `
+    <tr>
+      <td>${p.type}</td>
+      <td>${p.target}</td>
+      <td>${p.location}</td>
+    </tr>`).join("");
+
+  document
+    .getElementById("IntelArea")
+    .insertAdjacentHTML("beforeend", intelRows);
+
+/***
+Economy
+***/
+  // Calculate the EPs spent
+  empire.totalIncome =
+    empire.systemIncome +
+    empire.previousEP +
+    empire.tradeIncome +
+    empire.miscIncome -
+    empire.maintExpense -
+    empire.miscExpense;
+  empire.nextEPs =
+    empire.totalIncome -
+    empire.purchaseTotal;
+
+  // Determine expenditure on research
+  empire.techSpent = empire.purchaseTotal - empire.constructionTotal;
+  if( empire.techSpent > Math.round(empire.systemIncome / 2) )
+    errorVal += "*NOTE* Research purchase ("+empire.techSpent+") exceeds max per turn ("+Math.round(empire.systemIncome / 2)+")";
+
+  // Surplus EPs from this turn
+  const endingPoolRow = `
+    <tr>
+      <td class="summation">Ending Point Pool</td>
+      <td class="summation">${newRound(empire.nextEPs, 2)}</td>
+    </tr>`;
+  document
+    .getElementById("purchaseData")
+    .insertAdjacentHTML("beforeend", endingPoolRow);
+
+/***
+Map References
+***/
+  document.querySelectorAll('[name="map"]').forEach(el => el.src = empire.mapFile);
+  document.querySelectorAll('[name="mapLink"]').forEach(el => el.href = empire.mapFile);
+
+/***
+One-Liners
+***/
+  // Write the one-liners
+  document.getElementById("empireName").textContent =
+    `${empire.name} (${empire.empire})`;
+  document.getElementById("gameTurn").textContent = game.turn;
+  document.getElementById("gameMonth").textContent =
+    `${gameMonth} (${makeFancyMonth(gameMonth, game.monthsPerYear)})`;
+  document.getElementById("previousEPs").textContent = empire.previousEP;
+  document.getElementById("systemIncome").textContent = empire.systemIncome;
+  document.getElementById("tradeIncome").textContent = empire.tradeIncome;
+  document.getElementById("miscIncome").textContent = empire.miscIncome;
+  document.getElementById("maintTotal").textContent = empire.maintExpense;
+  document.getElementById("miscExpense").textContent = empire.miscExpense;
+  document.getElementById("totalIncome").textContent = empire.totalIncome;
+  document.getElementById("techYear").textContent = empire.techYear;
+  document.getElementById("techSpent").textContent = empire.techSpent;
+  document.getElementById("constructionTotal").textContent = empire.constructionTotal;
+  document.getElementById("researchInvested").textContent = empire.researchInvested;
+  document.getElementById("nextEPs").textContent = newRound(empire.nextEPs, 2);
+  document.getElementById("maxTechCost").textContent = Math.round(empire.systemIncome / 2);
+  document.getElementById("techAdvCost").textContent = Math.round(empire.systemIncome * 4);
+
+/***
+Write Errors
+***/
   if( errorVal )
     document.getElementById('errorArea').innerHTML = errorVal;
 
