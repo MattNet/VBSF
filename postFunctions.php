@@ -1,31 +1,4 @@
 <?php
-###
-# Order names
-###
-# ORDER TYPE	-	ORDER NAME
-# Break a treaty -	break
-# Build unit -		build_unit
-# Build intel points -	build_intel
-# Colonize system -	colonize
-# Convert Unit -	convert
-# Cripple unit -	cripple
-# Destroy unit -	destroy
-# Assign flights -	flight
-# Perform an intel action - intel
-# Load units -		load
-# Mothball a unit -	mothball
-# Move fleet -		move
-# Move unit -		move_unit
-# (Re) name a place -	name
-# Offer a treaty -	offer
-# Increase productivity - productivity
-# Repair unit -		repair
-# Invest into research - research
-# Sign a treaty -	sign
-# Set a trade route -	trade_route
-# Unload units -	unload
-# Unmothball a unit -	unmothball
-###
 
 ###
 # Constants
@@ -41,96 +14,55 @@ $CIVILIAN_FLEETS = array("Colony Fleet", "Trade Fleet", "Transport Fleet" );
 # - (array) The data file converted to a series of PHP arrays.
 #           False for an error
 ###
-function extractJSON( $inputFile )
+function extractJSON(string $inputFile): array|false
 {
-  $endPos = 0; // the end of the line selection
-  $inFileContents = ""; // string contents of input JSON file
-  $midPos = 0; // the end of the top-level variable selection
-  $output = array();
-  $startPos = 0; // the start of the line selection
+    $output = [];
 
-  $inFileContents = file_get_contents( $inputFile );
-  if( $inFileContents === false )
-  {
-    echo "Could not read file '".$inputFile."'\n";
-    exit(1);
-  }
+    if (!is_readable($inputFile)) {
+        error_log("extractJSON(): Cannot read file '$inputFile'");
+        return false;
+    }
 
-  if( strlen($inFileContents) < 5 )
-  {
-    echo "Order file '$inputFile' is empty.\n";
-    return false;
-  }
+    $inFileContents = file_get_contents($inputFile);
+    if ($inFileContents === false || strlen($inFileContents) < 5) {
+        error_log("extractJSON(): File '$inputFile' is empty or unreadable.");
+        return false;
+    }
 
-  while( $endPos < (strlen($inFileContents)-5) )
-  {
-    $varName = ""; // the top-level variable of the data-file 
+    // Match all "var name = ...;" blocks
+    if (preg_match_all('/var\s+([A-Za-z_][A-Za-z0-9_]*)\s*=\s*(.*?);/s', $inFileContents, $matches, PREG_SET_ORDER)) {
+        foreach ($matches as $match) {
+            $varName = $match[1];
+            $json    = trim($match[2]);
 
-    # Create the variable name of the top-level JSON variable
-    $startPos += 4; // advance past the "var" statement
-    $midPos = strpos( $inFileContents, "=", $startPos )-1; // catch the first assignment operator
-    $varName = substr( $inFileContents, $startPos, ($midPos-$startPos) ); // assign the top-level variable name
-    $varName = trim($varName); // trim off whitespace
+            $decoded = json_decode($json, true, 512, JSON_OBJECT_AS_ARRAY);
+            if ($decoded === null && json_last_error() !== JSON_ERROR_NONE) {
+                error_log("extractJSON(): Could not decode JSON for variable '$varName': " . json_last_error_msg());
+                return false;
+            }
 
-    # Select the entire JSON assignment for a top-level variable
-    $endPos = strpos( $inFileContents, ";\n", $midPos ); // set the end of the selection
-    $midPos += 3; // advance past the assignment operator
-    // make string from $midPos to $endPos of $inFileContents
-    $JSON = substr( $inFileContents, $midPos, ($endPos-$midPos) );
+            $output[$varName] = $decoded;
+        }
+    } else {
+        error_log("extractJSON(): No valid 'var name = ...;' blocks found in '$inputFile'.");
+        return false;
+    }
 
-    # Decode the JSON and assign to the PHP variable
-    // decode the selection
-    $output[$varName] = json_decode( $JSON, true, 6, JSON_OBJECT_AS_ARRAY );
-    if( $output[$varName] === false )
-      echo "Could not decode variable '".$output[$varName]."'\n";
+    // Required keys check
+    $required = ["colonies","empire","game","mapPoints","orders","unknownMovementPlaces","unitList"];
+    foreach ($required as $key) {
+        if (!isset($output[$key])) {
+            error_log("extractJSON(): Required key '$key' missing in '$inputFile'.");
+            return false;
+        }
+    }
 
-    # Clean up this loop
-    // the next selection is where this one leaves off
-    $startPos = $endPos+2;
-  }
+    // Fleets are optional, log a warning if missing
+    if (!isset($output["fleets"])) {
+        error_log("extractJSON(): Warning - 'fleets' array missing in '$inputFile'.");
+    }
 
-  // Deal with un-written variables in the input stream
-  if( ! isset($output["colonies"]) ) // panic
-  {
-    echo "Mal-formed or empty 'colonies' array in the input data.\n";
-    return false;
-  }
-  else if( ! isset($output["empire"]) ) // panic
-  {
-    echo "Mal-formed or empty 'empire' array in the input data.\n";
-    return false;
-  }
-  else if( ! isset($output["game"]) ) // panic
-  {
-    echo "Mal-formed or empty 'game' array in the input data.\n";
-    return false;
-  }
-  else if( ! isset($output["mapPoints"]) ) // panic
-  {
-    echo "Mal-formed or empty 'mapPoints' array in the input data.\n";
-    return false;
-  }
-  else if( ! isset($output["orders"]) ) // panic
-  {
-    echo "Mal-formed or empty 'orders' array in the input data.\n";
-    return false;
-  }
-  else if( ! isset($output["unknownMovementPlaces"]) ) // panic
-  {
-    echo "Mal-formed or empty 'unknownMovementPlaces' array in the input data.\n";
-    return false;
-  }
-  else if( ! isset($output["unitList"]) ) // panic
-  {
-    echo "Mal-formed or empty 'unitList' array in the input data.\n";
-    return false;
-  }
-  else if( ! isset($output["fleets"]) ) // warning
-  {
-    echo "Caution: Mal-formed or empty 'fleets' array in the input data.\n";
-  }
-
-  return $output;
+    return $output;
 }
 
 ###
@@ -348,7 +280,7 @@ function getLeftover( $dataArray )
     }
   }
 
-  return $out;
+  return round( $out, 3 );
 }
 
 ###
@@ -562,42 +494,45 @@ function UKSortFunc( $a, $b )
 # Return:
 # - (boolean) True for success, false for failure
 ###
-function writeJSON( $dataArray, $writeFile )
+function writeJSON(array $dataArray, string $writeFile): bool
 {
-  $output = "";
+    $output = "";
 
-  if( empty($writeFile) )
-  {
-    echo "writeJSON() given no file to write.\n";
-    return false;
-  }
-
-  ksort( $dataArray ); // sort the keys of the incoming array
-  uksort( $dataArray, "UKSortFunc" );
-  foreach( $dataArray as $key => $line )
-  {
-    $result = json_encode($line);
-    if( $result === false )
-    {
-      echo "Could not encode JSON: ".json_last_error()."\n";
-      return false;
+    if (empty($writeFile)) {
+        error_log("writeJSON() given no file to write.");
+        return false;
     }
-    $output .= "var $key = $result;\n";
-  }
 
-  $inReplace = array( "},{", "],[", "null", "[[", "[{", "]]", "}]" );
-  $outReplace = array( "},\n   {", "], [", "{}", "[\n   [", "[\n   {", "]\n]", "}\n]" );
-  $output = str_replace( $inReplace, $outReplace, $output ); // insert newlines for easier human-readability
+    ksort( $dataArray ); // sort the keys of the incoming array
+    uksort( $dataArray, "UKSortFunc" ); // sort so that 'unitList' comes last
 
-  $result = file_put_contents( $writeFile, $output );
-  if( $result === false )
-  {
-    echo "Could not write file '$writeFile'\n";
-    return false;
-  }
+    foreach ($dataArray as $key => $line) {
+        // Ensure key is safe for use as a JS variable
+        if (!preg_match('/^[A-Za-z_][A-Za-z0-9_]*$/', $key)) {
+            error_log("Invalid JS variable name: $key");
+            return false;
+        }
 
-  echo "Wrote to file '$writeFile'\n";
+        $result = json_encode($line, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+        if ($result === false) {
+            error_log("Could not encode JSON: " . json_last_error_msg());
+            return false;
+        }
 
-  return true;
+        $output .= "var $key = $result;\n";
+    }
+
+    // Improve readability
+    $output = preg_replace('/},\s*{/', "},\n   {", $output);
+
+    // Write the file back
+    $result = file_put_contents($writeFile, $output);
+    if ($result === false) {
+        error_log("Could not write file '$writeFile'");
+        return false;
+    }
+
+    return true;
 }
+
 ?>

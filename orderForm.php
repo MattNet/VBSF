@@ -1,238 +1,192 @@
 <?php
-###
-# Accepts orders from the player sheet in the form of POST data
-# and puts them into the data file
-###
-
-###
-# Order names
-###
-# ORDER TYPE	-	ORDER NAME
-# Break a treaty -	break
-# Build unit -		build_unit
-# Build intel points -	build_intel
-# Colonize system -	colonize
-# Convert Unit -	convert
-# Cripple unit -	cripple
-# Destroy unit -	destroy
-# Assign flights -	flight
-# Perform an intel action - intel
-# Load units -		load
-# Mothball a unit -	mothball
-# Move fleet -		move
-# Move unit -		move_unit
-# (Re) name a place -	name
-# Offer a treaty -	offer
-# Increase productivity - productivity
-# Repair unit -		repair
-# Invest into research - research
-# Sign a treaty -	sign
-# Set a trade route -	trade_route
-# Unload units -	unload
-# Unmothball a unit -	unmothball
-###
+/**
+ * Accepts orders from the player sheet in the form of POST data
+ * and puts them into the data file
+ */
 
 ###
 # Configuration
 ###
-$EXIT_PAGE = $_SERVER["HTTP_HOST"]."/sheet/index.html"; // the page to show when the script is finished
-$dataFileDir = "files/"; // location of the data files
+$EXIT_PAGE   = "sheet/index.html"; // relative player page to redirect to
+$dataFileDir = "files/";           // location of the data files
 
 ###
 # Initialization
 ###
-include( "./postFunctions.php" );
+require_once("./postFunctions.php");
 
-$errorStrings = ""; // ongoing litany of errors to send to the UI
+$errors = []; // structured error messages
 
-// Format is $orderTable['internal "type" keyword'] = [ require "reciever", require "target", require "note", 'external "type" phrase' ]
-$orderTable = array();
-$orderTable['break'] 		= [ false, false, false, 'Break a treaty' ];
-$orderTable['build_unit'] 	= [ true, true, true, 'Build unit' ];
-$orderTable['build_intel'] 	= [ true, false, true, 'Build intel points' ];
-$orderTable['colonize'] 	= [ true, false, false, 'Colonize system' ];
-$orderTable['convert'] 		= [ true, true, false, 'Convert Unit' ];
-$orderTable['cripple'] 		= [ true, false, false, 'Cripple unit' ];
-$orderTable['destroy'] 		= [ true, false, false, 'Destroy unit' ];
-$orderTable['flight'] 		= [ true, true, false, 'Assign flights' ];
-$orderTable['intel'] 		= [ true, true, true, 'Perform an intel action' ];
-$orderTable['load'] 		= [ true, true, true, 'Load units' ];
-$orderTable['mothball'] 	= [ true, false, false, 'Mothball a unit' ];
-$orderTable['move'] 		= [ true, true, false, 'Move fleet' ];
-$orderTable['move_unit'] 	= [ true, false, true, 'Move unit' ];
-$orderTable['name'] 		= [ true, false, false, '(Re) name a place' ];
-$orderTable['name_fleet']	= [ true, false, true, 'Rename a fleet' ];
-$orderTable['offer'] 		= [ true, true, false, 'Offer a treaty' ];
-$orderTable['productivity'] 	= [ true, false, false, 'Increase productivity' ];
-$orderTable['repair'] 		= [ true, false, false, 'Repair unit' ];
-$orderTable['research'] 	= [ false, false, true, 'Invest into research' ];
-$orderTable['sign'] 		= [ true, true, false, 'Sign a treaty' ];
-$orderTable['trade_route'] 	= [ true, true, false, 'Set a trade route' ];
-$orderTable['unload'] 		= [ true, false, true, 'Unload units' ];
-$orderTable['unmothball'] 	= [ true, false, false, 'Unmothball a unit' ];
-
-/*
-Array
-(
-    [dataFile] = sample01
-// "perm" orders below
-    [OrderEntry0A] => move
-    [OrderEntry0B] => Exploration Alpha
-    [OrderEntry0C] => Fraxee Dir A
-    [OrderEntry0D] => 
-    [OrderEntry1A] => move
-    [OrderEntry1B] => Exploration Beta
-    [OrderEntry1C] => Fraxee Dir F
-    [OrderEntry1D] => 
-    [OrderEntry2A] => invest
-    [OrderEntry2B] => 
-    [OrderEntry2C] => 
-    [OrderEntry2D] => 13
-    [OrderEntry3A] => build
-    [OrderEntry3B] => Colony Fleet
-    [OrderEntry3C] => Fraxee
-    [OrderEntry3D] => Colony-1
-// drop-down entries below
-    [OrderEntry4A] => productivity
-    [OrderEntry4B] => Fraxee
-    [OrderEntry4D] => 
-    [OrderEntry5A] => colonize
-    [OrderEntry5B] => Fraxee dir A
-    [OrderEntry5D] => 
-    [OrderEntry6A] => move
-    [OrderEntry6B] => Exploration Beta
-    [OrderEntry6C] => Fraxee
-    [OrderEntry6D] => 
-)
-
-Always gives OrderEntryxD (the text-entry)
-"finished" entries gives all four entries
-unassigned orders are given "<-- No Order -->" for the A entry
-
-"Order \""+orders[i].reciever+"\" to do \""+orders[i].type+"\" to \""+orders[i].target+"\" with \""+orders[i].note+"\"";
-
-var orders = [
-   {"type":"move","reciever":"Exploration Alpha","target":"Fraxee Dir A","note":"","perm":0},
-   {"type":"move","reciever":"Exploration Beta","target":"Fraxee Dir F","note":"","perm":0},
-   {"type":"invest","reciever":"","target":"","note":"13","perm":1},
-   {"type":"build","reciever":"Colony Fleet","target":"Fraxee","note":"Colony-1","perm":0}
+// Order table: [ require "reciever", require "target", require "note", 'description' ]
+$orderTable = [
+# Fleet Deployment
+    'add_fleet'    => [ true, false, true, 'Add to Fleet' ],
+    'flight'       => [ true, true, false, true ],
+    'name_fleet'   => [ true, false, true, 'Rename a fleet' ],
+# Intelligence Orders
+    'covert'       => [ true, true, true, 'Perform covert mission' ],
+    'special_force'=> [ true, true, true, 'Perform special-forces mission' ],
+# Movement Orders
+    'convoy_raid'  => [ true, true, false, 'Convoy Raid' ],
+    'explore_lane' => [ true, false, false, 'Explore Jump-Lane' ],
+    'move'         => [ true, true, false, 'Move fleet' ],
+    'load'         => [ true, true, true, 'Load units' ],
+    'long_range'   => [ true, true, false, 'Long-Range Scan' ],
+    'start_trade'  => [ true, true, true, 'Set a trade route' ],
+    'stop_trade'   => [ true, true, false, true ],
+    'unload'       => [ true, false, true, 'Unload units' ],
+# Diplomatic Orders
+    'hostile_check'=> [ true, false, false, 'Declare War' ],
+    'diplo_check'  => [ true, false, false, 'Offer a treaty' ],
+    'sign_treaty'  => [ true, true, false, 'Sign a treaty' ],
+    'sneak_attack' => [ true, false, false, 'Sneak Attack' ],
+# Construction orders
+    'build_unit'   => [ true, true, 'New fleet name', 'Build unit at system' ],
+    'convert'      => [ true, true, false, 'Convert/Refit Unit' ],
+    'mothball'     => [ true, false, false, 'Mothball a unit' ],
+    'purchase_civ' => [ true, true, true, 'Purchase civilian unit at system' ],
+    'purchase_troop'=> [ true, true, true, 'Purchase troop at system' ],
+    'remote_build' => [ true, true, false, 'Remote build unit' ],
+    'repair'       => [ true, false, false, 'Repair unit' ],
+    'scrap'        => [ true, false, false, 'Scrap a unit' ],
+    'unmothball'   => [ true, false, false, 'Unmothball a unit' ],
+# Investment Orders
+    'colonize'     => [ true, false, false, 'Colonize system' ],
+    'downgrade_lane'=> [ true, true, false, 'Downgrade Lane' ],
+    'imp_capacity' => [ true, false, false, 'Improve capacity' ],
+    'imp_pop'      => [ true, false, false, 'Improve Population' ],
+    'imp_intel'    => [ true, false, false, 'Improve Intelligence' ],
+    'imp_fort'     => [ true, false, false, 'Improve Fortifications' ],
+    'research'     => [ false, false, true, 'Invest into research' ],
+    'name_place'   => [ true, false, false, '(Re) name a colony' ],
+    'research_new' => [ true, true, false, 'Research Target' ],
+    'upgrade_lane' => [ true, true, false, 'Upgrade Lane' ],
+# Combat Orders
+    'cripple'      => [ true, false, false, 'Cripple unit' ],
+    'destroy'      => [ true, false, false, 'Destroy unit' ],
+    'gift'         => [ true, true, false, 'Transfer ownership of unit' ]
 ];
-*/
 
-// find the data-file name
-$dataFileRoot = $_REQUEST["dataFile"];
-$dataFileName = $dataFileDir.$dataFileRoot.".js";
+###
+# Input validation
+###
 
-// error-catching for inability to read or write to $dataFileName
-if( ! is_readable($dataFileName) )
-{
-  echo "Cannot write to '$dataFileName'\n\n";
-  exit(0);
+// Require POST
+if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+    http_response_code(405);
+    exit("Method not allowed");
 }
-if( ! is_writeable($dataFileName) )
-{
-  echo "Cannot write to '$dataFileName'\n\n";
-  exit(0);
-}
+//print_r($_POST);exit;
 
-// get the data file
-$fileContents = extractJSON( $dataFileName );
+// Validate file name
+if (empty($_POST["dataFile"]))
+    exit("No data file specified");
+$dataFileRoot = basename($_POST["dataFile"],'.js');
+if (!preg_match('/^[a-zA-Z0-9_-]+$/', $dataFileRoot))
+    exit("Invalid data file name, '$dataFileRoot'");
+$dataFileName = $dataFileDir . $dataFileRoot . ".js";
 
-$flagDelete = -1; // set to an order number to be deleted
+// Check file readability and writability
+if (!is_readable($dataFileName))
+    exit("Cannot read from '$dataFileName'");
+if (!is_writable($dataFileName))
+    exit("Cannot write to '$dataFileName'");
 
-// Iterate through the order array
-// If an order if "<-- No Order -->" then try to delete the entry from the data file
-// otherwise add to the data file
-foreach( array_keys($_REQUEST) as $key )
-{
-  // skip if this is not an order entry
-  if( strpos( $key, "OrderEntry" ) !== 0 ) // catches if the needle is missing or not at start
-    continue;
+###
+# Load current file contents
+###
+$fileContents = extractJSON($dataFileName);
+if (!isset($fileContents["orders"]))
+    $fileContents["orders"] = [];
 
-  // get the order to affect with this $key
-  $orderNum = intval( substr( $key, 10, 2 ) );
-  $orderPos = strtolower( substr( $key, 10+strlen($orderNum), 1 ) );
+###
+# Process incoming orders
+###
+$flagDelete = -1;
 
-  // skip if we failed to get the location inside the order from the $key
-  if( $orderNum === false || $orderPos === false )
-    continue;
+foreach ($_POST as $key => $value) {
+    // Only process OrderEntryNNX keys
+    if (!preg_match('/^OrderEntry(\d+)([ABCD])$/', $key, $matches))
+        continue;
 
-  if( $_REQUEST[ $key ] == "<-- No Order -->" || $flagDelete == $orderNum )
-  {
-    $flagDelete = $orderNum;
-    if( isset($fileContents["orders"][$orderNum]) )
-      unset( $fileContents["orders"][$orderNum] ); // remove the deleted item
-    continue; // order is empty
-  }
+    $orderNum = (int)$matches[1];
+    $orderPos = strtolower($matches[2]);
 
-  // set everything else. They might have changed
-  // set up the entry to the orders array if not already
-  if( ! isset( $fileContents["orders"][$orderNum]) )
-    $fileContents["orders"][$orderNum] = array();
+    // Handle delete or "<-- No Order -->"
+    if ($value === "<-- No Order -->" || $flagDelete === $orderNum) {
+        $flagDelete = $orderNum;
+        if (isset($fileContents["orders"][$orderNum]))
+            unset($fileContents["orders"][$orderNum]);
+        continue;
+    }
 
-  // create a segment of an order with this $key entry
-  switch($orderPos)
-  {
-  case "a":
-    $fileContents["orders"][$orderNum]["type"] = $_REQUEST[$key];
-    break;
-  case "b":
-    $fileContents["orders"][$orderNum]["reciever"] = $_REQUEST[$key];
-    break;
-  case "c":
-    $fileContents["orders"][$orderNum]["target"] = $_REQUEST[$key];
-    break;
-  case "d":
-    $fileContents["orders"][$orderNum]["note"] = $_REQUEST[$key];
-    break;
-  }
+    // Ensure order entry exists
+    if (!isset($fileContents["orders"][$orderNum]))
+        $fileContents["orders"][$orderNum] = [];
+
+    // Assign field based on position
+    switch ($orderPos) {
+        case 'a': $fileContents["orders"][$orderNum]["type"]     = trim($value); break;
+        case 'b': $fileContents["orders"][$orderNum]["reciever"] = trim($value); break;
+        case 'c': $fileContents["orders"][$orderNum]["target"]   = trim($value); break;
+        case 'd': $fileContents["orders"][$orderNum]["note"]     = trim($value); break;
+    }
 }
 
-foreach( array_keys($fileContents["orders"]) as $orderNum )
-{
-  // used to check which parts of the order array are required for each order type
-  $orderTableEntry = $orderTable[ $fileContents["orders"][$orderNum]["type"] ];
+###
+# Validate orders
+###
+foreach (array_keys($fileContents["orders"]) as $orderNum) {
+    $order = &$fileContents["orders"][$orderNum];
 
-// create any otherwise-empty order fields
-  if( ! isset($fileContents["orders"][$orderNum]["type"]) )
-    $fileContents["orders"][$orderNum]["type"] = "";
-  if( ! isset($fileContents["orders"][$orderNum]["reciever"]) )
-    $fileContents["orders"][$orderNum]["reciever"] = "";
-  if( ! isset($fileContents["orders"][$orderNum]["target"]) )
-    $fileContents["orders"][$orderNum]["target"] = "";
-  if( ! isset($fileContents["orders"][$orderNum]["note"]) )
-    $fileContents["orders"][$orderNum]["note"] = "";
+    // Ensure all fields exist
+    foreach (['type','reciever','target','note'] as $f)
+        if (!isset($order[$f]))
+            $order[$f] = "";
 
-// Check that all required fields are not blank
-  if( ! isset( $orderTable[ $fileContents["orders"][$orderNum]["type"] ] ) )
-  {
-    $errorStrings .= "Order processing file does not know of order type '".$fileContents["orders"][$orderNum]["type"]."'.\n";
-    unset( $fileContents["orders"][$orderNum] ); // delete the offending entry
-  }
-  if( empty($fileContents["orders"][$orderNum]["reciever"]) && $orderTableEntry[0] == true )
-  {
-    $errorStrings .= "Order type '".$orderTableEntry[3]."' requires a reciever. None given.\n";
-    unset( $fileContents["orders"][$orderNum] ); // delete the offending entry
-  }
-  if( empty($fileContents["orders"][$orderNum]["target"]) && $orderTableEntry[1] == true )
-  {
-    $errorStrings .= "Order type '".$orderTableEntry[3]."' requires a target. None given.\n";
-    unset( $fileContents["orders"][$orderNum] ); // delete the offending entry
-  }
-  if( empty($fileContents["orders"][$orderNum]["note"]) && $orderTableEntry[2] == true )
-  {
-    $errorStrings .= "Order type '".$orderTableEntry[3]."' requires a note. None given.\n";
-    unset( $fileContents["orders"][$orderNum] ); // delete the offending entry
-  }
+    // Check valid order type
+    if (!isset($orderTable[$order["type"]])) {
+        $errors[] = "Unknown order type '{$order["type"]}' at #$orderNum.";
+        unset($fileContents["orders"][$orderNum]);
+        continue;
+    }
+
+    $requirements = $orderTable[$order["type"]];
+    $desc = $requirements[3];
+
+    // Validate required fields
+    $requiredMap = ['reciever','target','note'];
+    foreach ($requiredMap as $i => $field) {
+        if ($requirements[$i] && empty($order[$field])) {
+            $errors[] = "Order type '$desc' requires a $field. None given (order #$orderNum).";
+            unset($fileContents["orders"][$orderNum]);
+            break;
+        }
+    }
 }
+unset($order);
 
-// re-index the orders array
-$fileContents["orders"] = array_values( $fileContents["orders"] );
+// Reindex array
+$fileContents["orders"] = array_values($fileContents["orders"]);
 
-// write the (edited) file
-writeJSON( $fileContents, $dataFileName );
+###
+# Write updated file
+###
+if (!writeJSON($fileContents, $dataFileName, true))
+    exit("Failed to write updated data to '$dataFileName'");
 
-// go back to the player-page
-header( "location: http://".$EXIT_PAGE."?data=".$_REQUEST["dataFile"]."&e=".urlencode($errorStrings)."&t=".time(), true, 302 );
+###
+# Redirect back to player sheet
+###
+$redirectUrl = sprintf(
+    "http://%s/%s?data=%s&e=%s&t=%d",
+    $_SERVER["HTTP_HOST"],
+    $EXIT_PAGE,
+    urlencode($dataFileRoot),
+    urlencode(implode("\n", $errors)),
+    time()
+);
+
+header("Location: $redirectUrl", true, 302);
 exit;
-?>
+
