@@ -42,11 +42,11 @@ The remaining files in the root directory are used for back-end moderation. They
 ### Program workflow
 To initialize a game, create a data sheet for each player and store it in the **files/** directory. A sample data file is included in that directory for reference.
 Execute **postTurn.php** on each player’s data sheet to process the current turn. This script performs the following operations:
-* Executes all end-of-turn procedures on the existing sheet. (Out of supply, Construction, Technology upgrades, * *et.al.* *)
+* Executes all end-of-turn procedures on the existing sheet. (Out of supply, Construction, Technology upgrades, *et.al.*)
 * Generates a new data sheet for the subsequent turn. Therefore, each completed data sheet represents the player’s game state at the conclusion of that turn.
-* Executes all start-of-turn procedures on the newly generated sheet. (Economics, * *et, al.* *)
+* Executes all start-of-turn procedures on the newly generated sheet. (Economics, *et, al.*)
 
-Players then access their new data sheets to submit orders for the next turn. To do this, they open **./sheet/index.html?data=** followed by the identifier of the data file. For security purposes, data filenames should not be easily predictable (for example, avoid * *bob-turn-1* *). A hashing or randomization scheme (e.g., * *hf93mdf7* *) is recommended to prevent unauthorized access to other players’ sheets.
+Players then access their new data sheets to submit orders for the next turn. To do this, they open **./sheet/index.html?data=** followed by the identifier of the data file. For security purposes, data filenames should not be easily predictable (for example, avoid *bob-turn-1*). A hashing or randomization scheme (e.g., *hf93mdf7*) is recommended to prevent unauthorized access to other players’ sheets.
 
 After all players have submitted their orders, the moderator executes **postOrders.php** on each data sheet. This script processes the intermediate game logic that occurs between order submission and combat resolution. Once this step is complete, the system is ready to resolve any resulting combat operations.
 
