@@ -32,8 +32,15 @@ document.addEventListener("DOMContentLoaded", function() {
     return false;
   }
 
+  const input = document.createElement("input");
+    input.type = "hidden";
+    input.name = "dataFile";
+    input.value = dataVal + ".js";
+  document.getElementById("ordersForm").appendChild(input);
+
   // get the datafile
   fetchData( "../files/"+dataVal+".js", () => {
+
     // initialization functions here
     emitGameData();
   });
@@ -87,7 +94,6 @@ document.addEventListener("DOMContentLoaded", function() {
   <div class='orders'>
     <h3>Turn Orders</h3>
     <form accept-charset='UTF-8' action='../orderForm.php' id='ordersForm' method='post' target='_SELF'>
-    <input type='hidden' name='dataFile' value=''>
 
     <span id='ordersArea'></span>
     </form>
@@ -128,7 +134,7 @@ document.addEventListener("DOMContentLoaded", function() {
   <div class='treaties'>
     <h3>Treaties</h3>
     <table style='margin:auto;' id='treatyArea'>
-    <tr><th>Empire</th><th>Diplomatic<br>Cooldown</th><th>Treaty</th></tr>
+    <tr><th>Empire</th><th>Diplomatic<br>Cooldown</th><th>Diplomatic<br>State</th><th>National<br>Income</th><th>Navy<br>Strength</th></tr>
     </table>
   </div>
 

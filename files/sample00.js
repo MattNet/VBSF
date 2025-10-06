@@ -81,14 +81,14 @@ var mapPoints = [
    [175,120,"","Bellerophon"], [210,420,"","Cassandra"], [245,360,"","Chimera"],
    [140,60,"","Daedalus"], [140,300,"","Diomedes"], [315,120,"","Freya"],
    [280,180,"","Frigga"], [105,240,"","Hector"], [420,300,"","Heimdall"],
-   [385,240,"","Hela"], [35,240,"","Hera"], [105,360,"","Heracles"],
+   [385,240,"","Hela"], [35,240,"Orion","Hera"], [105,360,"","Heracles"],
    [420,180,"","Idis"], [315,240,"","Jotunhiem"], [385,120,"","Loki"],
    [210,180,"","Meleager"], [175,240,"","Menelaus"], [350,300,"","Midgard"],
-   [350,60,"","Odin"], [280,420,"","Odysseus"], [210,60,"","Oedipus"],
+   [350,60,"Orion","Odin"], [280,420,"","Odysseus"], [210,60,"","Oedipus"],
    [245,240,"Federation","Olympus"], [210,300,"","Orpheus"], [385,360,"","Perseus"],
    [280,300,"","Priam"], [105,120,"","Sagittarius"], [455,240,"","Sif"],
    [280,60,"","Thor"], [245,120,"","Tyr"], [140,180,"","Ulysses"],
-   [350,420,"","Zeus"]
+   [350,420,"Orion","Zeus"]
 ];
 var offeredTreaties = [];
 var orders = [

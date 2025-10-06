@@ -236,7 +236,6 @@ const allIntelProjects = [
     load:          [ unitsWithCarry, allLoadableUnits, 'Amount to Load', 'Load units', "pre" ],
     long_range:    [ currentFleets, allMovablePlaces, '', 'Long-Range Scan', "pre" ],
     start_trade:   [ currentFleets, allKnownPlaces, 'Third system of trade route', 'Set a trade route', "pre" ],
-    sneak_attack:  [ currentFleets, [], '', 'Sneak Attack', "pre" ],
     stop_trade:    [ currentFleets, allKnownPlaces, '', 'Stop a trade route', "pre" ],
     unload:        [ unitsWithCarry, [], 'Amount to unload', 'Unload units', "pre" ],
 
@@ -244,8 +243,9 @@ const allIntelProjects = [
     hostile_check: [ otherEmpires, [], '', 'Declare War', "pre" ],
     diplo_check:   [ otherEmpires, [], '', 'Offer a treaty', "pre" ],
     sign_treaty:   [ offeredTreaties, otherEmpires, '', 'Sign a treaty', "post" ],
+    sneak_attack:  [ currentFleets, [], '', 'Sneak Attack', "pre" ],
 
-    header_construnction: [ "Construction orders" ],
+    header_construction: [ "Construction orders" ],
     build_unit:    [ allBuildableUnits, colonyNames, 'New fleet name', 'Build unit at system', "pre" ],
     convert:       [ currentUnits, buildableShips, '', 'Convert/Refit Unit', "pre" ],
     mothball:      [ currentUnits, [], '', 'Mothball a unit', "pre" ],
@@ -265,7 +265,7 @@ const allIntelProjects = [
     imp_fort:      [ colonyNames, [], '', 'Improve Fortifications', "pre" ],
     research:      [ [], [], 'Amount to Invest', 'Invest into research', "pre" ],
     name_place:    [ colonyNames, [], '', '(Re) name a colony', "pre" ],
-    research_new:  [ ['Research New Unit','Upgrade Unit'], [], '', 'Research Target', "pre" ],
+    research_new:  [ ['Research New Unit','Upgrade Unit'], allBuildableUnits, '', 'Research Target', "pre" ],
     upgrade_lane:  [ allKnownPlaces, allKnownPlaces, '', 'Upgrade Lane', "pre" ],
 
     header_combat: [ "Combat Orders" ],
@@ -639,6 +639,8 @@ Treaties
       <td>${t.empire}</td>
       <td>${t.cooldown}</td>
       <td>${t.type}</td>
+      <td>${t.income}</td>
+      <td>${t.navy}</td>
     </tr>`).join("");
 
   document

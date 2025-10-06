@@ -103,8 +103,6 @@ elemEnter.append("text")
     .attr("stroke", function(d){ return EmpireTextColors( String(d).split(',')[2] ) })
     .style("font-size", function(d){ return HexRadius+"px" });
 
-
-
 // Build a lookup table from label -> [x, y]
 var pointLookup = {};
 mapPoints.forEach(d => {
