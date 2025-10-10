@@ -206,19 +206,7 @@ Build Orders Lists
   allKnownPlaces = JsonConcatArrays(colonyNames, otherSystems);
   allBasablePlaces = JsonConcatArrays(unitsWithBasing, colonyNames);
 
-
-/*
-const allIntelProjects = [
-    "System Espionage", "Fleet Espionage", "Intel Espionage",
-    "Tech Espionage", "Trade Espionage", "Troop Espionage",
-    "Raider Espionage", "Industrial Sabotage", "Counter-Intelligence",
-    "Starship Sabotage", "Installation Sabotage", "Population Sabotage",
-    "Insurgency", "Counter-Insurgency", "Reduce Raiding",
-    "NPE Diplomatic Shift", "NPE Treaty Acceptance"
-  ];
-*/
-
-    // Format is orderTable['internal "type" keyword'] = [ [auto-populated "reciever"], [auto-populated "target"], 'auto-populated "note"', 'external "type" phrase' ]
+  // Format is orderTable['internal "type" keyword'] = [ [auto-populated "reciever"], [auto-populated "target"], 'auto-populated "note"', 'external "type" phrase' ]
   orderTable = {
     header_fleet:  [ "Fleet Deployment" ],
     add_fleet:     [ currentUnits, [], 'New Fleet Name', 'Add to Fleet', "pre" ],

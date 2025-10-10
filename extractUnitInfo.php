@@ -389,10 +389,10 @@ $units = [
     ["StarBase-I",        180, "SB",  36, 36, 36, 1, 10, "Carrier(24), Fixed, Scout(6), Supply Depot"],
     ["Mobile Base",       140, "MB",  9,  8,  8,  1, 6,  "Carrier(6), Fixed, Scout(1), Supply Depot"],
     ["Mobile Base-I",     180, "MB",  9,  8,  8,  1, 6,  "Carrier(6), Fixed, Scout(1), Supply Depot"],
-    ["Convoy",            65,  "",    20, 0,  10, 1, 0,  "Civilian"],
-    ["Convoy-I",          105,  "",    20, 0,  10, 1, 0,  "Civilian"],
-    ["Convoy-II",         145, "",    20, 0,  10, 1, 0,  "Civilian"],
-    ["Convoy-III",        185, "",    20, 0,  10, 1, 0,  "Civilian"],
+    ["Convoy",            65,  "Convoy",    20, 0,  10, 1, 0,  "Civilian"],
+    ["Convoy-I",          105, "Convoy",    20, 0,  10, 1, 0,  "Civilian"],
+    ["Convoy-II",         145, "Convoy",    20, 0,  10, 1, 0,  "Civilian"],
+    ["Convoy-III",        185, "Convoy",    20, 0,  10, 1, 0,  "Civilian"],
     ["Shipyard",          65,  "Shipyard",20, 0,  10, 1, 0, "Civilian, Shipyard, Fixed"],
     ["Shipyard-I",        105,  "Shipyard",20, 0,  10, 1, 0, "Civilian, Shipyard, Fixed"],
     ["Shipyard-II",       145, "Shipyard",20, 0,  10, 1, 0, "Civilian, Shipyard, Fixed"],
@@ -605,7 +605,7 @@ foreach( $queryOut as $row )
   }
   $output .= ',"notes":"'.$row["special"]."\"},\n";
 }
-
+$output = trim( $output, ",\n" );
 // add the footer
 $output .= "];\n";
 

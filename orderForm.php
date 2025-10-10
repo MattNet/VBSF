@@ -13,7 +13,7 @@ $dataFileDir = "files/";           // location of the data files
 ###
 # Initialization
 ###
-require_once("./postFunctions.php");
+require_once("./postFunctions.php"); // for the extractJSON and encodeJSON functions
 
 $errors = []; // structured error messages
 
@@ -76,7 +76,6 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     http_response_code(405);
     exit("Method not allowed");
 }
-//print_r($_POST);exit;
 
 // Validate file name
 if (empty($_POST["dataFile"]))
