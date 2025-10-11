@@ -247,6 +247,7 @@ Build Orders Lists
     header_investment: [ "Investment Orders" ],
     colonize:      [ otherSystems, [], '', 'Colonize system', "pre" ],
     downgrade_lane:[ allKnownPlaces, allKnownPlaces, '', 'Downgrade Lane', "pre" ],
+    martial_law:   [ colonyNames, [], '', 'Enact martial law', "pre" ],
     imp_capacity:  [ colonyNames, [], '', 'Improve capacity', "pre" ],
     imp_pop:       [ colonyNames, [], '', 'Improve Population', "pre" ],
     imp_intel:     [ colonyNames, [], '', 'Improve Intelligence', "pre" ],
@@ -453,7 +454,7 @@ Maintenance
 /***
 Fleets
 ***/
-  const assetOut = [...fleets, ...unitsInMothballs]; // show the mothballs as fleets
+  const assetOut = [...fleets, ...unitsInMothballs]; // mothballs also show as fleets
 
   let fleetTables = assetOut.map(fleet => {
     let unitCount = UnitCounts(fleet.units);
@@ -468,29 +469,36 @@ Fleets
 
     for (const unit of unitCount) {
       const [designation, count, index] = unit;
+      const notes = index == -1 ? "" : unitList[index].notes;
+
+      // Determine all applicable states for this unit
+      const matchingStates = unitStates
+        .filter(([key]) => key === `${designation} w/ ${fleet.name}`)
+        .map(([_, state]) => state);
+
+      const stateText = matchingStates.length ? `${notes ? "," : ""} <em>${matchingStates.join(", ")}</em>` : "";
+      const crippledText = `${notes ? ", " : ""} <em>Crippled</em>${stateText ? ", " : ""}`;
 
       // Handle crippled units
       const repairIndex = seperateRepairs.indexOf(designation);
       if (repairIndex >= 0) {
         seperateRepairs.splice(repairIndex, 1);
-        const notes = index == -1 ? "" : unitList[index].notes;
         rows += `
           <tr>
             <td>1</td>
             <td>${designation}</td>
-            <td colspan="2">${notes} (Crippled)</td>
+            <td colspan="2">${notes} ${crippledText}${stateText}</td>
           </tr>`;
         unit[1]--; // reduce remaining count
       }
 
-      // Non-crippled units
+      // Handle non-crippled units
       if (unit[1] > 0) {
-        const notes = index == -1 ? "" : unitList[index].notes;
         rows += `
           <tr>
             <td>${unit[1]}</td>
             <td>${designation}</td>
-            <td colspan="2">${notes}</td>
+            <td colspan="2">${notes}${stateText}</td>
           </tr>`;
       }
     }
