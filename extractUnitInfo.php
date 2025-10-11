@@ -375,6 +375,33 @@ foreach( $queryNavyOut as &$row )
 }
 unset($row); // getting a double-entry for the last item
 
+// Modify heavy-fighter counts so that they are regular-fighter counts
+foreach ($queryNavyOut as &$unit) {
+    if (isset($unit['special'])) {
+        // Handle pattern: Carrier(<num>H)
+        $unit['special'] = preg_replace_callback(
+            '/Carrier\((\d+)H\)/',
+            function ($matches) {
+                $num = (int)$matches[1];
+                return 'Carrier(' . ($num * 2) . ')';
+            },
+            $unit['special']
+        );
+
+        // Handle pattern: Carrier(<num>+<num>H)
+        $unit['special'] = preg_replace_callback(
+            '/Carrier\((\d+)\+(\d+)H\)/',
+            function ($matches) {
+                $a = (int)$matches[1];
+                $b = (int)$matches[2];
+                return 'Carrier(' . ($a + ($b * 2)) . ')';
+            },
+            $unit['special']
+        );
+    }
+}
+unset($unit);
+
 // Add bases
 $units = [
     ["Early Base Station",    65,  "BSE", 15, 8,  8,  1, 8,  "Fixed"],
@@ -427,6 +454,7 @@ if( strtolower($EMPIRE) == "tholian" )
                            "cmdcost"=> 0,"cmdrate"=> 0,"basing"=>0,"special"=>""
                          );
 */
+print_r($queryNavyOut);exit();
 
 // make the actual unit query (PFs)
 $result = $database->genquery( $pfUnitQuery, $queryPfOut );
