@@ -19,7 +19,7 @@ declare(strict_types=1);
 
 # writeToFile(string $file): void
 #   Encodes object properties into the file format and writes back to the data file.
-#   Arguments: $file – path to the [new] data file
+#   Arguments: $file – path to the [new] data file. Uses original data file if left blank
 #   Output: none
 #   Access: public
 
@@ -109,6 +109,8 @@ declare(strict_types=1);
 # array $unitStates
 # array $unknownMovementPlaces
 # array $unitList
+
+# string $fileName
 ###
 
 ###
@@ -138,6 +140,8 @@ class GameData
   public array $unknownMovementPlaces = [];
   public array $unitList = [];
 
+  public string $fileName = "";
+
   private array $errors = [];
 
 ###
@@ -148,6 +152,7 @@ class GameData
   public function __construct(string $filePath)
   {
     $this->readFromFile ($filePath);
+    $this->fileName = $filePath;
   }
 
 ###
@@ -188,10 +193,10 @@ class GameData
 
 ###
 #   Encodes object properties into the file format and writes back to the data file.
-#   Arguments: $file – path to the [new] data file
+#   Arguments: $file – path to the [new] data file. Uses original data file if left blank
 #   Output: none
 ###
-  public function writeToFile(string $file): void
+  public function writeToFile(string $file = ""): void
   {
     $output = '';
     $keys = array_keys(get_object_vars($this));
@@ -206,6 +211,10 @@ class GameData
       $output .= "var {$key} = {$encoded};\n";
     }
 
+    if ($file == "") // if the argument is empty, write the original filename
+      $file = $this->fileName;
+    else // if the argument is given, treat that as our original filename
+      $this->fileName = $file;
     if (file_put_contents($file, $output) === false) {
       $this->errors[] = "Failed to write file: {$file}";
     }
