@@ -354,7 +354,6 @@ Turn Selection
     prevDocEl.textContent = "";
     prevDocEl.parentElement.classList.remove("button");
   }
-//  document.getElementById("UnitListDoc").href = `../docs/units.html#${String(empire.empire).toLowerCase()}`;
 
 /***
 Month / Year
@@ -403,7 +402,7 @@ Systems
         <td class="sysTableType">${colony.type}</td>
         <td>${colony.capacity}</td>
         <td>${colony.raw}</td>
-        <td>${colony.population} ${censusLoad}${colony.owner.slice(0,3)}</td>
+        <td>${colony.population} ${censusLoad}<b>${colony.owner.slice(0,3)}</b></td>
         <td>${colony.morale}</td>
         <td>${colony.intel}</td>
         <td>${colony.fort}</td>
@@ -592,7 +591,7 @@ Construction
   const constructionRows = underConstruction.map(item => {
     const idx = unitList.findIndex(u => u.ship === item.unit);
     if (idx == -1)
-      Console.warn("Construction: Unit '"+item.unit+"' not in list");
+      console.warn("Construction: Unit '"+item.unit+"' not in list");
     else
     {
       constructionTotal += Number(unitList[idx].cost);
@@ -702,6 +701,8 @@ One-Liners
   document.getElementById("gameTurn").textContent = game.turn;
   document.getElementById("gameMonth").textContent =
     `${gameMonth} (${makeFancyMonth(gameMonth, game.monthsPerYear)})`;
+  document.getElementById("gameName").textContent = game.game;
+//  document.getElementById("UnitListDoc").href = `../docs/units.html#${String(empire.empire).toLowerCase()}`;
   document.getElementById("previousEPs").textContent = empire.previousEP;
   document.getElementById("systemIncome").textContent = empire.systemIncome;
   document.getElementById("tradeIncome").textContent = empire.tradeIncome;

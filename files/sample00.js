@@ -41,10 +41,8 @@ var colonies = [
 ];
 var empire = {"empire":"Federation","maintExpense":0,"miscExpense":0,"miscIncome":0,"name":"Emergent Federation","systemIncome":0,"previousEP":0,"techYear":165,"tradeIncome":0,"researchInvested":0};
 var events = [];
-var fleets = [
-   {"name":"Initial Fleet","location":"Olympus","units":["3xDD","5xFF","SC","2xPOL","Convoy"],"notes":""},
-];
-var game = {"turn":1,"monthsPerYear":6,"blankOrders":0,"turnSegment":"post","nextDoc":"sample01","previousDoc":""};
+var fleets = [{"name":"Initial Fleet","location":"Olympus","units":["3xDD","5xFF","SC","2xPOL","Convoy"],"notes":""}];
+var game = {"blankOrders":0,"game":"Sample Game","nextDoc":"sample01","monthsPerYear":6,"previousDoc":"","turn":1,"turnSegment":"post"};
 var intelProjects = [];
 var mapConnections = [
   ["Aeneas", "Diomedes", "Unexplored"], ["Aeneas", "Hera", "Unexplored"],
@@ -91,15 +89,11 @@ var mapPoints = [
    [350,420,"Orion","Zeus"]
 ];
 var offeredTreaties = [];
-var orders = [
-];
+var orders = [];
 var otherEmpires = [];
-var purchases = [
-];
-var treaties = [
-];
-var underConstruction = [
-];
+var purchases = [];
+var treaties = [];
+var underConstruction = [];
 var unitStates = [];
 var unitsInMothballs = [];
 var unitsNeedingRepair = [];
