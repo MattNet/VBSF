@@ -13,7 +13,7 @@ $dataFileDir = "files/";           // location of the data files
 ###
 # Initialization
 ###
-require_once("./postFunctions.php"); // for the extractJSON and encodeJSON functions
+require_once("./GameData.php"); // for the reading and writing functions
 
 $errors = []; // structured error messages
 
@@ -94,9 +94,15 @@ if (!is_writable($dataFileName))
 ###
 # Load current file contents
 ###
-$fileContents = extractJSON($dataFileName);
-if (!isset($fileContents["orders"]))
-    $fileContents["orders"] = [];
+$fileObj = new GameData($dataFileName);
+$issues = $fileObj->getErrors();
+if ($issues) {
+  foreach ($issues as $issue)
+    $errors[] = $issue."\n";
+  endScript();
+}
+if (!isset($fileObj->orders))
+    $fileObj->orders = [];
 
 ###
 # Process incoming orders
@@ -114,29 +120,29 @@ foreach ($_POST as $key => $value) {
     // Handle delete or "<-- No Order -->"
     if ($value === "<-- No Order -->" || $flagDelete === $orderNum) {
         $flagDelete = $orderNum;
-        if (isset($fileContents["orders"][$orderNum]))
-            unset($fileContents["orders"][$orderNum]);
+        if (isset($fileObj->orders[$orderNum]))
+            unset($fileObj->orders[$orderNum]);
         continue;
     }
 
     // Ensure order entry exists
-    if (!isset($fileContents["orders"][$orderNum]))
-        $fileContents["orders"][$orderNum] = [];
+    if (!isset($fileObj->orders[$orderNum]))
+        $fileObj->orders[$orderNum] = [];
 
     // Assign field based on position
     switch ($orderPos) {
-        case 'a': $fileContents["orders"][$orderNum]["type"]     = trim($value); break;
-        case 'b': $fileContents["orders"][$orderNum]["reciever"] = trim($value); break;
-        case 'c': $fileContents["orders"][$orderNum]["target"]   = trim($value); break;
-        case 'd': $fileContents["orders"][$orderNum]["note"]     = trim($value); break;
+        case 'a': $fileObj->orders[$orderNum]["type"]     = trim($value); break;
+        case 'b': $fileObj->orders[$orderNum]["reciever"] = trim($value); break;
+        case 'c': $fileObj->orders[$orderNum]["target"]   = trim($value); break;
+        case 'd': $fileObj->orders[$orderNum]["note"]     = trim($value); break;
     }
 }
 
 ###
 # Validate orders
 ###
-foreach (array_keys($fileContents["orders"]) as $orderNum) {
-    $order = &$fileContents["orders"][$orderNum];
+foreach (array_keys($fileObj->orders) as $orderNum) {
+    $order = &$fileObj->orders[$orderNum];
 
     // Ensure all fields exist
     foreach (['type','reciever','target','note'] as $f)
@@ -146,7 +152,7 @@ foreach (array_keys($fileContents["orders"]) as $orderNum) {
     // Check valid order type
     if (!isset($orderTable[$order["type"]])) {
         $errors[] = "Unknown order type '{$order["type"]}' at #$orderNum.";
-        unset($fileContents["orders"][$orderNum]);
+        unset($fileObj->orders[$orderNum]);
         continue;
     }
 
@@ -158,7 +164,7 @@ foreach (array_keys($fileContents["orders"]) as $orderNum) {
     foreach ($requiredMap as $i => $field) {
         if ($requirements[$i] && empty($order[$field])) {
             $errors[] = "Order type '$desc' requires a $field. None given (order #$orderNum).";
-            unset($fileContents["orders"][$orderNum]);
+            unset($fileObj->orders[$orderNum]);
             break;
         }
     }
@@ -166,26 +172,34 @@ foreach (array_keys($fileContents["orders"]) as $orderNum) {
 unset($order);
 
 // Reindex array
-$fileContents["orders"] = array_values($fileContents["orders"]);
+$fileObj->orders = array_values($fileObj->orders);
 
 ###
 # Write updated file
 ###
-if (!writeJSON($fileContents, $dataFileName, true))
-    exit("Failed to write updated data to '$dataFileName'");
+$fileObj->writeToFile($dataFileName);
+$issues = $fileObj->getErrors();
+if ($issues) {
+  foreach ($issues as $issue)
+    $errors[] = $issue."\n";
+  endScript();
+}
 
 ###
 # Redirect back to player sheet
 ###
-$redirectUrl = sprintf(
+function endScript(): void
+{
+  $redirectUrl = sprintf(
     "http://%s/%s?data=%s&e=%s&t=%d",
     $_SERVER["HTTP_HOST"],
     $EXIT_PAGE,
     urlencode($dataFileRoot),
     urlencode(implode("\n", $errors)),
     time()
-);
+  );
+  header("Location: $redirectUrl", true, 302);
+  exit;
+}
 
-header("Location: $redirectUrl", true, 302);
-exit;
 
