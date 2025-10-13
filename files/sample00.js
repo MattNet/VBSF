@@ -71,7 +71,7 @@ var mapConnections = [
   ["Menelaus", "Ulysses", "Unexplored"], ["Odin", "Thor", "Unexplored"],
   ["Odysseus", "Zeus", "Unexplored"], ["Oedipus", "Tyr", "Unexplored"],
   ["Olympus", "Orpheus", "Unexplored"], ["Olympus", "Priam", "Unexplored"],
-  ["Perseus", "Zeus", "Unexplored"], ["Thor", "Tyr", "Unexplored"],
+  ["Perseus", "Zeus", "Unexplored"], ["Thor", "Tyr", "Unexplored"]
 ];
 var mapPoints = [
    [70,300,"","Aeneas"], [70,180,"","Agamemnon"], [140,420,"","Ajax"],
@@ -313,5 +313,5 @@ var unitList = [
    {"ship":"Heavy Armor","yis":65,"design":"Ground Unit","cost":3,"notes":""},
    {"ship":"Heavy Armor-I","yis":105,"design":"Ground Unit","cost":3,"notes":""},
    {"ship":"Heavy Armor-II","yis":145,"design":"Ground Unit","cost":3,"notes":""},
-   {"ship":"Heavy Armor-III","yis":185,"design":"Ground Unit","cost":3,"notes":""},
+   {"ship":"Heavy Armor-III","yis":185,"design":"Ground Unit","cost":3,"notes":""}
 ];

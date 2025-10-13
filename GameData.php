@@ -174,19 +174,18 @@ class GameData
     }
 
     // Remove "var " assignments and semicolons for JSON decode
-    $pattern = '/var\s+(\w+)\s*=\s*(.*?);(\s*\/\/.*)?$/m';
+    $pattern = '/var\s+(\w+)\s*=\s*(.*?);(\s*\/\/.*)?(?=\r?\n|$)/s';
     if (preg_match_all($pattern, $content, $matches, PREG_SET_ORDER)) {
       foreach ($matches as $match) {
         $key = $match[1];
-        $jsonStr = $match[2];
+        $jsonStr = trim($match[2]);
         $decoded = json_decode($jsonStr, true);
         if ($decoded === null && json_last_error() !== JSON_ERROR_NONE) {
           $this->errors[] = "JSON decode error for key '{$key}': " . json_last_error_msg();
           continue;
         }
-        if (property_exists($this, $key)) {
+        if (property_exists($this, $key))
           $this->$key = $decoded;
-        }
       }
     }
   }
@@ -207,6 +206,7 @@ class GameData
     foreach ($keys as $key) {
       if (!property_exists($this, $key)) continue;
       $value = $this->$key;
+      if (!is_array($value)) continue; // Only write properties that are arrays
       $encoded = $this->encodeValue($value);
       $output .= "var {$key} = {$encoded};\n";
     }
