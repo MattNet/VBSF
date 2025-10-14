@@ -182,14 +182,15 @@ $issues = $fileObj->getErrors();
 if ($issues) {
   foreach ($issues as $issue)
     $errors[] = $issue."\n";
-  endScript();
 }
+endScript();
 
 ###
 # Redirect back to player sheet
 ###
 function endScript(): void
 {
+  global $EXIT_PAGE, $dataFileRoot, $errors;
   $redirectUrl = sprintf(
     "http://%s/%s?data=%s&e=%s&t=%d",
     $_SERVER["HTTP_HOST"],
