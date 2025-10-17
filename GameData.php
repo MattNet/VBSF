@@ -23,33 +23,32 @@ declare(strict_types=1);
 #   Output: none
 #   Access: public
 
-# encodeValue(mixed $value): string
-#   Helper method to encode arrays/strings/numbers/booleans/null into a JSON-like string
-#   Arguments: $value – value to encode
-#   Output: encoded string
-#   Access: private
-
-# isAssoc(array $arr): bool
-#   Determines whether an array is associative.
-#   Arguments: $arr – array to check
-#   Output: boolean
-#   Access: private
-
-# calculateSystemIncome(): void
+# calculateSystemIncome(): int
 #   Calculates income for a colony based on population, RAW, and status notes (Opposition/Rebellion)
 #   Arguments: $name - colony name
 #   Output: integer
 #   Access: public
 
+# calculatePurchaseExpense(): int
+#   Calculates all of the cost from purchases made on this data sheet. Note that construction is considered a purchase
+#   Arguments: None
+#   Output: integer
+
 # getUnitsAtLocation(string $location): array
 #   Returns all units present at a given location, including colonies, fleets, and mothballs.
 #   Arguments: $location – name of colony or sector
-#   Output: array of unit strings
+#   Output: array of unit strings. Multiple unit strings if there is more than one quantity
 #   Access: public
 
 # getFleetByName(string $name): ?array
 #   Returns a fleet array by its name.
 #   Arguments: $name – fleet name
+#   Output: fleet array or null if not found
+#   Access: public
+
+# getFleetByLocation(string $location): ?array
+#   Returns a fleet array by its location.
+#   Arguments: $name – colony name
 #   Output: fleet array or null if not found
 #   Access: public
 
@@ -71,6 +70,11 @@ declare(strict_types=1);
 #   Output: array, where 'path' is the list of systems and 'distance' is the number of links
 #   Access: public
 
+# fleetHasAbility(string $fleet, string $ability): bool
+#   Determines if a fleet has a unit with a certain ability. e.g. is a scout fleet?
+#   Arguments: $fleet – fleet to check, $ability – the ability keyword to check
+#   Output: Boolean yes/no
+
 # getErrors(): array
 #   Returns any errors encountered during file read/write or decoding.
 #   Arguments: none. Optionally erase the errors if true
@@ -88,6 +92,24 @@ declare(strict_types=1);
 #   Arguments: $unit – string unit identifier
 #   Output: array [quantity:int, name:string]
 #   Access: private
+
+#   atLeastPoliticalState(string $treatyState, string $stateCheck): bool
+#   Determines if one treaty type is more hostile than another
+#   Example: "Do we have at least a trade treaty with them?"
+#     atLeastPoliticalState($ourTreaty, 'Trade'); // true if $ourTreaty is 'Trade' or 'Mutual Defense' or 'Alliance'
+#   Arguments: $treatyState – string Current treaty state
+#              $stateCheck - string Treaty type to check against
+#   Output: boolean yes/no
+#   Access: public
+
+#   atLeastShipSize(string $shipDesign, string $designCheck): bool
+#   Determines if one hull type (design type) is larger than another
+#   Example: "Is this ship at least a CL"
+#     atLeastShipSize($ourShipDesign, 'CL'); // true if $ourShipDesign is 'CL' or 'CW' or 'CA' or 'NCA' etc...
+#   Arguments: $shipDesign – string Current design type
+#              $designCheck - string Design type to check against
+#   Output: boolean yes/no
+#   Access: public
 
 # Public properties, as defined by the data file specification:
 # array $colonies
@@ -110,7 +132,15 @@ declare(strict_types=1);
 # array $unknownMovementPlaces
 # array $unitList
 
+# Misc property for reading/writing object to disk
 # string $fileName
+###
+
+###
+# TODO: Convert these methods from "Loop always" to "Loop Once, lookup always"
+# Make a private method that loops through the data once and builds a series of lookup tables. Convert the methods to use the lookup tables.
+# Invoke that private method only once, when there is a first-need for that data.
+# Do not invoke it as a matter-of-course during object construction, because sometimes the object is loaded only for the read/write routines.
 ###
 
 ###
@@ -197,67 +227,48 @@ class GameData
 ###
   public function writeToFile(string $file = ""): void
   {
-    $output = '';
-    $keys = array_keys(get_object_vars($this));
-    sort($keys);
-    // Move unitList to end
-    $keys = array_filter($keys, fn($k) => $k !== 'unitList');
-    $keys[] = 'unitList';
-    foreach ($keys as $key) {
-      if (!property_exists($this, $key)) continue;
-      $value = $this->$key;
-      if (!is_array($value)) continue; // Only write properties that are arrays
-      $encoded = $this->encodeValue($value);
-      $output .= "var {$key} = {$encoded};\n";
+    // copy data into $dataArray. Exclude named keys (errors[], etc..)
+    $dataArray = array_filter(
+        get_object_vars($this),
+        fn($value, $key) => is_array($value) && !in_array($key, ['errors', 'fileName']),
+        ARRAY_FILTER_USE_BOTH
+    );
+
+    // Custom sort: sort all keys alphabetically, then move 'unitList' to the end
+    $unitListValue = null;
+    if (array_key_exists('unitList', $dataArray)) {
+      $unitListValue = $dataArray['unitList'];
+      unset($dataArray['unitList']);
     }
+    ksort($dataArray); // Sort remaining keys alphabetically
+    $dataArray['unitList'] = $unitListValue; // Append 'unitList' at the end
+
+    $outputLines = [];
+
+    foreach ($dataArray as $key => $value) {
+        // Ensure key is a valid JS variable name
+        if (!preg_match('/^[A-Za-z_][A-Za-z0-9_]*$/', $key))
+            $this->errors[] = "Invalid JS variable name: {$key}";
+
+        // Encode JSON safely
+        $json = json_encode($value, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+        if ($json === false)
+            $this->errors[] = "Could not encode JSON for key '{$key}': " . json_last_error_msg();
+        $outputLines[] = "var $key = $json;";
+    }
+
+    // Combine all lines with newlines
+    $output = implode("\n", $outputLines) . "\n";
+
+    // Add extra newlines for readability in arrays of objects
+    $output = preg_replace('/},\s*{/', "},\n   {", $output);
 
     if ($file == "") // if the argument is empty, write the original filename
       $file = $this->fileName;
     else // if the argument is given, treat that as our original filename
       $this->fileName = $file;
-    if (file_put_contents($file, $output) === false) {
+    if (file_put_contents($file, $output) === false)
       $this->errors[] = "Failed to write file: {$file}";
-    }
-  }
-
-###
-#   Helper method to encode arrays/strings/numbers/booleans/null into a JSON-like string
-#   Arguments: $value – value to encode
-#   Output: encoded string
-###
-  private function encodeValue(mixed $value): string
-  {
-    if (is_array($value)) {
-      $isAssoc = $this->isAssoc($value);
-      if ($isAssoc) {
-        $parts = [];
-        foreach ($value as $k => $v) {
-          $parts[] = '"' . $k . '":' . $this->encodeValue($v);
-        }
-        return '{' . implode(',', $parts) . '}';
-      } else {
-        $parts = array_map(fn($v) => $this->encodeValue($v), $value);
-        return '[' . implode(',', $parts) . ']';
-       }
-    } elseif (is_string($value))
-      return '"' . addcslashes($value, "\"\\") . '"';
-    elseif (is_bool($value))
-      return $value ? 'true' : 'false';
-    elseif (is_null($value))
-      return 'null';
-    else
-      return (string)$value;
-  }
-
-###
-#   Determines whether an array is associative.
-#   Arguments: $arr – array to check
-#   Output: boolean
-###
-  private function isAssoc(array $arr): bool
-  {
-    if ([] === $arr) return false;
-    return array_keys($arr) !== range(0, count($arr) - 1);
   }
 
 ###
@@ -272,34 +283,61 @@ class GameData
       $this->errors[] = "Missing colony '{$name}' in calculateSystemIncome()";
       return null;
     }
-    $output = [$colony]['population'] * $colony['raw'];
+    $output = $colony['population'] * $colony['raw'];
     $notes = $colony['notes'] ?? '';
-    if (str_contains($notes, 'Rebellion'))
+    if (str_contains(strToLower($notes), 'rebellion'))
       $output = 0;
-    elseif (str_contains($notes, 'Opposition'))
-      $output = intdiv($output, 2);
+    elseif (str_contains(strToLower($notes), 'opposition')) {
+      // Martial law restores full productivity, at the cost of making it likely to rebel
+      // So if not Martial Law but is in opposition, then reduce output
+      if (strpos($col['notes'] ?? '', 'Martial Law') === false)
+        $output = intdiv($output, 2);
+    }
+    // No Blockade check here
+    // This value may affect other rules outside of being blockaded.
+    // In addition, this allows us to fund in-system items, despite the blockade
+
+    return $output;
+  }
+
+###
+#   Calculates all of the cost from purchases made on this data sheet. Note that construction is considered a purchase
+#   Arguments: None
+#   Output: integer
+###
+  public function calculatePurchaseExpense(): int
+  {
+    $output = 0;
+    foreach ($this->purchases as $purchase) {
+        $output += $purchase['cost'];
+    }
     return $output;
   }
 
 ###
 #   Returns all units present at a given location, including colonies, fleets, and mothballs.
 #   Arguments: $location – name of colony or sector
-#   Output: array of unit strings
+#   Output: array of unit strings. Multiple unit strings if there is more than one quantity
 ###
   public function getUnitsAtLocation(string $location): array
   {
+    $entries = [];
     $units = [];
     foreach ($this->colonies as $colony) {
       if ($colony['name'] === $location)
-        $units = array_merge($units, $colony['fixed']);
+        $entries = array_merge($entries, $colony['fixed']);
     }
     foreach ($this->fleets as $fleet) {
       if ($fleet['location'] === $location)
-        $units = array_merge($units, $fleet['units']);
+        $entries = array_merge($entries, $fleet['units']);
     }
     foreach ($this->unitsInMothballs as $fleet) {
       if ($fleet['location'] === $location)
-        $units = array_merge($units, $fleet['units']);
+        $entries = array_merge($entries, $fleet['units']);
+    }
+    foreach ($entries as $row) {
+      [$qty, $name]= $this->parseUnitQuantity($row);
+      $units = array_merge($units, array_fill(0, $qty, $name));
     }
     return $units;
   }
@@ -316,6 +354,22 @@ class GameData
     }
     return null;
   }
+
+# getFleetByLocation(string $location): ?array
+#   Returns a fleet array by its location.
+#   Arguments: $name – colony name
+#   Output: fleet array or null if not found
+#   Access: public
+public function getFleetByLocation(string $location): ?array
+{
+  // Search for a fleet matching the given location
+  foreach ($this->fleets as $fleet) {
+    if (isset($fleet['location']) && strcasecmp($fleet['location'], $location) === 0)
+      return $fleet;
+  }
+  // Return null if no fleet is found at that location
+  return null;
+}
 
 ###
 #   Returns a colony array by its name.
@@ -380,6 +434,21 @@ class GameData
     return ['path' => [], 'distance' => -1];
   }
 
+###
+#   Determines if a fleet has a unit with a certain ability. e.g. is a scout fleet?
+#   Arguments: $fleet – fleet to check, $ability – the ability keyword to check
+#   Output: Boolean yes/no
+###
+  public function fleetHasAbility(string $fleet, string $ability): bool
+  {
+    $fleetObj = $this->getFleetbyName($fleet); // get fleet
+    foreach ($fleetObj["units"] as $unit) { // get each unit of the fleet
+      $unitData = $this->getUnitByName($unit); // get the named unit
+      if (str_contains(strToLower($unitData["notes"]), strToLower($ability))) // if the named unit has the ability, end here
+        return true;
+    }
+    return false; // we didn't find the ability in the fleet
+  }
 
 ###
 #   Returns any errors encountered during file read/write or decoding.
@@ -443,4 +512,49 @@ class GameData
     }
     return [1, $unit];
   }
+
+###
+#   Determines if one treaty type is more hostile than another
+#   Example: "Do we have at least a trade treaty with them?"
+#     atLeastPoliticalState($ourTreaty, 'Trade'); // true if $ourTreaty is 'Trade' or 'Mutual Defense' or 'Alliance'
+#   Arguments: $treatyState – string Current treaty state
+#              $stateCheck - string Treaty type to check against
+#   Output: boolean yes/no
+###
+  public function atLeastPoliticalState(string $treatyState, string $stateCheck): bool
+  {
+    $treatyOrder = ['War', 'Hostilities', 'Neutral', 'Non-Aggression', 'Trade', 'Mutual Defense', 'Alliance'];
+    $treatyIdx = array_search($treatyState, $treatyOrder);
+    $checkIdx = array_search($stateCheck, $treatyOrder);
+    // False if the current treaty is unknown or the treaty to check is unknown or the current treaty is more hostile than the treaty to check
+    if ($treatyState === false || $treatyState === false || $treatyIdx < $checkIdx)
+      return false;
+    return true;
+  }
+
+#   atLeastShipSize(string $shipDesign, string $designCheck): bool
+#   Determines if one hull type (design type) is larger than another
+#   Example: "Is this ship at least a CL"
+#     atLeastShipSize($ourShipDesign, 'CL'); // true if $ourShipDesign is 'CL' or 'CW' or 'CA' or 'NCA' etc...
+#   Arguments: $shipDesign – string Current design type
+#              $designCheck - string Design type to check against
+#   Output: boolean yes/no
+#   Access: public
+  public function atLeastShipSize(string $shipDesign, string $designCheck): bool
+  {
+    // sorted by size. "New" hull versions considered larger than standard versions.
+    // "War" versions considered smaller than "Heavy" versions. CWs considered smaller than CAs
+    $hullOrder = [ 'BOOM','FT','SAux','POL','FF','NFF','FFW','FFH','DD','NDD','DDH','DW','HDW',
+                   'LAux','CL','CW','CWH','CA','TUG','NCA','CCH','BC','BCH',
+                   'DNL','DNW','DN','DNH','BB'
+                 ];
+    $designIdx = array_search($shipDesign, $hullOrder);
+    $checkIdx = array_search($designCheck, $hullOrder);
+    // False if the current treaty is unknown or the treaty to check is unknown or the current treaty is more hostile than the treaty to check
+    if ($treatyState === false || $treatyState === false || $designIdx < $checkIdx)
+      return false;
+    return true;
+  }
+
+
 }

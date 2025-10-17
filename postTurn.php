@@ -1,803 +1,669 @@
-#!/usr/bin/php -q
+#!/usr/bin/env php
 <?php
-###
-# Creates a new data file from an old one
-###
-# Advances the turn variable
-# Sets the previous-file link
-# Invests research
-# advance research (if needed)
-# Creates fleets from built items
-# Empties the orders array of new file
-# Empties the construction array of new file
-###
+#####
+# open_game_files.php
 
-if( ! isset($argv[1]) )
-{
-  echo "\nCreates a data file for a player position\nThis is used after the second turn segment.\n\n";
-  echo "Called by:\n";
-  echo "  ".$argv[0]." OLD_TURN_DATA_FILE [NEW_FILE_NAME]\n\n";
-  exit(1);
-}
+# Perform processing for a VBAM turn
 
-###
+# Usage:
+#   open_game_files.php  GAME_NAME  TURN
+#####
+
+#####
+#
+# Configuration
+#
+#####
+$searchDir = 'files/'; // note the trailing slash
+
+#####
+#
 # Initialization
-###
-
-$fileRepoDir = "files/";
-$inputData = array(); // PHP variable of the JSON data
-$newFileName = ""; // save file filename
-$checklist = array(); // list of things that need to be done
-$MAKE_CHECKLIST = false; // if true, adds a turn checklist to the events
-$ACCELLERATED_RESEARCH = false; // If true, do research every half year. *Is Buggy*
-$BUILD_LOADED_COLONY_FLEETS = true; // If true, load colony fleets on the turn they are built
-
-if( isset($argv[2]) )
-  $newFileName = $argv[2];
-
-include( "./postFunctions.php" );
+#
+#####
+require_once("./GameData.php"); // for the reading and writing functions
+$errors = [];
+$gameFiles = array();
+$targetGame = "";
+$targetTurn = 0;
 
 ###
-# Generate Input
+# CLI argument parsing
 ###
-$inputData = extractJSON( $argv[1] );
-if( $inputData === false ) // leave if there was an error loading the file
+if (!isset($argv[2])) {
+  echo "Perform processing for a VBAM turn\n";
+  echo "Usage: ${argv[0]}  GAME_NAME  TURN\n\n";
   exit(1);
-
-// get the lookup tables
-list( $byColonyName, $byColonyOwner, $byFleetName, $byFleetLocation, $byFleetUnits, $byMapLocation, $byMapOwner, $byDesignator ) = makeLookUps($inputData);
-
-// pull out the next-file name for writing the new data
-if( empty($newFileName) )
-{
-  if( ! empty($inputData["game"]["nextDoc"]) )
-  {
-  // Filename is defined in the data file and is not assigned when the script was called
-    $newFileName = $inputData["game"]["nextDoc"].".js";
-  }
-  else
-  {
-  // Filename is not defined in the data file and also is not defined in script arguments
-    echo "Filename for new data file not given in data and not given in script-arguments.\n\n";
-    exit(0);
-  } 
-}
-else if( strpos( $newFileName, ".", -3 ) === false )
-{
-  // Filename does not contain the proper filetype extension (e.g. ".js")
-  echo "Filename does not contain the proper filetype extension (e.g. '.js').\n\n";
-  exit(0);
 }
 
-###
-# Perform the end-of-turn actions
-###
+$targetGame = trim($argv[1]);
+$targetTurn = (int)$argv[2];
 
 ###
-# Modify and write the previous-turn data file
+# File retrieval:
+# Scan a directory for data files, attempt to extract the 'game' object and 'turn'
+# number from each file, and collect files that match a given game name and turn.
+# Data files are in $gameFiles[]
 ###
-// Copy the input data to use as output data
-// Make seperate because of last-minute edits to the input copy that we don't 
-// want to propogate to the output copy
-$outputData = $inputData;
-
-// make all of the orders section into non-drop-down menus
-foreach( array_keys( $inputData["orders"] ) as $key )
-  $inputData["orders"][$key]["perm"] = 1;
-
-// clear the drop-downs in the orders section
-$inputData["game"]["blankOrders"] = 0;
-
-// add the next-doc link
-// Overwrite previous value, since it might have been re-defined by the CLI
-// remove the last 3 chars. They should be ".js"
-$inputData["game"]["nextDoc"] = substr( $newFileName, 0, -3 );
-
-// remove any location info from nextdoc but allow the written file name to keep it
-// This means the display will point only at files in the same location,
-// but the script will write to where the user wants
-if( strrpos( $inputData["game"]["nextDoc"], "/" ) !== false )
-  $inputData["game"]["nextDoc"] = substr( $inputData["game"]["nextDoc"], strrpos( $inputData["game"]["nextDoc"], "/" )+1 );
-
-$results = writeJSON( $inputData, $argv[1] );
-if( $results === false )
-{
-  echo "Error writing '".$argv[1]."'.\n\n";
-  exit(0);
+// Validate search dir
+if (!is_dir($searchDir)) {
+  $errors[] = "Error: search directory '{$searchDir}' does not exist or is not a directory.\n";
+  showErrors($errors);
 }
-else
-{
-  echo "Removed order drop-down-menus in '".$argv[1]."'.\n\n";
+$dir = scandir($searchDir);
+// Examine each file. Keep the ones that match the criteria
+foreach ($dir as $file) {
+  if (strpos($file, '.') === 0) continue; // skip hidden files
+  if (strpos($file, '.js', -3) === false) continue; // file must end in '.js'
+
+  $fileCheck = new GameData($searchDir.$file);
+  if ($fileCheck->game["game"] != $targetGame) continue;
+  if ($fileCheck->game["turn"] != $targetTurn) continue;
+
+  $gameFiles[] = $fileCheck; // Keep file. It passed our tests
+  unset($fileCheck); // unload the game object if un-needed
 }
 
-###
-# Make the end-of-turn modifications
-###
-
-  // set the prev file
-  $outputData["game"]["previousDoc"] = str_replace( $fileRepoDir, "", $argv[1] );
-  $outputData["game"]["previousDoc"] = str_replace( ".js", "", $outputData["game"]["previousDoc"] );
-
-  // remove the next file
-  $outputData["game"]["nextDoc"] = "";
-
-  // remove the previous-turn events
-  $outputData["events"] = array();
-
-  // Advance the turn
-  $outputData["game"]["turn"] += 1;
-
-  // create the drop-downs in the orders section
-  $outputData["game"]["blankOrders"] = 3;
-
-  // clear the expenses so they aren't carried over to the new turn
-  $outputData["empire"]["maintExpense"] = 0;
-  $outputData["empire"]["miscExpense"] = 0;
-
-  // Add in the excess EPs
-  $outputData["empire"]["previousEP"] = getLeftover( $inputData );
-
-  // Empty the events list
-  unset( $outputData["events"] );
-  $outputData["events"] = array();
+#####
+#
+# Process Results
+#
+#####
 
 ###
-# Start Of Turn processing
+# Supply Phase
 ###
 
 ###
-# Destroy units
-# Note: Do this before colonization, in case colony fleets are destroyed before they can colonize
+# Construction Phase
 ###
 
 ###
-# Reduce or increase colony stats
-# Note: This is for random events, loading or unloading census
+# Tech Phase
 ###
 
 ###
-# Load / unload units (colony fleets, troop transports)
-# Only perform loading / unoloading of Census here
-# The UI shows that the Census will be deducted at the end of turn
-# Load Order: {"type":"load","reciever":"Colony Fleet w\/ Colony-1","target":"Census","note":"1"}
+# End Of Turn Phase
 ###
-  // Find any load orders
-  $orderKeys = findOrder( $outputData, "load" );
+foreach ($gameFiles as $empireId => $file) {
+  $empireName = $file->empire['empire'] ?? $empireId;
+  $turn = intval($file->game['turn'] ?? 0);
+  $file->events = $file->events ?? [];
 
-  if( isset($orderKeys[0]) ) // is there at least one instance?
-  {
-    foreach( $orderKeys as $key )
-    {
-      $loadAmt = (int) $outputData["orders"][$key]["note"];
-      $reciever = (string) $outputData["orders"][$key]["reciever"];
-      $target = (string) $outputData["orders"][$key]["target"];
+  // System Improvements
+  // Orders: type == "imp_capacity", "imp_pop", "imp_intel", "imp_fort"
+  // Costs & limits: see VBAM 4.10.1 (capacity/pop cost formula and caps).
 
-      // Keep the load amount a single digit
-      if( $loadAmt > 9 )
-      {
-        $loadAmt = 9;
-        $outputData["orders"][$key]["note"] = 9; // truncate the given order
-        echo "Order given to load '$reciever' with ".$outputData["orders"][$key]["note"];
-        echo " of '$target'. Amount truncated to 9.\n";
-      }
-
-      // convenience variable. Error string that identifies order that is wrong
-      $loadErrorString = "Order given to load '$reciever' with $loadAmt of '$target'. ";
-
-      $fleet = -1; // key to the fleet array
-      $fleetLoc = -1; // key to colonies array
-      $isGroundUnit = false; // determines if a unit being loaded is a ground unit
-
-      // determine if this is a ground unit being loaded
-      if( isset( $byDesignator[ $target ] )
-          && $outputData["unitList"][ $byDesignator[ $target ] ]["design"] == "ground unit"
-        )
-        $isGroundUnit = true;
-
-      // find the fleet
-      foreach( $byFleetName as $fleetName=>$fleetKey )
-       if( str_ends_with( $reciever, $fleetName ) )
-         $fleet = $fleetKey;
-      if( $fleet == -1 )
-      {
-        echo $loadErrorString."Could not find fleet.\n";
-        exit(1);
-      }
-
-      // skip if this fleet location cannot be found
-      if( ! isset( $byColonyName[ $outputData["fleets"][$fleet]["location"] ] ) )
-      {
-        echo $loadErrorString."'. Location of fleet is not a colony.\n";
-        $outputData["events"][] = array("event"=>"Load order failed","time"=>"Turn ".$outputData["game"]["turn"],
-                                       "text"=>$loadErrorString."Location of fleet is not a colony.\n");
-        continue;
-      }
-      else
-      {
-        $fleetLoc = $byColonyName[ $outputData["fleets"][$fleet]["location"] ]; // find fleet location
-      }
-
-      // determine if this colony is owned by the player
-      if( $outputData["colonies"][$fleetLoc]["owner"] != $outputData["empire"]["empire"] )
-      {
-        echo $loadErrorString."'. This player does not own this colony.\n";
-        $outputData["events"][] = array("event"=>"Load order failed","time"=>"Turn ".$outputData["game"]["turn"],
-                                       "text"=>$loadErrorString."This player does not own this colony.\n");
+  $improvementOrders = array_filter($file->orders ?? [], function($o){
+     return in_array($o['type'] ?? '', ['imp_capacity','imp_pop','imp_intel','imp_fort']);
+  });
+  if (!empty($improvementOrders)) {
+    foreach ($improvementOrders as $ord) {
+      $colonyName = $ord['receiver'][0] ?? null;
+      if (!$colonyName) continue;
+      $targetColony = $file->getColonyByName($colonyName);
+      if (!$targetColony) {
+        $errors[] = "System improvement order: colony '{$colonyName}' not found.";
         continue;
       }
 
-      // find amt of the supply trait in this fleet
-      $supplyAmt = getFleetSupplyValue( $outputData, $outputData["fleets"][$fleet]["units"] );
-      if( $supplyAmt == 0 ) // skip if this fleet has no supply trait
-      {
-        echo $loadErrorString."'. Fleet has no supply trait.\n";
-        $outputData["events"][] = array("event"=>"Load order failed","time"=>"Turn ".$outputData["game"]["turn"],
-                                       "text"=>$loadErrorString."Fleet has no supply trait.\n");
-        continue;
-      }
-/*
-      // find supply amt already used in this fleet
-      $supplyUsed = getFleetloadedValue( $outputData["fleets"][$fleet] );
+      // Calculate cost & check constraints
+      $availableFunds = $file->empire["totalIncome"] - $file->calculatePurchaseExpense();
+      switch ($ord['type']) {
+        case 'imp_capacity':
+          // New capacity = current + 1; cost = 10 * new capacity
+          $newCap = intval($targetColony['capacity']) + 1;
+          $cost = 10 * $newCap;
 
-      // skip if the fleet cannot hold the unit
-      if( $supplyAmt - $supplyUsed < ( 10 * $loadAmt ) )
-      {
-        echo $loadErrorString."'. Loading $loadAmt would overload fleet.\n";
-        $outputData["events"][] = array("event"=>"Load order failed","time"=>"Turn ".$outputData["game"]["turn"],
-                                       "text"=>$loadErrorString."Loading $loadAmt would overload fleet.\n");
-        continue;
-      }
-*/
-
-      // Load Census
-      if( strtolower($outputData["orders"][$key]["target"]) == "census" )
-      {
-        // skip if there is not enough Census to load
-        if( $outputData["colonies"][$fleetLoc]["census"] <= $loadAmt+1 )
-        {
-          echo $loadErrorString."'. Loading $loadAmt of Census would empty the colony.\n";
-          $outputData["events"][] = array("event"=>"Load order failed","time"=>"Turn ".$outputData["game"]["turn"],
-                                         "text"=>$loadErrorString."Loading $loadAmt of Census would empty the colony.\n");
-          continue;
-        }
-/*
-        // Add Census to fleet
-        $outputData["fleets"][$fleet]["notes"] .= "$loadAmt Census loaded.";
-*/
-        // remove Census from location
-        $outputData["colonies"][$fleetLoc]["census"] -= $loadAmt;
-        // deal with maybe having to much Morale
-        if( $outputData["colonies"][$fleetLoc]["morale"] > $outputData["colonies"][$fleetLoc]["census"] )
-          $outputData["colonies"][$fleetLoc]["morale"] = $outputData["colonies"][$fleetLoc]["census"];
-
-        // finished with this load order
-        continue;
-      }
-
-/*
-      // Load ground units
-      if( $isGroundUnit )
-      {
-        $unitCount = 0;
-
-        // skip if there is not enough of this ground unit to load
-        foreach( $outputData["colonies"][$fleetLoc]["fixed"] as $fixedKey=>$fixed )
-          if( strtolower($outputData["orders"][$key]["target"]) == strtolower($fixed) )
-            $unitCount++;
-        if( $unitCount < $loadAmt )
-        {
-          echo $loadErrorString."'. Not enough $target are present at colony.\n";
-          $outputData["events"][] = array("event"=>"Load order failed","time"=>"Turn ".$outputData["game"]["turn"],
-                                         "text"=>$loadErrorString."'. Not enough $target are present at colony.\n");
-          continue;
-        }
-        
-        // Add unit to fleet
-        $outputData["fleets"][$fleet]["notes"] .= "$loadAmt $target loaded.";
-        // remove unit from location
-        foreach( $outputData["colonies"][$fleetLoc]["fixed"] as $fixedKey=>$fixed )
-        {
-          if( strtolower($target) == strtolower($fixed) && $loadAmt > 0 )
-          {
-            unset( $outputData["colonies"][$fleetLoc]["fixed"][$fixedKey] );
-            $loadAmt--;
+          // Cost check
+          if ($availableFunds - $cost < 0) {
+            $errors[] = "{$colonyName} attempted to increase Capacity to {$newCap}. ".
+                        "Could not afford. Cost is {$cost} and had {$availableFunds}";
+            break;
           }
+
+          // Document the change
+          $file->purchases[] = ["cost"=>$cost,"name"=>"Improve Cap @ {$colonyName}"];
+          $targetColony['capacity'] = $newCap;
+
+          // roll 1d10 and on 8+ RAW increases by 1
+          $roll = rand(1,10);
+          if ($roll >= 8) {
+            $targetColony['raw'] = max(1, intval($targetColony['raw']) + 1);
+            $file->events[] = ["event"=>'System Improvement', "turn"=>$turn,
+               "text"=>"{$colonyName} increases Capacity to {$newCap}. (+1 RAW on roll {$roll})"];
+          } else {
+            $file->events[] = ["event"=>'System Improvement', "turn"=>$turn,
+               "text"=>"{$colonyName} increases Capacity to {$newCap}."];
+          }
+          break;
+        case 'imp_pop':
+          // New pop = current + 1; cost = 10 * new population
+          $newPop = intval($targetColony['population']) + 1;
+          $cost = 10 * $newPop;
+
+          // Capacity check
+          if ($newPop > intval($targetColony['capacity'])) {
+            $errors[] = "{$colonyName} attempted to increase Population to {$newPop}. ".
+                        "Not enough capacity ({$targetColony['capacity']}) for the new population.";
+            break;
+          }
+          // Cost check
+          if ($availableFunds - $cost < 0) {
+            $errors[] = "{$colonyName} attempted to increase Population to {$newPop}. ".
+                        "Could not afford. Cost is {$cost} and had {$availableFunds}";
+            break;
+          }
+
+          // Document the change
+          $file->purchases[] = ["cost"=>$cost,"name"=>"Improve Pop @ {$colonyName}"];
+          $targetColony['population'] = $newPop;
+          $targetColony['morale'] += 1;
+          break;
+        case 'imp_intel':
+          // New intel = current + 1; cost = 5 * new intel
+          $newIntel = intval($targetColony['intel']) + 1;
+          $cost = 5 * $newIntel;
+
+          // Capacity check
+          if ($newIntel > intval($targetColony['intel'])) {
+            $errors[] = "{$colonyName} attempted to increase Intel to {$newIntel}. ".
+                        "Not enough capacity ({$targetColony['capacity']}) for the new intel.";
+            break;
+          }
+          // Cost check
+          if ($availableFunds - $cost < 0) {
+            $errors[] = "{$colonyName} attempted to increase Intel to {$newIntel}. ".
+                        "Could not afford. Cost is {$cost} and had {$availableFunds}";
+            break;
+          }
+
+          // Document the change
+          $file->purchases[] = ["cost"=>$cost,"name"=>"Improve Intel @ {$colonyName}"];
+          $targetColony['intel'] = $newPop;
+          break;
+        case 'imp_fort':
+          // New fort = current + 1; cost = 5 * new fort
+          $newFort = intval($targetColony['fort']) + 1;
+          $cost = 5 * $newFort;
+
+          // Capacity check
+          if ($newFort > intval($targetColony['fort'])) {
+            $errors[] = "{$colonyName} attempted to increase Fort to {$newFort}. ".
+                        "Not enough capacity ({$targetColony['capacity']}) for the new fort.";
+            break;
+          }
+          // Cost check
+          if ($availableFunds - $cost < 0) {
+            $errors[] = "{$colonyName} attempted to increase Fort to {$newFort}. ".
+                        "Could not afford. Cost is {$cost} and had {$availableFunds}";
+            break;
+          }
+
+          // Document the change
+          $file->purchases[] = ["cost"=>$cost,"name"=>"Improve Fort @ {$colonyName}"];
+          $targetColony['fort'] = $newFort;
+          break;
+        default:
+          // ignore unknown
+          break;
+        } // end switch
+      } // end foreach improvement orders
+    } // end if improvements
+
+
+    // Jump Lane Upgrades
+    // Orders of type "upgrade_lane" (receiver: from, target: to)
+    $upgradeOrders = array_filter($file->orders ?? [], function($o){
+            return ($o['type'] ?? '') === 'upgrade_lane';
+    });
+    if (!empty($upgradeOrders)) {
+      foreach ($upgradeOrders as $ord) {
+        $from = $ord['receiver'][0] ?? null;
+        $to = $ord['target'][0] ?? null;
+        if (!$from) continue;
+        if (!$to) continue;
+        // search file->mapConnections array for [from,to] unordered pair
+        foreach ($file->mapConnections as $idx=>&$conn) {
+            if ((($conn[0] === $from && $conn[1] === $to) || ($conn[0] === $to && $conn[1] === $from))) {
+                // conn format per spec: [from, to, status]
+                $lane = ['from'=>$conn[0],'to'=>$conn[1],'status'=>$conn[2],'index'=>$idx];
+                unset($conn);
+                break;
+            }
         }
-        // re-index the fixed-unit array
-        $outputData["colonies"][$fleetLoc]["fixed"] = array_values( $outputData["colonies"][$fleetLoc]["fixed"] );
-
-        // finished with this load order
-        continue;
-      }
-*/
-      echo $loadErrorString."'. Unit not loaded.\n";
-      $outputData["events"][] = array("event"=>"Load order failed","time"=>"Turn ".$outputData["game"]["turn"],"text"=>$loadErrorString."Unit not loaded.\n");
-    }
-//    $outputData["orders"] = array_values( $outputData["orders"] ); // re-index the orders to close up gaps caused by invalid orders
-  }
-/***
-Unloading uses the same process, but with reverse effects
-***/
-  // Find any unload orders
-  $orderKeys = findOrder( $outputData, "unload" );
-
-  if( isset($orderKeys[0]) ) // is there at least one instance?
-  {
-    foreach( $orderKeys as $key )
-    {
-      $loadAmt = (int) $outputData["orders"][$key]["note"];
-      $reciever = (string) $outputData["orders"][$key]["reciever"];
-      $target = (string) $outputData["orders"][$key]["target"];
-
-      // Keep the unload amount a single digit
-      if( $loadAmt > 9 )
-      {
-        $loadAmt = 9;
-        $outputData["orders"][$key]["note"] = 9; // truncate the given order
-        echo "Order given to unload '$reciever' with ".$outputData["orders"][$key]["note"];
-        echo " of '$target'. Amount truncated to 9.\n";
-      }
-
-      // convenience variable. Error string that identifies order that is wrong
-      $loadErrorString = "Order given to unload '$reciever' with $loadAmt of '$target'. ";
-
-      $fleet = -1; // key of the fleet array that is being loaded
-      $isGroundUnit = false; // determines if a unit being loaded is a ground unit
-
-      // determine if this is a ground unit being unloaded
-      if( isset( $byDesignator[ $target ] )
-          && $outputData["unitList"][ $byDesignator[ $target ] ]["design"] == "ground unit"
-        )
-        $isGroundUnit = true;
-      
-      // find the fleet
-      foreach( $outputData["fleets"] as $fleetKey=>$value )
-       if( str_ends_with( $reciever, $value["name"] ) )
-         $fleet = $fleetKey;
-      if( $fleet == -1 )
-      {
-        echo $loadErrorString."Could not find fleet.\n";
-        // do not remove order, because exiting the script
-        exit(1);
-      }
-      
-      $success = preg_match( "/(\d) $reciever loaded/i", $loadAmt, $matches );
-      $amtLoaded = (int) $matches[1];
-      if( ! $success || $amtLoaded < 1 )
-      {
-        echo $loadErrorString."Fleet does not carry any $target.\n";
-        // do not remove order, because exiting the script
-        exit(1);
-      }
-
-      // skip if there is not enough to unload
-      if( $amtLoaded >= $loadAmt )
-      {
-        echo $loadErrorString."'. The fleet does not carry enough. It only has $amtLoaded.\n";
-        $outputData["events"][] = array("event"=>"Load order failed","time"=>"Turn ".$outputData["game"]["turn"],
-                                       "text"=>$loadErrorString."The fleet does not carry enough. It only has $amtLoaded.\n");
-        continue;
-      }
-
-      // skip if this fleet location cannot be found
-      if( ! isset( $byColonyName[ $outputData["fleets"][$fleet]["location"] ] ) )
-      {
-        echo $loadErrorString."'. Location of fleet is not a colony.\n";
-        $outputData["events"][] = array("event"=>"Load order failed","time"=>"Turn ".$outputData["game"]["turn"],
-                                       "text"=>$loadErrorString."Location of fleet is not a colony.\n");
-        continue;
-      }
-      else
-      {
-        $fleetLoc = $byColonyName[ $outputData["fleets"][$fleet]["location"] ]; // find fleet location
-      }
-
-      // Unload Census
-      if( strtolower($outputData["orders"][$key]["target"]) == "census" )
-      {
-        // determine if this colony is owned by the player
-        if( $outputData["colonies"][$fleetLoc]["owner"] != $outputData["empire"]["empire"] )
-        {
-          echo $loadErrorString."'. This player does not own this colony.\n";
-          $outputData["events"][] = array("event"=>"Load order failed","time"=>"Turn ".$outputData["game"]["turn"],
-                                         "text"=>$loadErrorString."This player does not own this colony.\n");
+        if (!isset($lane)) {
+          $errors[] = "Upgrade lane failed: connection {$from} <-> {$to} unknown.";
           continue;
         }
 
-        // Remove Census from fleet
-        $outputData["fleets"][$fleet]["notes"] = str_replace(
-          "$loadAmt Census loaded.",
-          "",
-          $outputData["fleets"][$fleet]["notes"]
-        );
-        // add Census to location
-        $outputData["colonies"][$fleetLoc]["census"] += $loadAmt;
-
-        // finished with this unload order
-        continue;
-      }
-/*
-      // Unload ground units
-      if( $isGroundUnit )
-      {
-        // Remove unit to fleet
-        $outputData["fleets"][$fleet]["notes"] = str_replace(
-          "$loadAmt $target loaded.",
-          "",
-          $outputData["fleets"][$fleet]["notes"]
-        );
-        // add unit to location
-        for( $i=$loadAmt; $i=0; $i-- )
-          $outputData["colonies"][$fleetLoc]["fixed"][] = $outputData["orders"][$key]["target"];
-        // re-index the fixed-unit array
-        $outputData["colonies"][$fleetLoc]["fixed"] = array_values( $outputData["colonies"][$fleetLoc]["fixed"] );
-
-        // finished with this unload order
-        continue;
-      }
-      echo $loadErrorString."Unit not unloaded.\n";
-      $outputData["events"][] = array("event"=>"Load order failed","time"=>"Turn ".$outputData["game"]["turn"],
-                                     "text"=>$loadErrorString."Unit not unloaded.\n");
-*/
-    }
-//    $outputData["orders"] = array_values( $outputData["orders"] ); // re-index the orders to close up gaps caused by invalid orders
-  }
-
-###
-# Colonization
-###
-
-  // Find any colonize orders
-  $orderKeys = findOrder( $outputData, "colonize" );
-
-  if( isset($orderKeys[0]) ) // is there at least one instance?
-  {
-    foreach( $orderKeys as $key )
-    {
-      // convenience variable
-      $fleetLoc = $outputData["orders"][$key]["reciever"];
-      // convenience variable. Error string that identifies order that is wrong
-      $loadErrorString = "Order given to colonize at '$fleetLoc'";
-      // key of the fleet array that is colonizing
-      $fleet = -1;
-      // key of the colony array that is being colonized
-      $colony = -1;
-
-      // find the colony
-      if( isset($byColonyName[ $fleetLoc ]) )
-      {
-        $colony = $byColonyName[ $fleetLoc ];
-      }
-      else
-      {
-        echo $loadErrorString."'. Could not find colonization location in colony data.\n";
-        continue;
-      }
-
-      // find the fleet
-      if( isset($byFleetLocation[ $fleetLoc ]) )
-      {
-        foreach( $byFleetLocation[ $fleetLoc ] as $tempFleetID )
-        {
-          // if the fleet has a colony fleet
-          if( ! in_array( $tempFleetID, $fleetUnits["Colony Fleet"] ) )
-            continue;
-          // if the fleet has Census loaded
-          $success = preg_match( "/(\d) Census loaded/i", $outputData["fleets"][$tempFleetID]["notes"], $matches );
-          if( ! $success || $matches[1] < 1 )
-            continue;
-          $fleet = $tempFleetID;
-          $loadedAmt = $matches[1];
-        }
-
-        if( $fleet == -1 )
-        {
-          $outputData["events"][] = array("event"=>$loadErrorString."'. Could not find a fleet with all colonization elements.","time"=>"Turn ".$outputData["game"]["turn"],"text"=>"");
-          echo $loadErrorString."'. Could not find fleet with all colonization elements.\n";
+        // Allowed status: Unexplored, Restricted, Minor, Major
+        // Unexplored is upgraded to restricted by exploration. Majors cannot be further updgraded
+        $statusOrder = ['Unexplored', 'Restricted', 'Minor', 'Major'];
+        $laneIdx = array_search($lane['status'], $statusOrder, true);
+        // Fail if lane status is unknown or is Unexplored or is Major
+        if ($laneIdx === false || $laneIdx === 0 || $laneIdx > 2) {
+          $errors[] = "Cannot upgrade lane {$from}<->{$to} from {$lane['status']}.";
           continue;
         }
-      }
-      else
-      {
-        // hard failure if we could not find the fleet location
-        echo $loadErrorString."'. Could not find the fleet location.\n";
-        exit(1);
-      }
 
-      // Fail if this is an empty system. e.g. by capacity = 0
-      if( $outputData["colonies"][$colony]["capacity"] < 1 )
-      {
-        $outputData["events"][] = array("event"=>$loadErrorString."'. There is no system here.","time"=>"Turn ".$outputData["game"]["turn"],"text"=>"");
-        echo $loadErrorString."'. There is no system here.\n";
-        continue;
-      }
-
-      // determine if this colony is owned by nobody. e.g. by "General"
-      if( $outputData["colonies"][$colony]["owner"] != "General" )
-      {
-        $outputData["events"][] = array("event"=>$loadErrorString."'. This location is already a colony.","time"=>"Turn ".$outputData["game"]["turn"],"text"=>"");
-        echo $loadErrorString."'. This location is already a colony.\n";
-        continue;
-      }
-
-      // add Census to location
-      $outputData["colonies"][$colony]["census"] = 1;
-      // add Morale to location
-      $outputData["colonies"][$colony]["morale"] = 1;
-
-      // change ownership of the location
-      $outputData["colonies"][$colony]["owner"] = $outputData["empire"]["empire"];
-
-      // update the lookup tables
-      $byColonyOwner[ "General" ][ $outputData["empire"]["empire"] ][] = $colony;
-      foreach( $byColonyOwner[ "General" ] as $genKey => $gen )
-        if( $gen == $colony )
-          unset( $byColonyOwner[ "General" ][ $genKey ] );
-
-      // add owner to the map info
-      foreach( $outputData["mapPoints"] as $mapKey=>$value )
-      {
-        if( $value[3] != $fleetLoc )
-          continue; // skip if this is not the location
-        $outputData["mapPoints"][$mapKey][2] = $outputData["empire"]["empire"];
-
-        // update the lookup tables
-        $byMapOwner[ $outputData["empire"]["empire"] ][] = $mapKey;
-        foreach( $byMapOwner[ "General" ] as $genKey => $gen )
-          if( $gen == $mapKey )
-            unset( $byMapOwner[ "General" ][ $genKey ] );
-      }
-
-      // Remove Census from fleet
-      if( $loadedAmt == 1 )
-        $outputData["fleets"][$fleet]["notes"] = str_replace(
-          "$loadedAmt Census loaded.",
-          "",
-         $outputData["fleets"][$fleet]["notes"]
-        );
-      else
-        $outputData["fleets"][$fleet]["notes"] = str_replace(
-          "$loadedAmt Census loaded.",
-          ($loadedAmt-1)." Census loaded.",
-         $outputData["fleets"][$fleet]["notes"]
-        );
-
-      // Remove Colony Fleet from fleet
-      foreach( $outputData["fleets"][$fleet]["units"] as  $fleetKey=>$fleetValue )
-      {
-        if( $fleetValue == "Colony Fleet" )
-        {
-          unset( $outputData["fleets"][$fleet]["units"][$fleetKey] );
-          break; // stop the loop here. Don't want to unset more than one Colony Fleet
+### TODO: Determine cost to upgrade
+### TODO: Determine scout placement, etc
+        $cost = 0;
+###
+        if ($availableFunds - $cost < 0) {
+          $errors[] = "Insufficient EP to upgrade lane {$from}<->{$to}. Cost is {$cost} and had {$availableFunds}.";
+          continue;
         }
+
+        // Document the change
+        $file->purchases[] = ["cost"=>$cost,"name"=>"Upgrade {$lane['status']} lane {$from} to {$to}."];
+        $file->mapConnections[$lane['index']][2] = $statusOrder[$laneIdx+1];
+
+      } // end foreach upgrade orders
+    } // end if upgrades
+
+    // Jump Lane Downgrades
+    // Orders of type "downgrade_lane" (receiver/from, target/to)
+    // Downgrades are similar but step lane down one level (Major -> Minor -> Restricted -> Unexplored)
+    $downgradeOrders = array_filter($file->orders ?? [], function($o){
+       return ($o['type'] ?? '') === 'downgrade_lane';
+    });
+    if (!empty($downgradeOrders)) {
+      foreach ($downgradeOrders as $ord) {
+        $from = $ord['receiver'][0] ?? null;
+        $to = $ord['target'][0] ?? null;
+        if (!$from) continue;
+        if (!$to) continue;
+        // search file->mapConnections array for [from,to] unordered pair
+        foreach ($file->mapConnections as $idx=>&$conn) {
+            if ((($conn[0] === $from && $conn[1] === $to) || ($conn[0] === $to && $conn[1] === $from))) {
+                // conn format per spec: [from, to, status]
+                $lane = ['from'=>$conn[0],'to'=>$conn[1],'status'=>$conn[2],'index'=>$idx];
+                unset($conn);
+                break;
+            }
+        }
+        if (!isset($lane)) {
+          $errors[] = "Downgrade lane failed: connection {$from} <-> {$to} unknown.";
+          continue;
+        }
+
+        // Allowed status: Unexplored, Restricted, Minor, Major
+        // Unexplored is upgraded to restricted by exploration. Majors cannot be further updgraded
+        $statusOrder = ['Unexplored', 'Restricted', 'Minor', 'Major'];
+        $laneIdx = array_search($lane['status'], $statusOrder, true);
+        // Fail if lane status is unknown or is Unexplored or is Major
+        if ($laneIdx === false || $laneIdx === 0 || $laneIdx < 2) {
+          $errors[] = "Cannot upgrade lane {$from}<->{$to} from {$lane['status']}.";
+          continue;
+        }
+
+### TODO: Determine limitations
+
+        $cost = 30;
+        if ($availableFunds - $cost < 0) {
+          $errors[] = "Insufficient EP to downgrade lane {$from}<->{$to}. Cost is {$cost} and had {$availableFunds}.";
+          continue;
+        }
+
+        // Document the change
+        $file->purchases[] = ["cost"=>$cost,"name"=>"Downgrade {$lane['status']} lane {$from} to {$to}."];
+        $file->mapConnections[$lane['index']][2] = $statusOrder[$laneIdx-1];
+
+      } // end foreach downgrade orders
+    } // end if downgrades
+
+    // Morale & System Loyalty
+    // - Determine Good Order vs Opposition
+    // - Then perform Morale Checks for: systems in Opposition OR systems with any enemy units present (VBAM 4.10.4.4).
+    // - Apply modifiers: Good Order, Frontier world, martial law, bombardment, blockaded, empire traits, full garrison, etc. See table.
+    foreach ($file->colonies as &$colony) {
+      // compute Good Order vs Opposition
+      $pop = intval($colony['population']);
+      $morale = intval($colony['morale']);
+      $inGoodOrder = ($morale >= ceil($pop / 2));
+      $previousNotes = $colony['notes'] ?? '';
+
+      // set notes accordingly
+      if ($inGoodOrder) {
+        // remove 'Opposition' string if present
+        $colony['notes'] = str_replace('Opposition','', $colony['notes'] ?? '');
+      } else if (strpos($colonies['notes'] ?? '', 'Opposition') === false) {
+        // ensure Opposition note present
+        $colony['notes'] .= (strlen($colony['notes']) > 2 ? ', ': '') . 'Opposition';
       }
 
-      // If the fleet is empty, remove the fleet
-      if( empty($outputData["fleets"][$fleet]["units"]) )
-      {
-        // update the lookup tables
-        unset( $byFleetName[ $outputData["fleets"][$fleet]["name"] ] );
-        foreach( $byFleetLocation[ $fleetLoc ] as $tempKey=>$tempFleet)
-          if( $tempFleet == $fleetKey )
-            unset( $byFleetLocation[ $fleetLoc ][$fleetKey] );
+      // decide whether to roll a Morale Check:
+      // Morale Checks are required if the system is in Opposition OR if any enemy units are currently present.
+### TODO
+//      $enemyPresent = checkEnemyUnitsInSystem($file, $colonies['name']); // implement per CM knowledge of fleets
+//      $requiresMoraleCheck = (!$inGoodOrder) || $enemyPresent;
+      $requiresMoraleCheck = (!$inGoodOrder);
 
-        // remove the fleet
-        unset( $outputData["fleets"][$fleet] );
-        $outputData["fleets"] = array_values( $outputData["fleets"] ); // re-index the fleets array
+      if ($requiresMoraleCheck) {
+        // Compose modifiers
+        $mod = 0;
+        // +1 Frontier World (Population 3 or less)
+        if ($pop <= 3) $mod += 1;
+        // +1 Good Order (only applies if currently Good Order)
+        if ($inGoodOrder) $mod += 1;
+        // +1 Full Garrison (# friendly troops >= Population)
+### TODO
+//        if (hasFullGarrison($file, $col)) $mod += 1;
+        // -1 Orbital Bombardment this turn? (need to check per-turn flags)
+### TODO
+//        if (isset($colony['flags']['orbital_bombarded']) && $colonies['flags']['orbital_bombarded']) $mod -= 1;
+        // -1 Economic Disruptions? (if flagged)
+### TODO
+//        if (isset($colony['flags']['econ_disrupted']) && $colonies['flags']['econ_disrupted']) $mod -= 1;
+        // -1 System Blockaded
+        if (isset($colony['notes']) && strpos($colony['notes'],'Blockaded') !== false) $mod -= 1;
+        // -1 Martial Law
+        if (isset($colony['notes']) && strpos($colony['notes'],'Martial Law') !== false) $mod -= 1;
+        // Empire trait modifiers (Steadfast, Quarrelsome)
+        # Un-implemented
+
+        // Roll d10 and look up Morale Check Table
+        $roll = rand(1,10);
+        $rollTotal = $roll + $mod;
+        $oldMorale = $colony['morale'];
+        // returns -2,-1,0,1,2 per VBAM table & modifiers
+        if ($rollTotal <= 0) $delta = -2;
+        elseif ($rollTotal <= 3) $delta = -1;
+        elseif ($rollTotal <= 7) $delta = 0;
+        elseif ($rollTotal <= 10) $delta = 1;
+        else $delta = 2; // 11+
+
+        // no higher than capacity, no lower than 0
+        $colony['morale'] = min(intval($colony['capacity']), intval($colony['morale']) + $delta);
+        $colony['morale'] = max(0, $colony['morale']);
+
+        // Re-check opposition
+        if ($morale >= ceil($pop / 2)) {
+          // remove 'Opposition' string if present
+          $colony['notes'] = str_replace('Opposition','', $colony['notes'] ?? '');
+        } else if (strpos($colonies['notes'] ?? '', 'Opposition') === false) {
+          // ensure Opposition note present
+          $colony['notes'] .= (strlen($colony['notes']) > 2 ? ', ': '') . 'Opposition';
+        }
+
+        $file->events[] = eventEntry('Morale Check', $turn,
+          "{$colonies['name']}: Rolled {$roll} + mod {$mod} = {$rollTotal} => Morale change {$delta} (from {$oldMorale} to {$colonies['morale']}).");
+        } // end morale check
+
+      // 4.10.5 Rebellion
+      // - Any system with Morale == 0 is checked for Rebellion (VBAM 4.10.5).
+      // - The rules provide a die roll mechanism (apply rebellion modifiers such as martial law penalty, etc).
+      // - If rebellion occurs, place Rebel troops/units or mark Rebellion note and set system to contested.
+        if (intval($colony['morale']) === 0) {
+          // Do Rebellion check
+          $mod = 0;
+          // martial law makes rebellion more likely. VBAM notes: Martial Law gives -1 to morale checks and rebellion rolls.
+          if (strpos($colony['notes'] ?? '', 'Martial Law') !== false) $mod -= 1;
+          // roll d10: 1-3 => rebellion
+          $roll = rand(1,10);
+          $rollTotal = $roll + $mod;
+          $rebellionOccurs = ($rollTotal <= 3);
+          if ($rebellionOccurs) {
+            // Place rebellion: add "Rebellion" to notes and spawn Rebel troops (example: 1d10 EP of raider units or fixed troops)
+            $colony['notes'] = (strlen($colony['notes']) > 2 ? ', ': '') . ' Rebellion';
+            // Example: spawn Raiders worth 3d10 EP (VBAM random events used similar values). Adapt per 4.10.5 rules.
+            $reRoll = rand(1,10) + rand(1,10) + rand(1,10); // 3d10 EP -> convert to units via CM rules
+            $file->events[] = ['event'=>"Rebellion in {$colony['name']}", 'turn'=>$turn,
+                   'text'=>"{$colonies['name']}: Rebellion occurred (roll {$roll} + mod {$rebMod} = {$rollTotal}). Rebel force magnitude ~{$reRoll} EP (CM convert to units)."];
+          } else {
+            $file->events[] = ['event'=>'Rebellion Check', 'turn'=>$turn,
+                   'text'=>"{$colony['name']}: Rebellion check failed (roll {$roll} + mod {$rebMod} = {$rollTotal})."];
+          }
+        } // end rebellion check
+      unset($colony);
+    } // end foreach colony
+
+    // Colonizing a System
+    // - Convoys that were ordered to colonize this turn are dismantled and new colony entries are created in uninhabited systems.
+    // - Orders: type == "colonize"
+    $colonizeOrders = array_filter($file->orders ?? [], function($o){
+      return ($o['type'] ?? '') === 'colonize';
+    });
+    if (!empty($colonizeOrders)) {
+      foreach ($colonizeOrders as $ord) {
+        $convoyLocation = $ord['receiver'][0] ?? null;
+        if (!$convoyLocation) continue;
+        // Find the convoy fleet and validate it's currently in an uninhabited system
+        $convoyFleet = $file->getFleetByLocation($convoyLocation);
+        if (!isset($convoyFleet)) {
+          $errors[] = "Colonize failed: convoy at '{$convoyLocation}' not found.";
+           continue;
+        }
+        $targetColony = $file->findColonyByName($convoyLocation);
+        // Only colonize if target is uninhabited (population == 0 and owner == "")
+        if ($targetColony && intval($targetColony['population']) === 0 && empty($targetColony['owner'])) {
+          // Dismantle convoy - Mark as destroyed
+          $file->unitStates[] = ["Convoy w/ {$convoyFleet['name']}","Destroyed"];
+          // Create new colony entry or set owner/population etc.
+          $targetColony['owner'] = $empireName;
+          $targetColony['population'] = 1;
+          $targetColony['morale'] = 1;
+### TODO: add to traits from system specials
+          $file->events[] = eventEntry('Colonize', $turn,
+                     "{$empireName} colonized {$targetColony['name']}. Convoy {$convoyFleet['name']} dismantled.");
+        } else {
+          $errors[] = "Colonize failed: target {$location} is not uninhabited or not found.";
+        }
+      } // end foreach order
+    } // end if orders
+
+
+}
+
+###
+# Write the old file. Create the new file
+###
+foreach ($gameFiles as &$file) {
+  // make a new filename
+  $newFile = substr(
+               rtrim(
+                 strtr(
+                   base64_encode(
+                     random_bytes(9)
+                   ), '+/', '-_'
+                 ),'='
+               ), 0, 12
+             );
+
+  // Prevent new orders
+  $file->game["blankOrders"] = 0;
+  foreach ($file->orders as $order) {
+    $order["perm"] = 1;
+  }
+  // set the next turn's name
+  $file->game["nextDoc"] = $newFile;
+  // Write the old file
+  $file->writeToFile();
+
+  # The original file is completed.
+  # All code after this point will modify the new turn file
+
+  // update the turn number
+  $file->game["turn"] += 1;
+  // update the previous/next docs
+  $file->game["previousDoc"] = pathinfo($file->fileName, PATHINFO_FILENAME); // this is the old filename
+  $file->game["nextDoc"] = "";
+  // Allow orders
+  $file->game["blankOrders"] = 3;
+  $file->game["turnSegment"] = "pre";
+  $file->orders = [];
+  // Update economics
+  $file->empire['previousEP'] += $file->empire['systemIncome']
+                              + $file->empire['tradeIncome']
+                              + $file->empire['miscIncome']
+                              - $file->empire['maintExpense']
+                              - $file->empire['miscExpense']
+                              - $file->calculatePurchaseExpense();
+  $file->empire['systemIncome'] = 0;
+  $file->empire['tradeIncome'] = 0;
+  $file->empire['miscIncome'] = 0;
+  $file->empire['maintExpense'] = 0;
+  $file->empire['miscExpense'] = 0;
+  // empty purchases
+  $file->purchases = [];
+
+### TODO: go through unitStates and remove any units marked "Destroyed".
+### Go through fleets and system['units'] arrays, removing those units that were marked destroyed
+
+  $file->writeToFile($searchDir.$newFile.".js"); // Also updates the $file->fileName
+  unset($file);
+}
+
+###
+# Economics Phase
+###
+foreach ($gameFiles as &$file) {
+  $maintenance = 0;
+  $miscExpenses = 0;
+  $miscIncome = 0;
+  $totalSystemIncome = 0;
+  $totalTradeIncome = 0;
+
+  $usedSystems = []; // This is a list of unique systems being visited for trade
+
+  foreach ($file->colonies as &$colony) {
+    // Maintenance costs
+    $unitsAtLocation = $file->getUnitsAtLocation($colony['name']);
+    foreach ($unitsAtLocation as &$unit) {
+      $unitData = $file->getUnitByName($unit);
+      if (!isset($unitData)) {
+        $errors[] = "Calculating maintenance cost of unknown unit, {$unit} for {$file->empire["name"]}";
+        continue;
       }
+      $maintenance += $unitData["cost"]*0.1;
+      unset($unit);
+    }
 
-      $outputData["events"][] = array("event"=>"Colonized '$fleetLoc'","time"=>"Turn ".$outputData["game"]["turn"],"text"=>"Ready to be renamed.");
+    if ($colony['owner'] !== $file->empire['empire']) continue;
 
-      // finished with this colonization order
+    $colonyIncome = $file->calculateSystemIncome($colony["name"]);
+    // blockade check
+    if (str_contains(strToLower($colony["name"]), 'blockade'))
+      $colonyIncome = 0;
+
+    $totalSystemIncome += $colonyIncome;
+    unset($colony);
+  }
+
+  // Look for Trade fleets
+  foreach ($file->fleets as $fleet) {
+
+    // Check if this is a valid Trade fleet
+    if (strtolower(trim($fleet['location'])) !== 'trade') continue;
+    // Must have a Convoy unit
+    if (!$game->fleetHasAbility($fleet['name'], 'convoy')) continue;
+
+    // Parse the trade route systems from fleet notes
+    $routeSystems = explode(",", $fleet['notes']);
+
+    if (count($routeSystems) > 3) { // more than three route legs
+      $errors[] = "Fleet {$fleet['name']} for {$file->empire["name"]} has invalid trade route format: “{$fleet['notes']}”.";
       continue;
     }
-  }
+    if (count($routeSystems) < 1) // less than one route leg
+      continue;
 
-###
-# Calculate economy
-###
-
-  // calculate the income for the turn-start
-  $outputData["empire"]["planetaryIncome"] = getTDP( $outputData );
-
-  // invest research
-  $orderKeys = findOrder( $outputData, "research" );
-  if( isset($orderKeys[0]) )
-    $outputData["empire"]["researchInvested"] += intval($outputData["orders"][$orderKeys[0]]["note"]);
-
-###
-# Process research advancement
-###
-
-  // if the current turn was the 0th turn of the year or if the accellerated research and we are halfway through the year
-  // then advance research (if needed)
-  if( $outputData["game"]["turn"] % $outputData["game"]["monthsPerYear"] == 0 ||
-      ( $ACCELLERATED_RESEARCH && 
-      floor($outputData["game"]["turn"] % $outputData["game"]["monthsPerYear"]) == floor($outputData["game"]["monthsPerYear"] / 2)  )
-    )
-  {
-    $amt = $outputData["empire"]["researchInvested"]; // convenience variable
-    $goal = floor( getTDP($outputData) / 2 ); // convenience variable
-    $rand = mt_rand(1,100);
-    if( $amt > $goal )
-      $amt = $goal; // first roll can be no better than the goal
-
-    // if the roll was equal or larger than the chance, then the player made the roll
-    if( floor( $amt / $goal * 100 ) <= $rand )
-    {
-      $outputData["empire"]["techYear"]++;
-      $outputData["empire"]["researchInvested"] -= $amt;
-      $outputData["events"][] = array("event"=>"Advanced technology to Y".$outputData["empire"]["techYear"],
-                                      "time"=>"Turn ".$outputData["game"]["turn"],
-                                      "text"=>"Advanced technology to Y".$outputData["empire"]["techYear"].
-                                      ". The chance of success was ".floor( $amt / $goal * 100 )." and rolled a ".$rand
-                                     );
-      // Attempt second advancement
-      $goal = getTDP(); // convenience variable. Note that this makes the chances half of the successful attempt
-      $amt = $outputData["empire"]["researchInvested"]; // convenience variable
-      $rand = mt_rand(1,100);
-
-      if( floor( $amt / $goal * 100 ) <= $rand )
-      {
-        $outputData["empire"]["techYear"]++;
-        $outputData["empire"]["researchInvested"] -= $amt;
-        $outputData["events"][] = array("event"=>"Advanced technology to Y".$outputData["empire"]["techYear"],
-                                        "time"=>"Turn ".$outputData["game"]["turn"],
-                                        "text"=>"Advanced technology to Y".$outputData["empire"]["techYear"].
-                                        ". The chance of success was ".floor( $amt / $goal * 100 )." and rolled a ".$rand
-                                       );
-      }
-      else
-      {
-        $outputData["empire"]["researchInvested"] = 0;
-        $outputData["events"][] = array("event"=>"Failed to advance technology from Y".$outputData["empire"]["techYear"],
-                                        "time"=>"Turn ".$outputData["game"]["turn"],
-                                        "text"=>"Failed to advance technology to Y".$outputData["empire"]["techYear"].
-                                        ". The chance of success was ".floor( $amt / $goal * 100 )." and rolled a ".$rand
-                                       );
-      }
+    // Verify route continuity
+    $isContiguous = false;
+    if (count($routeSystems) > 1) {
+      [$path, $count] = $game->findPath($routeSystems[0], $routeSystems[1], true);
+      if ($count == 1) $isContiguous = true;
+    } else {
+      $isContiguous = true; // set true if only one system on the route
+    }    
+    if (count($routeSystems) == 3) {
+      [$path, $count] = $game->findPath($routeSystems[0], $routeSystems[2], true);
+      if ($count == 1) $isContiguous = true;
+      [$path, $count] = $game->findPath($routeSystems[1], $routeSystems[2], true);
+      if ($count == 1) $isContiguous = true;
     }
-    else // did not make the roll
-    {
-      $outputData["events"][] = array("event"=>"Failed to advance technology from Y".$outputData["empire"]["techYear"],
-                                      "time"=>"Turn ".$outputData["game"]["turn"],
-                                      "text"=>"Failed to advance technology to Y".$outputData["empire"]["techYear"].
-                                      ". The chance of success was ".floor( $amt / $goal * 100 )." and rolled a ".$rand
-                                     );
-    }
-  }
+    if (!$isContiguous) continue;
 
-###
-# Build units
-###
+    foreach ($routeSystems as $sysName) {
+      // record duplicate trade sources per empire to prevent them later
+      $usedSystems[$sysName] = true;
 
-  // find the build orders and create the fleets
-  $orderKeys = findOrder( $outputData, "build_unit" );
-  if( isset($orderKeys[0]) )
-  {
-    foreach( $orderKeys as $orderKey )
-    {
-      $fleetKey = -1; // index to the fleets array for the destination fleet
-
-      // find fleets with this name
-      if( isset($byFleetName[ $outputData["orders"][$orderKey]["note"] ]) )
-        $fleetKey = $byFleetName[ $outputData["orders"][$orderKey]["note"] ];
-      // reset $fleetKey if the named fleet is not where the build occured
-      if( $fleetKey >= 0 && $outputData["fleets"][ $fleetKey ]["location"] != $outputData["orders"][$orderKey]["target"] )
-        $fleetKey = -1;
-
-      // this unit should be built into an existing fleet
-      if( $fleetKey >= 0 )
-        $outputData["fleets"][$fleetKey]["units"][] = $outputData["orders"][$orderKey]["reciever"];
-      else
-      // if no fleets with this name, then create a new one
-      $outputData["fleets"][] = array( "name" => $outputData["orders"][$orderKey]["note"], 
-                     "location" => $outputData["orders"][$orderKey]["target"], 
-                     "units" => array( $outputData["orders"][$orderKey]["reciever"] ), 
-                     "notes" => "",
-                   );
-    }
-  }
-
-###
-# Handle Morale checks
-###
-
-###
-# Rename things
-# Note: This is last, because the data files and orders point to the old names
-#  {"type":"name","reciever":"Fraxee dir B","note":"Fraxa","target":""}
-###
-// rename the colony
-// rename the location of fleets at that place
-
-  // find renaming orders
-  $orderKeys = findOrder( $outputData, "name" );
-
-  if( isset($orderKeys[0]) ) // is there at least one instance?
-  {
-    foreach( $orderKeys as $key )
-    {
-      // some convenience variables
-      $oldName = $outputData["orders"][$key]["reciever"];
-      $newName = $outputData["orders"][$key]["note"];
-      $colonyKey = -1; // index to the colony array
-      $flag = false; // used to detect a fraudulent order
-
-      // Does this colony exist?
-      if( isset($byColonyName[ $oldName ]) )
-        $colonyKey = $byColonyName[ $oldName ];
-      else
-      {
-        echo "Tried to rename colony '$oldName' that doesn't exist.\n";
-        $outputData["events"][] = array("event"=>"Could not rename $oldName: Does not exist.","time"=>"Turn ".$outputData["game"]["turn"],"text"=>"");
+      // Validate ownership and treaties
+      $colony = $game->getColonyByName($sysName);
+      // colony is not in list
+      if (!$colony) {
+        unset($usedSystems[$sysName]); // remove the system from the list of trading systems
         continue;
       }
-
-      // Does this colony belong to this empire?
-      if( in_array( $colonyKey, $byColonyOwner[ $outputData["empire"]["empire"] ] ) )
-      {
-        echo "Tried to rename colony '$oldName' that doesn't belong to this player.\n";
-        $outputData["events"][] = array("event"=>"Could not rename $oldName: Does not belong to you.","time"=>"Turn ".$outputData["game"]["turn"],"text"=>"");
+      // colony is un-owned
+      if ($colony["owner"] == '') {
+        unset($usedSystems[$sysName]); // remove the system from the list of trading systems
         continue;
       }
-
-      // Rename the colony
-      $outputData["colonies"][$colonyKey]["name"] = $newName;
-
-      // find and rename the map point
-      if( isset($byMapLocation[ $oldName ]) )
-        $outputData["mapPoints"][ $byMapLocation[$oldName] ][3] = $newName;
-      else
-      {
-        echo "Tried to rename colony '$oldName' that isn't in.\n";
-        exit(1);
+      // Must be owned by self or a valid trade partner
+      // Owned by self is implied
+      if ($colony["owner"] !== $empireName) {
+        $treatyOK = false;
+        foreach ($game->treaties as $treaty) {
+          if ($treaty['empire'] === $colony["owner"])
+            if (!atLeastPoliticalState($treaty['type'], 'Trade'))
+              unset($usedSystems[$sysName]); // remove the system from the list of trading systems
+        }
       }
 
-      // find and rename the fleet locations
-      foreach( $outputData["fleets"] as $fleetKey=>$value )
-      {
-        if( $value["location"] == $oldName )
-          $outputData["fleets"][$fleetKey]["location"] = $newName;
-      }
+      // Check for blockades
+      if (str_contains(strToLower($colony['notes']), 'blockaded') !== false)
+        unset($usedSystems[$sysName]); // remove the system from the list of trading systems
     }
   }
 
-
-###
-# Ready the new player sheet
-###
-
-  // Empty the orders
-  unset( $outputData["orders"] );
-  $outputData["orders"] = array();
-
-  // Empty the construction list
-  unset( $outputData["underConstruction"] );
-  $outputData["underConstruction"] = array();
-
-  // Empty the purchases list
-  unset( $outputData["purchases"] );
-  $outputData["purchases"] = array();
-
-  // Fill events with a checklist
-  if( $MAKE_CHECKLIST )
-  {
-    $checklist[] = "Checklist: Building";
-    $checklist[] = "Checklist: Colonize and build assets";
-    $checklist[] = "Checklist: Morale check";
-    $checklist[] = "Checklist: Research";
-    $checklist[] = "Checklist: Orders";
+  // calculate the trade income for this system
+  foreach ($usedSystems as $sysName) {
+    $colony = $file->getColonyByName($sysName);
+    $totalTradeIncome += (int)$colony['population'];
   }
 
-  // fill events with the list generated by this script
-  foreach( $checklist as $entry )
-    $outputData["events"][] = array("event"=>$entry,"time"=>"Turn ".$outputData["game"]["turn"],"text"=>"");
+
+  # System Income phase
+  $file->empire['systemIncome'] = $totalSystemIncome;
+  # Trade income phase
+  $file->empire['tradeIncome'] = $totalTradeIncome;
+  # Maintenance Expense phase
+  $file->empire['maintExpense'] = $maintenance;
+  # Misc Income/Expense phase
+  $file->empire['miscIncome'] = $miscIncome;
+  $file->empire['miscExpense'] = $miscExpenses;
+
+  $file->empire['totalIncome'] = $file->empire['systemIncome'] +
+                                 $file->empire['previousEP'] +
+                                 $file->empire['tradeIncome'] +
+                                 $file->empire['miscIncome'] - 
+                                 $file->empire['maintExpense'] -
+                                 $file->empire['miscExpense'];
+
+  unset($file);
+}
+
 
 ###
-# Write out the file
+# Write the game files
 ###
+foreach ($gameFiles as $file) {
+  $file->writeToFile();
+}
 
-writeJSON( $outputData, $newFileName );
-exit(0); // all done
+$errors = array_merge( $errors, $file->getErrors());
+showErrors($errors);
+
+
+function showErrors(array $errorArray): void
+{
+  foreach($errorArray as $line) {
+    echo $line."\n";
+  }
+  exit(1);
+}
+?>
 

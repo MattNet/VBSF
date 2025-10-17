@@ -532,7 +532,7 @@ Trade Fleets
         // Try to find a colony with matching name
         let colony = colonies.find(c => c.name.toLowerCase() === locName.toLowerCase());
         if (!seen.has(colony.name)) {
-          row += `<td>${colony.name}</td><td>${calcColonyOutput(colony)}</td>`;
+          row += `<td>${colony.name}</td><td>${colony.population}</td>`;
           seen.add(colony.name);
         } else {
           row += `<td><em>${colony.name}</em></td><td><em>0</em></td>`;
