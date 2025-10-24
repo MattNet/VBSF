@@ -137,7 +137,6 @@ Build Orders Lists
       // The list of known colonies not owned by this position
       otherSystems.push(colony.name);
     }
-    colony.censusLoad = 0; // Amt of census being loaded / unloaded
   }
 
 // Fleets
@@ -164,10 +163,18 @@ Build Orders Lists
   
 // Buildable Units
   for (const u of unitList) {
-    // skip if the unit could not be built yet
-    if (u.yis > empire.techYear) continue;
-    // skip if the unit is obsolete
-    if (u.yis < empire.techYear-50) continue;
+    // Determine tech eligibility
+    let eligible = false;
+
+    if (game.techAdvancement) {
+      // Optional Rule: Historical Tech Advancement
+      if (u.yis <= empire.techYear && u.yis >= empire.techYear - 50) eligible = true;
+    } else {
+      // Standard Rules: Research-based advancement
+      if (u.researched === true) eligible = true;
+    }
+
+    if (!eligible) continue; // skip if not available under current tech system
 
     if (u.design.includes("Ground")) 
     { // List of Ground Units, because design contain 'Ground'
@@ -175,8 +182,8 @@ Build Orders Lists
     } else if (/^(LF|HF|SHF|AB)/.test(u.design))
     { // List of Fighter Units, because the design is some sort of flight
       buildableFlights.push(u.ship);
-    } else if (u.notes.includes("Civilian")) 
-    { // List of civilian units, because specials contain 'Civilian'
+    } else if (u.design.includes("Convoy")) 
+    { // List of convoy units, because ship design contains 'Convoy'
       BuildableCivUnits.push(u.ship);
     } else if (u.notes.includes("Fixed")) 
     { // List of bases, because specials contain 'Fixed'
@@ -364,23 +371,6 @@ Month / Year
 /***
 Systems
 ***/
-  // Adjust colony census accounting for load/unload orders
-  for (const order of orders) {
-    const fleetIndex = fleets.findIndex(f => order.reciever.endsWith(f.name));
-    if (fleetIndex === -1) continue;
-
-    const colonyIndex = colonies.findIndex(c => c.name === fleets[fleetIndex].location);
-    if (colonyIndex === -1) continue;
-
-    if (order.target === "Census") {
-      if (order.type === "load") {
-        colonies[colonyIndex].censusLoad -= 1;
-      } else if (order.type === "unload") {
-        colonies[colonyIndex].censusLoad += 1;
-      }
-    }
-  }
-
   let systemRows = colonies.map(colony => {
     const unitCount = UnitCounts(colony.fixed);
     const fixedUnits = unitCount
@@ -389,20 +379,13 @@ Systems
       )
       .join(", ");
 
-    // adjust how population is reported when loading or unloading
-    const censusLoad = colony.censusLoad < 0
-      ? `(${colony.censusLoad}) `
-      : colony.censusLoad > 0
-        ? `(+${colony.censusLoad}) `
-        : "";
-
     return `
       <tr>
         <td>${colony.name}</td>
         <td class="sysTableType">${colony.type}</td>
         <td>${colony.capacity}</td>
         <td>${colony.raw}</td>
-        <td>${colony.population} ${censusLoad}<b>${colony.owner.slice(0,3)}</b></td>
+        <td>${colony.population}<b> ${colony.owner.slice(0,3)}</b></td>
         <td>${colony.morale}</td>
         <td>${colony.intel}</td>
         <td>${colony.fort}</td>

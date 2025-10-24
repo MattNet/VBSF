@@ -33,6 +33,13 @@ declare(strict_types=1);
 #   Calculates all of the cost from purchases made on this data sheet. Note that construction is considered a purchase
 #   Arguments: None
 #   Output: integer
+#   Access: public
+
+# checkBlockaded(string $name): boolean
+#   Determines if the named colony is blockaded
+#   Arguments: $name – colony name
+#   Output: boolean yes/no
+#   Access: public
 
 # getUnitsAtLocation(string $location): array
 #   Returns all units present at a given location, including colonies, fleets, and mothballs.
@@ -59,8 +66,8 @@ declare(strict_types=1);
 #   Access: public
 
 # getUnitByName(string $ship): ?array
-#   Returns a unit object from unitList by ship name.
-#   Arguments: $ship – ship designator
+#   Returns a unit object from unitList by ship designation.
+#   Arguments: $ship – ship designation
 #   Output: unit array or null if not found
 #   Access: public
 
@@ -70,16 +77,21 @@ declare(strict_types=1);
 #   Output: array, where 'path' is the list of systems and 'distance' is the number of links
 #   Access: public
 
-# fleetHasAbility(string $fleet, string $ability): bool
+# fleetHasAbility(string $fleet, string $ability): string
 #   Determines if a fleet has a unit with a certain ability. e.g. is a scout fleet?
 #   Arguments: $fleet – fleet to check, $ability – the ability keyword to check
-#   Output: Boolean yes/no
+#   Output: string - The unit name with this ability. False if none
 
 # getErrors(): array
 #   Returns any errors encountered during file read/write or decoding.
 #   Arguments: none. Optionally erase the errors if true
 #   Output: array of error messages
 #   Access: public
+
+# locationHasAbility(string $location, string $ability): bool
+#   Determines if a location has a unit with a certain ability. e.g. is a scout fleet?
+#   Arguments: $location – locaiton to check, $ability – the ability keyword to check
+#   Output: Boolean yes/no
 
 # syncUnitStates(): void
 #   Synchronizes unitsNeedingRepair and unitStates with current units in colonies, fleets, and mothballs.
@@ -93,7 +105,7 @@ declare(strict_types=1);
 #   Output: array [quantity:int, name:string]
 #   Access: private
 
-#   atLeastPoliticalState(string $treatyState, string $stateCheck): bool
+# atLeastPoliticalState(string $treatyState, string $stateCheck): bool
 #   Determines if one treaty type is more hostile than another
 #   Example: "Do we have at least a trade treaty with them?"
 #     atLeastPoliticalState($ourTreaty, 'Trade'); // true if $ourTreaty is 'Trade' or 'Mutual Defense' or 'Alliance'
@@ -102,13 +114,21 @@ declare(strict_types=1);
 #   Output: boolean yes/no
 #   Access: public
 
-#   atLeastShipSize(string $shipDesign, string $designCheck): bool
+# atLeastShipSize(string $shipDesign, string $designCheck): bool
 #   Determines if one hull type (design type) is larger than another
 #   Example: "Is this ship at least a CL"
 #     atLeastShipSize($ourShipDesign, 'CL'); // true if $ourShipDesign is 'CL' or 'CW' or 'CA' or 'NCA' etc...
 #   Arguments: $shipDesign – string Current design type
 #              $designCheck - string Design type to check against
 #   Output: boolean yes/no
+#   Access: public
+
+# traceSupplyLines(string $start, int $distance): ?array
+#   Finds one or more paths where supply can be traced to the given location
+#   Supply locations includes supply ships, supply depots, and colonies
+#   Arguments: $start – string The loction to check the supply status on
+#              $distance - integer An optional amount of hops to trace 
+#   Output: array [paths:array, source:string] - A collection of paths that satisfy supply. Source is 'colony' or 'supply ship'
 #   Access: public
 
 # Public properties, as defined by the data file specification:
@@ -315,6 +335,25 @@ class GameData
   }
 
 ###
+# checkBlockaded(string $name): boolean
+#   Determines if the named colony is blockaded
+#   Arguments: $name – colony name
+#   Output: boolean yes/no
+#   Access: public
+###
+  function checkBlockaded(string $name): boolean
+  {
+    $colony = $this->getColonyByName($name);
+    if (!$colony) {
+      $this->errors[] = "Failure to get colony {$name} in checkBlockaded().";
+      return false;
+    }
+    if (str_contains(strToLower($colony['notes']), 'blockaded') !== false)
+      return true;
+    return false;
+  }
+
+###
 #   Returns all units present at a given location, including colonies, fleets, and mothballs.
 #   Arguments: $location – name of colony or sector
 #   Output: array of unit strings. Multiple unit strings if there is more than one quantity
@@ -385,8 +424,8 @@ public function getFleetByLocation(string $location): ?array
   }
 
 ###
-#   Returns a unit object from unitList by ship name.
-#   Arguments: $ship – ship designator
+#   Returns a unit object from unitList by ship designation.
+#   Arguments: $ship – ship designation
 #   Output: unit array or null if not found
 ###
   public function getUnitByName(string $ship): ?array
@@ -437,7 +476,7 @@ public function getFleetByLocation(string $location): ?array
 ###
 #   Determines if a fleet has a unit with a certain ability. e.g. is a scout fleet?
 #   Arguments: $fleet – fleet to check, $ability – the ability keyword to check
-#   Output: Boolean yes/no
+#   Output: string - The unit name with this ability. False if none
 ###
   public function fleetHasAbility(string $fleet, string $ability): bool
   {
@@ -445,7 +484,7 @@ public function getFleetByLocation(string $location): ?array
     foreach ($fleetObj["units"] as $unit) { // get each unit of the fleet
       $unitData = $this->getUnitByName($unit); // get the named unit
       if (str_contains(strToLower($unitData["notes"]), strToLower($ability))) // if the named unit has the ability, end here
-        return true;
+        return $unit;
     }
     return false; // we didn't find the ability in the fleet
   }
@@ -464,6 +503,23 @@ public function getFleetByLocation(string $location): ?array
     // Erase the errors array
     $this->errors = [];
     return $errors;
+  }
+
+###
+# locationHasAbility(string $location, string $ability): bool
+#   Determines if a location has a unit with a certain ability. e.g. is a scout?
+#   Arguments: $location – locaiton to check, $ability – the ability keyword to check
+#   Output: Boolean yes/no
+###
+  public function locationHasAbility(string $location, string $ability): bool
+  {
+    $units = $this->getUnitsAtLocation($fleet); // get units
+    foreach ($units as $u) { // get each unit of the fleet
+      $unitData = $this->getUnitByName($u); // get the named unit
+      if (str_contains(strToLower($unitData["notes"]), strToLower($ability))) // if the named unit has the ability, end here
+        return true;
+    }
+    return false; // we didn't find the ability in the location
   }
 
 ###
@@ -532,6 +588,7 @@ public function getFleetByLocation(string $location): ?array
     return true;
   }
 
+###
 #   atLeastShipSize(string $shipDesign, string $designCheck): bool
 #   Determines if one hull type (design type) is larger than another
 #   Example: "Is this ship at least a CL"
@@ -540,6 +597,7 @@ public function getFleetByLocation(string $location): ?array
 #              $designCheck - string Design type to check against
 #   Output: boolean yes/no
 #   Access: public
+###
   public function atLeastShipSize(string $shipDesign, string $designCheck): bool
   {
     // sorted by size. "New" hull versions considered larger than standard versions.
@@ -556,5 +614,64 @@ public function getFleetByLocation(string $location): ?array
     return true;
   }
 
+###
+#   traceSupplyLines(string $start, int $distance): ?array
+#   Finds one or more paths where supply can be traced to the given location.
+#   Supply locations includes supply ships, supply depots, and colonies
+#   Arguments: $start – string The loction to check the supply status on
+#              $distance - integer An optional amount of hops to trace 
+#   Output: array [paths:array, source:string] - A collection of paths that satisfy supply. Source is 'colony' or 'supply ship'
+#   Access: public
+###
+  public function traceSupplyLines(string $start, int $distance=3): ?array
+  {
+    $output = array();
+    // Identify Supply Sources
+    $supplySources = [];
+    foreach ($this->colonies as $colony) {
+      if ($colony['owner'] != $this->empire['name']) continue;
 
+      $isCore = ($colony['population'] >= 5);
+      $isGoodOrder = ($colony['morale'] >= ($colony['population'] / 2));
+      $hasDepot = false;
+
+      if ($file->locationHasAbility($colony['name'], 'Supply Depot') === true)
+          $hasDepot = true;
+
+      if (($isCore && $isGoodOrder) || $hasDepot)
+        $supplySources[] = [$colony['name'],'colony'];
+    }
+    // Any unit with "Supply" in its notes can resupply units in the same location that cannot otherwise trace supply.
+    foreach ($file->fleets as $fleet) {
+      $supplyShip = $this->fleetHasAbility($fleet['name'], 'Supply');
+      if ($supplyShip !== false) {
+        $isExhausted = false;
+        foreach ($file->unitStates as $state) {
+          if ( in_array(array("{$unitName} w/ {$fleet['name']}",'Exhausted'), $state) {
+            $isExhausted = true;
+            break;
+          }
+        }
+        // Skip fleet if its supply unit is exhausted
+        if ($isExhausted) continue;
+
+        $supplySources[] = [$fleet['location'],'fleet'];
+      }
+    }
+    // Identify paths
+    foreach ($supplySources as $key=>$place) {
+      $paths = $this->findPath($start, $place[0], true);
+      if ($paths['distance'] > $distance) continue;
+      $isBad = false;
+      foreach($paths['path'] as $intermediate) {
+        if ($intermediate == $start) continue; // skip if looking at the start location (it can be blockaded)
+        if ($file->checkBlockaded($intermediate) !== true) continue;
+        // intermediate is blockaded
+        $isBad = true;
+      }
+      if (!$isBad)
+        $output[] = ['paths'=>$paths,'source'=>$place[1]];
+    }
+    return $output;
+  }
 }
