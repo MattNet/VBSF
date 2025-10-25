@@ -32,7 +32,7 @@ $orderTable = [
     'move'         => [ true, true, false, 'Move fleet' ],
     'load'         => [ true, true, true, 'Load units' ],
     'long_range'   => [ true, true, false, 'Long-Range Scan' ],
-    'start_trade'  => [ true, true, true, 'Set a trade route' ],
+    'start_trade'  => [ true, false, false, 'Set a trade route' ],
     'stop_trade'   => [ true, true, false, true ],
     'unload'       => [ true, false, true, 'Unload units' ],
 # Diplomatic Orders
@@ -53,12 +53,13 @@ $orderTable = [
 # Investment Orders
     'colonize'     => [ true, false, false, 'Colonize system' ],
     'downgrade_lane'=> [ true, true, false, 'Downgrade Lane' ],
+    'martial_law'  => [ true, false, false, 'Enact martial law' ],
     'imp_capacity' => [ true, false, false, 'Improve capacity' ],
     'imp_pop'      => [ true, false, false, 'Improve Population' ],
     'imp_intel'    => [ true, false, false, 'Improve Intelligence' ],
     'imp_fort'     => [ true, false, false, 'Improve Fortifications' ],
     'research'     => [ false, false, true, 'Invest into research' ],
-    'name_place'   => [ true, false, false, '(Re) name a colony' ],
+    'name_place'   => [ true, false, true, '(Re) name a colony' ],
     'research_new' => [ true, true, false, 'Research Target' ],
     'upgrade_lane' => [ true, true, false, 'Upgrade Lane' ],
 # Combat Orders

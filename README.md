@@ -5,22 +5,22 @@ In it's current form, This is geared towards a standard single-player game or a 
 
 ## What it does
 * The player sheet displays all of the information that a player would normally see on the stock VBAM player sheets.
+* Checking for units out of supply.
+* Handle mothballed units.
+* Convert units from one variant to another variant of the same base-hull
+* Increase population and productivity
+* Income added from colonies and previous turns
+* Research advanced on the end of the year and deducting research spent if successful.
+* Completion of unit construction
+* Morale checks
 
 ## What it will do
 This list is necessarily fluid, since these are the items being added to the scripts.
 * Tracking of trade fleets and their income.
 * A movement system - A system that moves units to different systems, after checking for connectivity of the systems, treaty effects of that movement, and the catching hostile fleets passing each other.
 * The handling of intelligence actions. Most, if not all, seem to be able to be coded
-* Checking for units out of supply.
-* Handle mothballed units.
-* Convert units from one variant to another variant of the same base-hull
 * Manage the effects of orbital bombardment and ground combat.
-* Increase population and productivity
-* Income added from colonies and previous turns
-* Research advanced on the end of the year and deducting research spent if successful.
 * Calculate Raids, all the way to determining how large the raiding force is
-* Completion of unit construction
-* Morale checks
 
 ## What it will not do
 In effect, this is a list of things that are not in the vision of what this will automate.

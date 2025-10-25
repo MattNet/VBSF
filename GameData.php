@@ -35,7 +35,7 @@ declare(strict_types=1);
 #   Output: integer
 #   Access: public
 
-# checkBlockaded(string $name): boolean
+# checkBlockaded(string $name): bool
 #   Determines if the named colony is blockaded
 #   Arguments: $name – colony name
 #   Output: boolean yes/no
@@ -91,7 +91,7 @@ declare(strict_types=1);
 # locationHasAbility(string $location, string $ability): bool
 #   Determines if a location has a unit with a certain ability. e.g. is a scout fleet?
 #   Arguments: $location – locaiton to check, $ability – the ability keyword to check
-#   Output: Boolean yes/no
+#   Output: string - The unit name with this ability. False if none
 
 # syncUnitStates(): void
 #   Synchronizes unitsNeedingRepair and unitStates with current units in colonies, fleets, and mothballs.
@@ -341,7 +341,7 @@ class GameData
 #   Output: boolean yes/no
 #   Access: public
 ###
-  function checkBlockaded(string $name): boolean
+  function checkBlockaded(string $name): bool
   {
     $colony = $this->getColonyByName($name);
     if (!$colony) {
@@ -478,7 +478,7 @@ public function getFleetByLocation(string $location): ?array
 #   Arguments: $fleet – fleet to check, $ability – the ability keyword to check
 #   Output: string - The unit name with this ability. False if none
 ###
-  public function fleetHasAbility(string $fleet, string $ability): bool
+  public function fleetHasAbility(string $fleet, string $ability): string
   {
     $fleetObj = $this->getFleetbyName($fleet); // get fleet
     foreach ($fleetObj["units"] as $unit) { // get each unit of the fleet
@@ -506,18 +506,18 @@ public function getFleetByLocation(string $location): ?array
   }
 
 ###
-# locationHasAbility(string $location, string $ability): bool
+# locationHasAbility(string $location, string $ability): string
 #   Determines if a location has a unit with a certain ability. e.g. is a scout?
 #   Arguments: $location – locaiton to check, $ability – the ability keyword to check
-#   Output: Boolean yes/no
+#   Output: string - The unit name with this ability. False if none
 ###
-  public function locationHasAbility(string $location, string $ability): bool
+  public function locationHasAbility(string $location, string $ability): string
   {
     $units = $this->getUnitsAtLocation($fleet); // get units
     foreach ($units as $u) { // get each unit of the fleet
       $unitData = $this->getUnitByName($u); // get the named unit
       if (str_contains(strToLower($unitData["notes"]), strToLower($ability))) // if the named unit has the ability, end here
-        return true;
+        return $unit;
     }
     return false; // we didn't find the ability in the location
   }
@@ -647,7 +647,7 @@ public function getFleetByLocation(string $location): ?array
       if ($supplyShip !== false) {
         $isExhausted = false;
         foreach ($file->unitStates as $state) {
-          if ( in_array(array("{$unitName} w/ {$fleet['name']}",'Exhausted'), $state) {
+          if (in_array(array("{$unitName} w/ {$fleet['name']}",'Exhausted'), $state)) {
             $isExhausted = true;
             break;
           }

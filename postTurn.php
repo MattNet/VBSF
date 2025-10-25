@@ -61,7 +61,12 @@ foreach ($dir as $file) {
   if ($fileCheck->game["turn"] != $targetTurn) continue;
 
   $gameFiles[] = $fileCheck; // Keep file. It passed our tests
+  echo "Using gamefile '{$file}' for empire '{$fileCheck->empire["empire"]}'\n";
   unset($fileCheck); // unload the game object if un-needed
+}
+if (empty($gameFiles)) {
+  echo "No game files found.\n";
+  exit(0);
 }
 
 #####
@@ -103,11 +108,11 @@ foreach ($gameFiles as $empireId => $file) {
       $inSupply = false;
 
       // Can trace to any known supply source?
-      $supplyLine = $file->traceSupplyLines($fleetLoc)
+      $supplyLine = $file->traceSupplyLines($fleetLoc);
       if (!empty($supplyLine)) {
           $inSupply = true;
+          // Exhaustion check
           if($supplyLine[0]['source'] == "fleet") {
-            // Exhaustion check: roll d6
             $roll = rand(1, 6);
             if ($roll <= 5) { // failed the exhaustion roll
               // find a ship to exhaust
@@ -205,7 +210,6 @@ foreach ($gameFiles as $empireId => $file) {
       'repair', 'convert', 'scrap', 'mothball', 'unmothball'
     ]);
   });
-
   if (empty($constructionOrders)) continue;
 
   $constructionCapacity = array();
@@ -277,11 +281,14 @@ foreach ($gameFiles as $empireId => $file) {
     // Remote Base Construction
     if ($type === "remote_build") {
       $convoyName = $target;
-
-### TODO: Supply check
-
       $cost = $unit['cost'];
 
+      // Supply check
+      $supplyLine = $file->traceSupplyLines($fleetLoc);
+      if (empty($supplyLine)) {
+        $errors[] = "Remote {$convoyName} attempted to build {$unitName}. Is out of supply.";
+        continue;
+      }
       // Cost check
       $availableFunds = $file->empire["totalIncome"] - $file->calculatePurchaseExpense();
       if ($availableFunds - $cost < 0) {
@@ -330,7 +337,7 @@ foreach ($gameFiles as $empireId => $file) {
       // Check for Supply Source: Pop≥5 and Good Order or has Supply Depot
       $isGoodOrder = ($system['morale'] >= ($system['population'] / 2));
       $hasDepot = $file->locationHasAbility($colonyName, "Supply Depot");
-      $isSupplySource = ($system['population'] >= 5 && $isGoodOrder) || $hasDepot;
+      $isSupplySource = ($system['population'] >= 5 && $isGoodOrder) || !empty($hasDepot);
 
       if (!$isSupplySource) {
         $errors[] = "{$colonyName} is not a valid supply source; cannot requisition Convoys here.";
@@ -386,29 +393,44 @@ foreach ($gameFiles as $empireId => $file) {
 
     // Repair Orders
     if ($type === "repair") {
-### Determine location
-#      if (in_array("{$unitName} w/ {$fleet['name']}", $file->unitsNeedingRepair)) continue;
+      // Determine the location of the unit
+      // Find the fleet this unit belongs to
+      foreach ($file->unitsNeedingRepair as $entry) {
+        if (str_starts_with($entry, $unitName . " w/ ")) {
+          $fleetName = trim(substr($entry, strlen($unitName) + 4));
+          break;
+        }
+      }
+      if (!$fleetName) {
+        $errors[] = "{$colonyName} attempted to repair {$unitName}. "
+                    . "Could not find the repair entry of {$unitName}.";
+        continue;
+      }
+
+      $f = $file->getFleetByName($fleetName);
+      if ($f) // unit was part of a fleet
+        $location = $f['location'];
+      else // if not part of a fleet, unit was part of a colony
+        $location = $fleetName; // colony locations are called out directly
 
       $cost = ceil($unit['cost'] * 0.25);
 
       // Cost check
       $availableFunds = $file->empire["totalIncome"] - $file->calculatePurchaseExpense();
       if ($availableFunds - $cost < 0) {
-### Add location
-        $errors[] = "{$colonyName} attempted to repair {$unitName}. "
+        $errors[] = "{$colonyName} attempted to repair {$unitName} at {$location}. "
                     . "Could not afford: Cost {$cost}, had {$availableFunds}.";
         continue;
       }
       // Capacity check
       if ($constructionCapacity[$colonyName] - $cost < 0) {
-### Add location
-        $errors[] = "{$colonyName} attempted to repair {$unitName}. "
+        $errors[] = "{$colonyName} attempted to repair {$unitName} at {$location}. "
                     . "Did not have the construction capacity: Cost {$cost}, had {$constructionCapacity[$colonyName]}.";
         continue;
       }
 
       // Document the change
-      $file->purchases[] = ["cost" => $cost, "name" => "Repair $unitName"];
+      $file->purchases[] = ["cost" => $cost, "name" => "Repair $unitName w/ {$location}"];
       $constructionCapacity[$colonyName] -= $cost;
       continue;
     }
@@ -526,7 +548,7 @@ foreach ($gameFiles as $empireId => $file) {
       foreach ($file->unitList as &$unit) {
         if ($unit['yis'] <= $file->empire['techYear']) {
           $unit['researched'] = true;
-          $newUnits[] = $unit['ship']
+          $newUnits[] = $unit['ship'];
         }
       }
       $eventText = "$empireName advanced to Tech Year {$file->empire['techYear']}.";
@@ -964,9 +986,11 @@ foreach ($gameFiles as $empireId => $file) {
           $colony['notes'] .= (strlen($colony['notes']) > 2 ? ', ': '') . 'Opposition';
         }
 
-        $file->events[] = ['event'=>'Morale Check', 'turn'=>$turn,
-          'text'=>"{$colonies['name']}: Rolled {$roll} + mod {$mod} = {$rollTotal} => Morale change {$delta} (from {$oldMorale} to {$colonies['morale']}).";
-        } // end morale check
+        $file->events[] = [
+          'event'=>'Morale Check: Morale changed', 'turn'=>$turn,
+          'text'=>"{$colonies['name']}: Rolled {$roll} + mod {$mod} = {$rollTotal} => Morale change {$delta} (from {$oldMorale} to {$colonies['morale']})."
+        ];
+      } // end morale check
 
       // Rebellion
       // - Any system with Morale == 0 is checked for Rebellion.
@@ -1063,8 +1087,10 @@ foreach ($gameFiles as $empireId => $file) {
               $targetColony[$attr] = $targetColony['capacity'];
           }
 
-          $file->events[] = ['event'=>'Colonize', 'turn'=>$turn,
-                     'text'=>"{$empireName} colonized {$targetColony['name']}. Convoy {$convoyFleet['name']} dismantled.";
+          $file->events[] = [
+            'event'=>"Colonized {$targetColony['name']}", 'turn'=>$turn,
+            'text'=>"{$empireName} colonized {$targetColony['name']}. Convoy {$convoyFleet['name']} dismantled."
+          ];
         } else {
           $errors[] = "Colonize failed: target {$location} is not uninhabited or not found.";
         }
@@ -1301,9 +1327,8 @@ foreach ($gameFiles as &$file) {
 ###
 foreach ($gameFiles as $file) {
   $file->writeToFile();
+  $errors = array_merge( $errors, $file->getErrors());
 }
-
-$errors = array_merge( $errors, $file->getErrors());
 showErrors($errors);
 
 

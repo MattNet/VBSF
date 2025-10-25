@@ -208,7 +208,7 @@ Build Orders Lists
 
 // Build lists into super-lists
   allBuildableUnits = JsonConcatArrays(buildableShips, buildableFlights, buildableBases);
-  allLoadableUnits = JsonConcatArrays(buildableGround, ["Census"]);
+  allLoadableUnits = buildableGround;
   allMovablePlaces = JsonConcatArrays(colonyNames, otherSystems, unknownMovementPlaces);
   allKnownPlaces = JsonConcatArrays(colonyNames, otherSystems);
   allBasablePlaces = JsonConcatArrays(unitsWithBasing, colonyNames);
@@ -260,7 +260,7 @@ Build Orders Lists
     imp_intel:     [ colonyNames, [], '', 'Improve Intelligence', "pre" ],
     imp_fort:      [ colonyNames, [], '', 'Improve Fortifications', "pre" ],
     research:      [ [], [], 'Amount to Invest', 'Invest into research', "pre" ],
-    name_place:    [ colonyNames, [], '', '(Re) name a colony', "pre" ],
+    name_place:    [ colonyNames, [], 'New name of place', '(Re) name a colony', "pre" ],
     research_new:  [ ['Research New Unit','Upgrade Unit'], allBuildableUnits, '', 'Research Target', "pre" ],
     upgrade_lane:  [ allKnownPlaces, allKnownPlaces, '', 'Upgrade Lane', "pre" ],
 
@@ -452,7 +452,6 @@ Fleets
     for (const unit of unitCount) {
       const [designation, count, index] = unit;
       const notes = index == -1 ? "" : unitList[index].notes;
-
       // Determine all applicable states for this unit
       const matchingStates = unitStates
         .filter(([key]) => key === `${designation} w/ ${fleet.name}`)
