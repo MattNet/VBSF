@@ -65,8 +65,8 @@ foreach ($dir as $file) {
   unset($fileCheck); // unload the game object if un-needed
 }
 if (empty($gameFiles)) {
-  echo "No game files found.\n";
-  exit(0);
+  $errors[] = "No game files found.\n";
+  showErrors($errors);
 }
 
 #####
@@ -78,6 +78,40 @@ foreach ($gameFiles as $empireId => $file) {
   $empireName = $file->empire['empire'] ?? $empireId;
   $turn = intval($file->game['turn'] ?? 0);
   $file->events = $file->events ?? [];
+  echo "Processing file for empire '{$empireName}'\n";
+
+###
+# Combat Phase
+###
+// Process Cripple, Destroy, and Gift orders
+  $combatOrders = array_filter($file->orders ?? [], function ($o) {
+    return in_array($o['type'] ?? '', ['cripple', 'destroy', 'gift']);
+  });
+
+  foreach ($combatOrders as $order) {
+    $type = $order['receiver'] ?? '';
+    $receiver = $order['receiver'] ?? '';
+    $target = $order['target'] ?? '';
+    list ($unitName, $location) = explode(' w/ ', $receiver);
+    $unit = $file->getUnitByName($unitName) ?? null;
+    if (!$unit) continue;
+    if ($target)
+      $unitTarget = $file->getUnitByName($target) ?? null;
+
+    switch ($type) {
+    case "cripple":
+      $file->unitsNeedingRepair[] = $receiver;
+      break;
+    case "destroy":
+      $file->unitStates[] = $receiver;
+      break;
+    case "gift":
+      $file->unitStates[] = $receiver;
+      break;
+    default:
+      break;
+    }
+  }
 
 ###
 # Supply Phase
@@ -101,10 +135,10 @@ foreach ($gameFiles as $empireId => $file) {
     $localLimit = $locPop;
     $locSupplied = 0;
 
-    foreach ($fleet['units'] as $unitName) {
-      $unit = $file->unitList[$unitName] ?? null;
+    foreach ($fleet['units'] as $unitEntry) {
+      [$qty,$unitName] = $file->parseUnitQuantity($unitEntry);
+      $unit = $file->getUnitByName($unitName) ?? null;
       if (!$unit) continue;
-
       $inSupply = false;
 
       // Can trace to any known supply source?
@@ -124,9 +158,7 @@ foreach ($gameFiles as $empireId => $file) {
                 if (in_array(array("{$supplyShip} w/ {$ship['fleet']}",'Exhausted'), $$file->unitStates))
                   continue;
                 $file->unitStates[] = ["{$supplyShip} w/ {$ship['fleet']}",'Exhausted'];
-                $file->events[] = [
-                  'event' => "{$supplyShip} exhausted",
-                  'time' => $turn,
+                $file->events[] = ['event' => "{$supplyShip} exhausted",'time' => $turn,
                   'text' => "{$supplyShip} w/ {$ship['fleet']} is exhausted and cannot supply other units until re-supplied."
                 ];
               }
@@ -139,7 +171,7 @@ foreach ($gameFiles as $empireId => $file) {
       if (!$inSupply) {
         $file->unitStates[] = ["{$unitName} w/ {$fleet['name']}","Out of supply"];
         $file->events[] = [
-          'event' => "{$unitName} out of supply",
+          'event' => "{$unitName} w/ {$fleet['name']} out of supply",
           'time' => $turn,
           'text' => "{$unitName} w/ {$fleet['name']} cannot trace supply and suffers reduced effectiveness."
         ];
@@ -200,7 +232,6 @@ foreach ($gameFiles as $empireId => $file) {
     }
   }
 
-
 ###
 # Construction Phase
 ###
@@ -210,7 +241,6 @@ foreach ($gameFiles as $empireId => $file) {
       'repair', 'convert', 'scrap', 'mothball', 'unmothball'
     ]);
   });
-  if (empty($constructionOrders)) continue;
 
   $constructionCapacity = array();
 
@@ -248,10 +278,11 @@ foreach ($gameFiles as $empireId => $file) {
       }
 
       // Blockade or supply checks
+      $supplyLine = $file->traceSupplyLines($colonyName);
       if ($file->checkBlockaded($colonyName)) {
         $errors[] = "{$colonyName} is blockaded and cannot build.";
         continue;
-      } elseif (count($file->traceSupplyLines($colonyName)) > 0) {
+      } elseif (count($supplyLine['paths']) > 0) {
         $errors[] = "{$colonyName} is out of supply and cannot build.";
         continue;
       }
@@ -429,8 +460,15 @@ foreach ($gameFiles as $empireId => $file) {
         continue;
       }
 
+      // Note the unit was repaired, so to make the change in the new turn
+      if (!isset($file->repairedUnits)) $file->repairedUnits = array();
+      $file->repairedUnits[] = [
+          'unit' => $unitName,
+          'location' => $location
+      ];
+
       // Document the change
-      $file->purchases[] = ["cost" => $cost, "name" => "Repair $unitName w/ {$location}"];
+      $file->purchases[] = ["cost" => $cost, "name" => "Repair {$unitName} w/ {$location}"];
       $constructionCapacity[$colonyName] -= $cost;
       continue;
     }
@@ -444,7 +482,7 @@ foreach ($gameFiles as $empireId => $file) {
       // Cost check
       $availableFunds = $file->empire["totalIncome"] - $file->calculatePurchaseExpense();
       if ($availableFunds - $cost < 0) {
-        $errors[] = "{$convoyName} attempted to convert {$unitName} into a {$newUnitName}. "
+        $errors[] = "{$colonyName} attempted to convert {$unitName} into a {$newUnitName}. "
                     . "Could not afford: Cost {$cost}, had {$availableFunds}.";
         continue;
       }
@@ -454,6 +492,13 @@ foreach ($gameFiles as $empireId => $file) {
                     . "Did not have the construction capacity: Cost {$cost}, had {$constructionCapacity[$colonyName]}.";
         continue;
       }
+
+      // Note the unit was converted, so to make the change in the new turn
+      if (!isset($file->convertedUnits)) $file->convertedUnits = array();
+      $file->convertedUnits[] = [
+          'old' => $oldUnit,
+          'new' => $newType
+      ];
 
       // Document the change
       $file->purchases[] = ["cost" => $cost, "name" => "Convert $unitName to {$newUnitName}"];
@@ -483,6 +528,13 @@ foreach ($gameFiles as $empireId => $file) {
         continue;
       }
 
+      // Note the unit was mothballed, so to make the change in the new turn
+      if (!isset($file->mothballedUnits)) $file->mothballedUnits = array();
+      $file->mothballedUnits[] = [
+          'unit' => $unitName,
+          'location' => $colonyName
+      ];
+
       // Document the change
       $file->purchases[] = ["cost" => 0, "name" => "Mothball $unitName"];
       $constructionCapacity[$colonyName] -= $cost;
@@ -499,6 +551,13 @@ foreach ($gameFiles as $empireId => $file) {
         continue;
       }
 
+      // Note the unit was unmothballed, so to make the change in the new turn
+      if (!isset($file->unmothballedUnits)) $file->unmothballedUnits = array();
+      $file->unmothballedUnits[] = [
+          'unit' => $unitName,
+          'location' => $colonyName
+      ];
+
       // Document the change
       $file->purchases[] = ["cost" => 0, "name" => "Mothball $unitName"];
       $constructionCapacity[$colonyName] -= $cost;
@@ -514,6 +573,11 @@ foreach ($gameFiles as $empireId => $file) {
   // Establish Tech Advancement Cost (TAC)
   $techAdvCost = $file->empire['systemIncome'] * 2;
 
+  // Need a minimum TAC. Will usually only find this on the 
+  // first turn. This allows the calculated stats to be 0 
+  // before this script modifies them
+  if (!$file->empire['systemIncome'])
+    $techAdvCost = 2; // This is equal to raw 1, pop 1 income.
 
   $researchOrders = array_filter($file->orders ?? [], function($o){
      return in_array($o['type'] ?? '', ['research','research_new']);
@@ -622,10 +686,10 @@ foreach ($gameFiles as $empireId => $file) {
           $roll = rand(1,10);
           if ($roll >= 8) {
             $targetColony['raw'] = max(1, intval($targetColony['raw']) + 1);
-            $file->events[] = ["event"=>'System Improvement', "turn"=>$turn,
+            $file->events[] = ["event"=>'System Improvement', "time"=>$turn,
                "text"=>"{$colonyName} increases Capacity to {$newCap}. (+1 RAW on roll {$roll})"];
           } else {
-            $file->events[] = ["event"=>'System Improvement', "turn"=>$turn,
+            $file->events[] = ["event"=>'System Improvement', "time"=>$turn,
                "text"=>"{$colonyName} increases Capacity to {$newCap}."];
           }
           break;
@@ -927,7 +991,7 @@ foreach ($gameFiles as $empireId => $file) {
       if ($inGoodOrder) {
         // remove 'Opposition' string if present
         $colony['notes'] = str_replace('Opposition','', $colony['notes'] ?? '');
-      } else if (strpos($colonies['notes'] ?? '', 'Opposition') === false) {
+      } else if (strpos($colony['notes'] ?? '', 'Opposition') === false) {
         // ensure Opposition note present
         $colony['notes'] .= (strlen($colony['notes']) > 2 ? ', ': '') . 'Opposition';
       }
@@ -935,26 +999,31 @@ foreach ($gameFiles as $empireId => $file) {
       // decide whether to roll a Morale Check:
       // Morale Checks are required if the system is in Opposition OR if any enemy units are currently present.
 ### TODO
-//      $enemyPresent = checkEnemyUnitsInSystem($file, $colonies['name']); // implement per CM knowledge of fleets
+//      $enemyPresent = checkEnemyUnitsInSystem($file, $colony['name']); // implement per CM knowledge of fleets
 //      $requiresMoraleCheck = (!$inGoodOrder) || $enemyPresent;
-      $requiresMoraleCheck = (!$inGoodOrder);
+      $requiresMoraleCheck = (!$inGoodOrder && $colony['owner'] === $file->empire['empire']);
 
       if ($requiresMoraleCheck) {
         // Compose modifiers
         $mod = 0;
+        $troopCount = 0;
         // +1 Frontier World (Population 3 or less)
         if ($pop <= 3) $mod += 1;
-        // +1 Good Order (only applies if currently Good Order)
+        // +1 Good Order
         if ($inGoodOrder) $mod += 1;
         // +1 Full Garrison (# friendly troops >= Population)
-### TODO
-//        if (hasFullGarrison($file, $col)) $mod += 1;
+        if (!empty($colony['fixed']))
+          foreach ($colony['fixed'] as $unitName) {
+            $unit = $file->getUnitByName($unitName);
+            if (!$unit) continue;
+            if ($unit['design'] === 'Ground Troop')
+              $troopCount++;
+          }
+        if ($troopCount >= $colony['population']) $mod += 1;
         // -1 Orbital Bombardment this turn? (need to check per-turn flags)
-### TODO
-//        if (isset($colony['flags']['orbital_bombarded']) && $colonies['flags']['orbital_bombarded']) $mod -= 1;
+        if (strpos($colony['notes'], 'Bombarded') !== false) $mod -= 1;
         // -1 Economic Disruptions? (if flagged)
-### TODO
-//        if (isset($colony['flags']['econ_disrupted']) && $colonies['flags']['econ_disrupted']) $mod -= 1;
+        if (strpos($colony['notes'], 'Economic Disruptions') !== false) $mod -= 1;
         // -1 System Blockaded
         if (isset($colony['notes']) && $file->checkBlockaded($colony["name"])) $mod -= 1;
         // -1 Martial Law
@@ -981,14 +1050,14 @@ foreach ($gameFiles as $empireId => $file) {
         if ($morale >= ceil($pop / 2)) {
           // remove 'Opposition' string if present
           $colony['notes'] = str_replace('Opposition','', $colony['notes'] ?? '');
-        } else if (strpos($colonies['notes'] ?? '', 'Opposition') === false) {
+        } else if (strpos($colony['notes'] ?? '', 'Opposition') === false) {
           // ensure Opposition note present
           $colony['notes'] .= (strlen($colony['notes']) > 2 ? ', ': '') . 'Opposition';
         }
 
         $file->events[] = [
-          'event'=>'Morale Check: Morale changed', 'turn'=>$turn,
-          'text'=>"{$colonies['name']}: Rolled {$roll} + mod {$mod} = {$rollTotal} => Morale change {$delta} (from {$oldMorale} to {$colonies['morale']})."
+          'event'=>'Morale Check: Morale changed', 'time'=>$turn,
+          'text'=>"{$colony['name']}: Rolled {$roll} + mod {$mod} = {$rollTotal} => Morale change {$delta} (from {$oldMorale} to {$colony['morale']})."
         ];
       } // end morale check
 
@@ -996,7 +1065,7 @@ foreach ($gameFiles as $empireId => $file) {
       // - Any system with Morale == 0 is checked for Rebellion.
       // - The rules provide a die roll mechanism (apply rebellion modifiers such as martial law penalty, etc).
       // - If rebellion occurs, place Rebel troops/units or mark Rebellion note and set system to contested.
-        if (intval($colony['morale']) === 0) {
+        if (intval($colony['morale']) === 0 && $colony['population'] === $file->empire['empire']) {
           // Do Rebellion check
           $mod = 0;
           // martial law makes rebellion more likely. VBAM notes: Martial Law gives -1 to morale checks and rebellion rolls.
@@ -1010,12 +1079,12 @@ foreach ($gameFiles as $empireId => $file) {
             $colony['notes'] = (strlen($colony['notes']) > 2 ? ', ': '') . ' Rebellion';
             // Example: spawn Raiders worth 3d10 EP (VBAM random events used similar values). Adapt per 4.10.5 rules.
             $reRoll = rand(1,10) + rand(1,10) + rand(1,10); // 3d10 EP -> convert to units via CM rules
-            $file->events[] = ['event'=>"Rebellion in {$colony['name']}", 'turn'=>$turn,
-                   'text'=>"{$colonies['name']}: Rebellion occurred (roll {$roll} + mod {$rebMod} = {$rollTotal}). " .
+            $file->events[] = ['event'=>"Rebellion in {$colony['name']}", 'time'=>$turn,
+                   'text'=>"{$colony['name']}: Rebellion occurred (roll {$roll} + mod {$mod} = {$rollTotal}). " .
                            "Rebel force magnitude ~{$reRoll} EP (CM convert to units)."];
           } else {
-            $file->events[] = ['event'=>'Rebellion Check', 'turn'=>$turn,
-                   'text'=>"{$colony['name']}: Rebellion check failed (roll {$roll} + mod {$rebMod} = {$rollTotal})."];
+            $file->events[] = ['event'=>'Rebellion Check', 'time'=>$turn,
+                   'text'=>"{$colony['name']}: Rebellion check failed (roll {$roll} + mod {$mod} = {$rollTotal})."];
           }
         } // end rebellion check
       unset($colony);
@@ -1088,7 +1157,7 @@ foreach ($gameFiles as $empireId => $file) {
           }
 
           $file->events[] = [
-            'event'=>"Colonized {$targetColony['name']}", 'turn'=>$turn,
+            'event'=>"Colonized {$targetColony['name']}", 'time'=>$turn,
             'text'=>"{$empireName} colonized {$targetColony['name']}. Convoy {$convoyFleet['name']} dismantled."
           ];
         } else {
@@ -1096,9 +1165,7 @@ foreach ($gameFiles as $empireId => $file) {
         }
       } // end foreach order
     } // end if orders
-
-
-}
+} // end GameFiles foreach
 
 ###
 # Write the old file. Create the new file
@@ -1152,8 +1219,10 @@ foreach ($gameFiles as &$file) {
   $file->empire['miscIncome'] = 0;
   $file->empire['maintExpense'] = 0;
   $file->empire['miscExpense'] = 0;
-  // empty purchases
+  // Empty purchases
   $file->purchases = [];
+  // Empty events
+  $file->events = [];
 
   // Collect destroyed units
   $destroyedUnits = [];
@@ -1183,10 +1252,263 @@ foreach ($gameFiles as &$file) {
   }
 
 ### TODO: Perform ownership transfers (e.g. "gifting")
-### TODO: Perform re-naming of fleets and colonies
-### TODO: Perform conversion of units so noted in purchases
-### TODO: Perform mothballing and unmothballing. add/remove to unitsInMothballs
-### TODO: Remove crippled status if repaired
+
+# Perform conversions per orders
+  if (!isset($file->convertedUnits)) $file->convertedUnits = array();
+  foreach ($file->convertedUnits as $conversion) {
+    $oldUnit = $conversion['old'];
+    $newType = $conversion['new'];
+    $conversionFound = false;
+
+    // Find the unit in all fleets
+    foreach ($file->fleets as &$fleet) {
+      foreach ($fleet['units'] as &$unitName) {
+        if ($unitName === $oldUnit) {
+          // Replace the old unit name with the new one
+          $unitName = $newType;
+          $conversionFound = true;
+
+          $file->events[] = [ 'event' => 'Unit Conversion', 'time' => $file->game['turn'],
+            'text' => "Converted {$oldUnit} in fleet '{$fleet['name']}' to {$newType}."
+          ];
+          break 2; // stop searching
+        }
+      }
+    }
+
+    // If not found in fleets, check colonies’ fixed units
+    if (!$conversionFound) {
+      foreach ($file->colonies as &$colony) {
+        foreach ($colony['fixed'] as &$fixedUnit) {
+          if ($fixedUnit === $oldUnit) {
+            $fixedUnit = $newType;
+            $conversionFound = true;
+
+            $file->events[] = [ 'event' => 'Unit Conversion', 'time' => $file->game['turn'],
+              'text' => "Converted {$oldUnit} stationed at {$colony['name']} to {$newType}."
+            ];
+            break 2;
+          }
+        }
+      }
+    }
+    // Update the unit in other arrays that reference it
+    foreach ($file->unitsNeedingRepair as &$entry) {
+      if (preg_match("/^" . preg_quote($oldUnit, '/') . " w\ (.*?)$/", $entry, $matches)) {
+        $fleet = trim($matches[1]);  // extract the fleet name
+        $entry = "{$newType} w/ {$fleet}";
+        break;
+      }
+      unset($entry);
+    }
+    foreach ($file->unitStates as &$entry) {
+      if (preg_match("/^" . preg_quote($oldUnit, '/') . " w\ (.*?)$/", $entry[0], $matches)) {
+        $fleet = trim($matches[1]);  // extract the fleet name
+        $entry[0] = "{$newType} w/ {$fleet}";
+      }
+      unset($entry);
+    }
+  }
+
+# Perform repairs per orders
+  if (!isset($file->repairedUnits)) $file->repairedUnits = array();
+  foreach ($file->repairedUnits as $repairs) {
+    $unit = $conversion['unit'];
+    $location = $conversion['location'];
+    $repairFound = false;
+
+    // remove the repaired unit from the repair array
+    $key = array_search("{$unit} w/ {$location}", $file->unitsNeedingRepair, true);
+    if ($key === false) {
+      $errors[] = "Attempted to repair unit '{$unit} w/ {$location}' but could not find in repair array";
+      continue;
+    }
+    unset($file->unitsNeedingRepair[$key]); // remove the repaired element
+    $file->unitsNeedingRepair = array_values($file->unitsNeedingRepair); // re-index the array
+  }
+
+# Perform mothballs per orders
+  if (!isset($file->mothballedUnits)) $file->mothballedUnits = array();
+  foreach ($file->mothballedUnits as $mothball) {
+    $unitName = $mothball['unit'];
+    $location = $mothball['location']; // colony name
+
+    // Locate the unit in active fleets
+    foreach ($file->fleets as $i => &$fleet) {
+      if ($fleet['location'] !== $location) continue;
+      list($qty, $design) = $file->parseUnitQuantity($entry);
+      if ($design === $unitName) {
+        // Decrease quantity or remove if it reaches zero
+        if ($qty > 1) {
+          $fleet['units'][$i] = ($qty - 1) . 'x' . $design;
+        } else {
+          unset($fleet['units'][$i]);
+          $fleet['units'] = array_values($fleet['units']);
+        }
+        break; // done with this fleet
+      }
+      $errors[] = "Failed to mothball {$unitName} at {$location}. Did not find fleet containing unit.";
+    }
+
+    $notNewFleet = false;
+    foreach ($file->unitsInMothballs as &$inactive) {
+      if ($inactive['location'] !== $location) continue;
+      $notNewFleet = true;
+      foreach ($inactive['units'] as $i => $entry) {
+        list($qty, $design) = $file->parseUnitQuantity($entry);
+        if ($design === $unitName)
+          // Increase the count of that unit in mothballs
+          $inactive['units'][$i] = ($qty + 1) . 'x' . $design;
+        else
+          $inactive['units'][] = $unitName;
+        break;
+      }
+    }
+    if ($notNewFleet === false)
+      // Add to mothballs list
+      $file->unitsInMothballs[] = [
+            'name' => 'Mothballs',
+            'location' => $colonyName,
+            'units' => [$unitName],
+            'notes' => 'Deactivated units'
+      ];
+  }
+
+# Perform unmothballs per orders
+  if (!isset($file->unmothballedUnits)) $file->unmothballedUnits = array();
+  foreach ($file->unmothballedUnits as $unmoth) {
+    $unitName = $unmoth['unit'];
+    $location = $unmoth['location']; // colony name
+    $found = false;
+
+    // Find the unit in mothballs
+    foreach ($file->unitsInMothballs as $idx => &$inactive) {
+      if ($inactive['location'] !== $location) continue;
+
+      foreach ($inactive['units'] as $i => $entry) {
+        list($qty, $design) = $file->parseUnitQuantity($entry);
+        if ($design === $unitName) {
+          // Decrease quantity or remove entirely
+          if ($qty > 1) {
+            $inactive['units'][$i] = ($qty - 1) . 'x' . $design;
+          } else {
+            unset($inactive['units'][$i]);
+            $inactive['units'] = array_values($inactive['units']);
+          }
+          $found = true;
+          break;
+          }
+        }
+        // Remove empty mothball entry
+        if (empty($inactive['units'])) unset($file->unitsInMothballs[$idx]);
+        if ($found) break;
+    }
+    if (!$found) {
+        $errors[] = "Failed to unmothball {$unitName} at {$location}. Unit not found in mothballs.";
+        continue;
+    }
+    // Add back to an existing fleet or create one
+    $added = false;
+    foreach ($file->fleets as &$fleet) {
+      if ($fleet['location'] !== $location) continue;
+      foreach ($fleet['units'] as $i => $entry) {
+        list($qty, $design) = $file->parseUnitQuantity($entry);
+        if ($design === $unitName) {
+          $fleet['units'][$i] = ($qty + 1) . 'x' . $design;
+          $added = true;
+          break;
+        }
+      }
+      if (!$added) {
+        $fleet['units'][] = $unitName;
+        $added = true;
+      }
+      break;
+    }
+    if (!$added) {
+        // Create a new local fleet if none exists at that location
+        $file->fleets[] = [
+            'name' => 'Local Defense',
+            'location' => $location,
+            'units' => [$unitName],
+            'notes' => 'Unmothballed units'
+        ];
+    }
+  }
+
+# Rename Fleets and Colonies per orders
+  foreach ($file->orders as $order) {
+    switch ($order['type']) {
+      case 'name_fleet':
+        $oldName = $order['receiver'];
+        $newName = trim($order['note']);
+        // Disallow blank new names and mothball fleets
+        if ($newName == '' && $oldName == 'MothBalls' && $newName == 'MothBalls') break;
+        foreach ($file->fleets as &$fleet) {
+          if ($fleet['name'] !== $oldName) continue;
+          // Update the fleet's name
+          $fleet['name'] = $newName;
+
+          // Update any units that reference this fleet
+          foreach ($file->unitsNeedingRepair as &$entry) {
+            if (preg_match("/^(.*?) w\/ " . preg_quote($oldName, '/') . "$/", $entry, $matches)) {
+              $unit = trim($matches[1]);  // extract the unit name
+              $entry = "{$unit} w/ {$newName}";
+            }
+            unset($entry);
+          }
+          foreach ($file->unitStates as &$entry) {
+            if (preg_match("/^(.*?) w\/ " . preg_quote($oldName, '/') . "$/", $entry[0], $matches)) {
+              $unit = trim($matches[1]);  // extract the unit name
+              $entry[0] = "{$unit} w/ {$newName}";
+            }
+            unset($entry);
+          }
+
+          // Add an event to record the rename
+          $file->events[] = [ "event" => "Fleet Renamed", "time" => $file->game['turn'],
+                        "text"  => "Fleet '$oldName' renamed to '$newName'."
+          ];
+        }
+        break;
+      case 'name_place':
+        $oldName = $order['receiver'];
+        $newName = trim($order['note']);
+        // Disallow blank new names
+        if ($newName !== '') break;
+        foreach ($file->colonies as &$place) {
+          if ($place['name'] === $oldName)  continue;
+          // Update the colony's name
+          $place['name'] = $newName;
+
+          // Update any units that reference this fleet
+          foreach ($file->unitsNeedingRepair as &$entry) {
+            if (preg_match("/^(.*?) w\/ " . preg_quote($oldName, '/') . "$/", $entry, $matches)) {
+              $unit = trim($matches[1]);  // extract the unit name
+              $entry = "{$unit} w/ {$newName}";
+            }
+            unset($entry);
+          }
+          foreach ($file->unitStates as &$entry) {
+            if (preg_match("/^(.*?) w\/ " . preg_quote($oldName, '/') . "$/", $entry[0], $matches)) {
+              $unit = trim($matches[1]);  // extract the unit name
+              $entry[0] = "{$unit} w/ {$newName}";
+            }
+            unset($entry);
+          }
+          foreach ($file->underConstruction as &$entry) {
+            if ($entry[0] == $oldName) $entry[0] == $newName;
+            unset($entry);
+          }
+
+          // Add an event to record the rename
+          $file->events[] = [ "event" => "Colony Renamed", "time" => $file->game['turn'],
+                        "text"  => "Colony '$oldName' renamed to '$newName'."
+          ];
+        }
+        break;
+    }
+  }
 
   $file->writeToFile($searchDir.$newFile.".js"); // Also updates the $file->fileName
   unset($file);
@@ -1196,6 +1518,11 @@ foreach ($gameFiles as &$file) {
 # Economics Phase
 ###
 foreach ($gameFiles as &$file) {
+  $empireName = $file->empire['empire'] ?? $empireId;
+  $turn = intval($file->game['turn'] ?? 0);
+  $file->events = $file->events ?? [];
+  echo "Processing new file for empire '{$empireName}'\n";
+
   $maintenance = 0;
   $miscExpenses = 0;
   $miscIncome = 0;
@@ -1203,22 +1530,29 @@ foreach ($gameFiles as &$file) {
   $totalTradeIncome = 0;
 
   $usedSystems = []; // This is a list of unique systems being visited for trade
+  $unitCounts = []; // Maintenance costs (aggregated by unit type)
 
-  foreach ($file->colonies as &$colony) {
-    // Maintenance costs
+  foreach ($file->colonies as $colony) {
+
+    // Gather all units at colony, including fleet units at location
     $unitsAtLocation = $file->getUnitsAtLocation($colony['name']);
-    foreach ($unitsAtLocation as &$unit) {
+
+    foreach ($unitsAtLocation as $unit) {
       $unitData = $file->getUnitByName($unit);
-      if (!isset($unitData)) {
+      if (!$unitData) {
         $errors[] = "Calculating maintenance cost of unknown unit, {$unit} for {$file->empire["name"]}";
         continue;
       }
-      $maintenance += $unitData["cost"]*0.1;
-      unset($unit);
+
+      $designation = $unitData['ship']; // e.g. 'FF', 'CVA', etc.
+      if (!isset($unitCounts[$designation]))
+        $unitCounts[$designation] = ['count' => 0, 'cost' => $unitData['cost']];
+      $unitCounts[$designation]['count']++;
     }
 
     if ($colony['owner'] !== $file->empire['empire']) continue;
 
+    // Calculate per-colony income
     $colonyIncome = $file->calculateSystemIncome($colony["name"]);
     // blockade check
     if ($file->checkBlockaded($colony["name"]))
@@ -1226,6 +1560,12 @@ foreach ($gameFiles as &$file) {
 
     $totalSystemIncome += $colonyIncome;
     unset($colony);
+  }
+
+  // Calculate maintenance expense
+  foreach ($unitCounts as $type => $info) {
+    $typeMaint = ceil($info['count'] * $info['cost'] * 0.1);
+    $maintenance += $typeMaint;
   }
 
   // Look for Trade fleets
@@ -1318,16 +1658,12 @@ foreach ($gameFiles as &$file) {
                                  $file->empire['maintExpense'] -
                                  $file->empire['miscExpense'];
 
-  unset($file);
-}
-
-
 ###
 # Write the game files
 ###
-foreach ($gameFiles as $file) {
   $file->writeToFile();
   $errors = array_merge( $errors, $file->getErrors());
+  unset($file);
 }
 showErrors($errors);
 
@@ -1389,4 +1725,3 @@ function calculateConstructionCapacity($file, $colonyName) {
 }
 
 ?>
-

@@ -157,6 +157,8 @@ foreach (array_keys($fileObj->orders) as $orderNum) {
         continue;
     }
 
+    // Check order requirements
+    // Where the $orderTable is TRUE, that $order field is required
     $requirements = $orderTable[$order["type"]];
     $desc = $requirements[3];
 
@@ -168,6 +170,10 @@ foreach (array_keys($fileObj->orders) as $orderNum) {
             unset($fileObj->orders[$orderNum]);
             break;
         }
+    }
+    // Correct for mis-spelled covert projects
+    if ($order['type'] == 'covert' || $order['type'] == 'special_force') {
+      $order['note'] = findIntelProject($order['note']);
     }
 }
 unset($order);
@@ -204,4 +210,43 @@ function endScript(): void
   exit;
 }
 
+###
+# findIntelProject(string $intelInput): string
+#   Determines which intel project was meant from the input
+#   Direct steal from the Levenstein example in the PHP docs
+#   Arguments: $intelInput – Mis-spelled intel project
+#   Output: string - The closest actual intel project from the input
+###
+function findIntelProject(string $intelInput): string
+{
+  // array of projects to check against
+  $words  = array('civilian','counter-insurgency','counterintel','espionage',
+                'fortification','industrial','insurgency','piracy','population',
+                'sabotage','tech');
+  $shortest = -1; // no shortest distance found, yet
 
+  // loop through words to find the closest
+  foreach ($words as $word) {
+    // calculate the distance between the input word, and the current word
+    $lev = levenshtein($intelInput, $word);
+
+    // check for an exact match
+    if ($lev == 0) {
+      // closest word is this one (exact match)
+      $closest = $word;
+      $shortest = 0;
+      break;
+    }
+
+    // if this distance is less than the next found shortest
+    // distance, OR if a next shortest word has not yet been found
+    if ($lev <= $shortest || $shortest < 0) {
+      // set the closest match, and shortest distance
+      $closest  = $word;
+      $shortest = $lev;
+    }
+  }
+
+  return $closest;
+}
+?>

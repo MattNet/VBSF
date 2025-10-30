@@ -54,7 +54,7 @@ declare(strict_types=1);
 #   Access: public
 
 # getFleetByLocation(string $location): ?array
-#   Returns a fleet array by its location.
+#   Returns the first fleet found in the fleet array by its location.
 #   Arguments: $name – colony name
 #   Output: fleet array or null if not found
 #   Access: public
@@ -103,7 +103,7 @@ declare(strict_types=1);
 #   Parses a unit string like "3xDD-II" into quantity and unit name.
 #   Arguments: $unit – string unit identifier
 #   Output: array [quantity:int, name:string]
-#   Access: private
+#   Access: public
 
 # atLeastPoliticalState(string $treatyState, string $stateCheck): bool
 #   Determines if one treaty type is more hostile than another
@@ -193,6 +193,11 @@ class GameData
   public string $fileName = "";
 
   private array $errors = [];
+  private array $writeVars = ['colonies','empire','events','fleets','game','intelProjects','mapConnections',
+                              'mapPoints','offeredTreaties','orders','otherEmpires','purchases','treaties',
+                              'underConstruction','unitStates','unitsInMothballs','unitsNeedingRepair',
+                              'unknownMovementPlaces','unitList'
+                             ];
 
 ###
 #   Initializes the object and reads data from the specified data file.
@@ -247,11 +252,11 @@ class GameData
 ###
   public function writeToFile(string $file = ""): void
   {
-    // copy data into $dataArray. Exclude named keys (errors[], etc..)
+    // copy data into $dataArray. Only include named keys in $this->writeVars
     $dataArray = array_filter(
         get_object_vars($this),
-        fn($value, $key) => is_array($value) && !in_array($key, ['errors', 'fileName']),
-        ARRAY_FILTER_USE_BOTH
+        fn($key) => in_array($key, $this->writeVars, true),
+        ARRAY_FILTER_USE_KEY
     );
 
     // Custom sort: sort all keys alphabetically, then move 'unitList' to the end
@@ -395,7 +400,7 @@ class GameData
   }
 
 # getFleetByLocation(string $location): ?array
-#   Returns a fleet array by its location.
+#   Returns the first fleet found in the fleet array by its location.
 #   Arguments: $name – colony name
 #   Output: fleet array or null if not found
 #   Access: public
@@ -476,17 +481,18 @@ public function getFleetByLocation(string $location): ?array
 ###
 #   Determines if a fleet has a unit with a certain ability. e.g. is a scout fleet?
 #   Arguments: $fleet – fleet to check, $ability – the ability keyword to check
-#   Output: string - The unit name with this ability. False if none
+#   Output: string - The unit name with this ability. Empty if none
 ###
   public function fleetHasAbility(string $fleet, string $ability): string
   {
     $fleetObj = $this->getFleetbyName($fleet); // get fleet
     foreach ($fleetObj["units"] as $unit) { // get each unit of the fleet
       $unitData = $this->getUnitByName($unit); // get the named unit
+      if (empty($unitData["notes"])) continue;
       if (str_contains(strToLower($unitData["notes"]), strToLower($ability))) // if the named unit has the ability, end here
         return $unit;
     }
-    return false; // we didn't find the ability in the fleet
+    return ''; // we didn't find the ability in the fleet
   }
 
 ###
@@ -509,17 +515,18 @@ public function getFleetByLocation(string $location): ?array
 # locationHasAbility(string $location, string $ability): string
 #   Determines if a location has a unit with a certain ability. e.g. is a scout?
 #   Arguments: $location – locaiton to check, $ability – the ability keyword to check
-#   Output: string - The unit name with this ability. False if none
+#   Output: string - The unit name with this ability. Empty if none
 ###
   public function locationHasAbility(string $location, string $ability): string
   {
-    $units = $this->getUnitsAtLocation($fleet); // get units
+    $units = $this->getUnitsAtLocation($location); // get units
+    if (empty($units)) return '';
     foreach ($units as $u) { // get each unit of the fleet
       $unitData = $this->getUnitByName($u); // get the named unit
       if (str_contains(strToLower($unitData["notes"]), strToLower($ability))) // if the named unit has the ability, end here
-        return $unit;
+        return $u;
     }
-    return false; // we didn't find the ability in the location
+    return ''; // we didn't find the ability in the location
   }
 
 ###
@@ -538,8 +545,6 @@ public function getFleetByLocation(string $location): ?array
         [$qty, $name] = $this->parseUnitQuantity($u);
         if (in_array("{$name} w/ {$colony['name']}", $this->unitsNeedingRepair))
           $repair[] = "{$name} w/ {$colony['name']}";
-        else
-          $states[] = ["{$name} w/ {$colony['name']}", "Active"];
       }
     }
     foreach ($this->fleets as $fleet) {
@@ -548,8 +553,6 @@ public function getFleetByLocation(string $location): ?array
         [$qty, $name] = $this->parseUnitQuantity($u);
         if (in_array("{$name} w/ {$fleet['name']}", $this->unitsNeedingRepair))
           $repair[] = "{$name} w/ {$fleet['name']}";
-        else
-          $states[] = ["{$name} w/ {$fleet['name']}", "Active"];
       }
     }
     $this->unitsNeedingRepair = array_unique($repair);
@@ -561,7 +564,7 @@ public function getFleetByLocation(string $location): ?array
 #   Arguments: $unit – string unit identifier
 #   Output: array [quantity:int, name:string]
 ###
-  private function parseUnitQuantity(string $unit): array
+  public function parseUnitQuantity(string $unit): array
   {
     if (preg_match('/^(\d+)x(.+)$/', $unit, $matches)) {
       return [(int)$matches[1], trim($matches[2])];
@@ -629,24 +632,24 @@ public function getFleetByLocation(string $location): ?array
     // Identify Supply Sources
     $supplySources = [];
     foreach ($this->colonies as $colony) {
-      if ($colony['owner'] != $this->empire['name']) continue;
+      if ($colony['owner'] != $this->empire['empire']) continue;
 
       $isCore = ($colony['population'] >= 5);
       $isGoodOrder = ($colony['morale'] >= ($colony['population'] / 2));
       $hasDepot = false;
 
-      if ($file->locationHasAbility($colony['name'], 'Supply Depot') === true)
+      if ($this->locationHasAbility($colony['name'], 'Supply Depot') === true)
           $hasDepot = true;
 
       if (($isCore && $isGoodOrder) || $hasDepot)
         $supplySources[] = [$colony['name'],'colony'];
     }
     // Any unit with "Supply" in its notes can resupply units in the same location that cannot otherwise trace supply.
-    foreach ($file->fleets as $fleet) {
+    foreach ($this->fleets as $fleet) {
       $supplyShip = $this->fleetHasAbility($fleet['name'], 'Supply');
-      if ($supplyShip !== false) {
+      if ($supplyShip !== '') {
         $isExhausted = false;
-        foreach ($file->unitStates as $state) {
+        foreach ($this->unitStates as $state) {
           if (in_array(array("{$unitName} w/ {$fleet['name']}",'Exhausted'), $state)) {
             $isExhausted = true;
             break;
@@ -665,7 +668,7 @@ public function getFleetByLocation(string $location): ?array
       $isBad = false;
       foreach($paths['path'] as $intermediate) {
         if ($intermediate == $start) continue; // skip if looking at the start location (it can be blockaded)
-        if ($file->checkBlockaded($intermediate) !== true) continue;
+        if ($this->checkBlockaded($intermediate) !== true) continue;
         // intermediate is blockaded
         $isBad = true;
       }

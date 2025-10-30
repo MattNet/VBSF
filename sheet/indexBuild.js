@@ -144,7 +144,10 @@ Build Orders Lists
     // assemble the currentFleets array
     currentFleets.push(fleet.name);
 
-    for (const unit of fleet.units) {
+    for (unit of fleet.units) {
+      // Strip leading quantity from the unit string
+      unit = unit.replace(/^\d+x/, '');
+
       // Assemble the list of current units
       currentUnits.push(`${unit} w/ ${fleet.name}`);
 
@@ -401,16 +404,18 @@ Maintenance
 ***/
   let unitCount = [];
   let totalMaintExpense = 0;
-  colonies.forEach(c => unitCount = UnitCounts(c.fixed, unitCount));
+  colonies.forEach(c => {
+    if (c.owner !== empire.empire) return;  // skip colonies not owned by this empire
+    unitCount = UnitCounts(c.fixed, unitCount)
+  });
   fleets.forEach(f => unitCount = UnitCounts(f.units, unitCount));
 
   let maintRows = unitCount.map(([designation, count, index]) => {
     let unitMaintCost = 0;
-    if (index != -1) {
-      const unit = unitList[index];
-      unitMaintCost = newRound(count * unit.cost * 0.1, 2);
-    }
-    totalMaintExpense += Math.ceil(unitMaintCost);
+    if (index == -1) return "";
+    const unit = unitList[index];
+    unitMaintCost = Math.ceil(count * unit.cost * 0.1);
+    totalMaintExpense += unitMaintCost;
     return `<tr><td>${designation}</td><td>x${count}</td><td>${unitMaintCost}</td></tr>`;
   }).join("");
 
@@ -599,7 +604,7 @@ Events
     if (e.text.length > 300) {
       return `<br><a onclick="popitupEvent(&quot;${safeText}&quot;)">${e.time}: ${e.event}</a>`;
     }
-    return `<br><a title="${safeText}">${e.time}: ${e.event}</a>`;
+    return `<br><a title="${safeText}">Turn ${e.time}: ${e.event}</a>`;
   }).join("");
 
   eventRows += `<p style="font-size:smaller;">Mouseover or click on event for description</p>`;
