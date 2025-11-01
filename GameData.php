@@ -294,6 +294,8 @@ class GameData
       $this->fileName = $file;
     if (file_put_contents($file, $output) === false)
       $this->errors[] = "Failed to write file: {$file}";
+    if (chmod($this->fileName,0777) === false )
+      $this->errors[] = "Failed to modify file '{$file}' to be written.";
   }
 
 ###
@@ -310,12 +312,12 @@ class GameData
     }
     $output = $colony['population'] * $colony['raw'];
     $notes = $colony['notes'] ?? '';
-    if (str_contains(strToLower($notes), 'rebellion'))
+    if (str_contains(strtolower($notes), 'rebellion'))
       $output = 0;
-    elseif (str_contains(strToLower($notes), 'opposition')) {
+    elseif (str_contains(strtolower($notes), 'opposition')) {
       // Martial law restores full productivity, at the cost of making it likely to rebel
       // So if not Martial Law but is in opposition, then reduce output
-      if (strpos($col['notes'] ?? '', 'Martial Law') === false)
+      if (strpos($colony['notes'] ?? '', 'Martial Law') === false)
         $output = intdiv($output, 2);
     }
     // No Blockade check here
@@ -351,9 +353,9 @@ class GameData
     $colony = $this->getColonyByName($name);
     if (!$colony) {
       $this->errors[] = "Failure to get colony {$name} in checkBlockaded().";
-      return false;
+      return null;
     }
-    if (str_contains(strToLower($colony['notes']), 'blockaded') !== false)
+    if (str_contains(strtolower($colony['notes']), 'blockaded'))
       return true;
     return false;
   }
@@ -400,19 +402,19 @@ class GameData
   }
 
 # getFleetByLocation(string $location): ?array
-#   Returns the first fleet found in the fleet array by its location.
+#   Returns all fleets found in the fleet array by its location.
 #   Arguments: $name – colony name
 #   Output: fleet array or null if not found
 #   Access: public
 public function getFleetByLocation(string $location): ?array
 {
+  $fleetCollection = [];
   // Search for a fleet matching the given location
   foreach ($this->fleets as $fleet) {
     if (isset($fleet['location']) && strcasecmp($fleet['location'], $location) === 0)
-      return $fleet;
+      $fleetCollection[] = $fleet;
   }
-  // Return null if no fleet is found at that location
-  return null;
+  return $fleetCollection;
 }
 
 ###
@@ -489,7 +491,7 @@ public function getFleetByLocation(string $location): ?array
     foreach ($fleetObj["units"] as $unit) { // get each unit of the fleet
       $unitData = $this->getUnitByName($unit); // get the named unit
       if (empty($unitData["notes"])) continue;
-      if (str_contains(strToLower($unitData["notes"]), strToLower($ability))) // if the named unit has the ability, end here
+      if (str_contains(strtolower($unitData["notes"]), strtolower($ability))) // if the named unit has the ability, end here
         return $unit;
     }
     return ''; // we didn't find the ability in the fleet
@@ -523,7 +525,7 @@ public function getFleetByLocation(string $location): ?array
     if (empty($units)) return '';
     foreach ($units as $u) { // get each unit of the fleet
       $unitData = $this->getUnitByName($u); // get the named unit
-      if (str_contains(strToLower($unitData["notes"]), strToLower($ability))) // if the named unit has the ability, end here
+      if (str_contains(strtolower($unitData["notes"]), strtolower($ability))) // if the named unit has the ability, end here
         return $u;
     }
     return ''; // we didn't find the ability in the location
@@ -604,7 +606,7 @@ public function getFleetByLocation(string $location): ?array
   public function atLeastShipSize(string $shipDesign, string $designCheck): bool
   {
     // sorted by size. "New" hull versions considered larger than standard versions.
-    // "War" versions considered smaller than "Heavy" versions. CWs considered smaller than CAs
+    // "War" versions considered smaller than "Heavy" versions: CWs considered smaller than CAs
     $hullOrder = [ 'BOOM','FT','SAux','POL','FF','NFF','FFW','FFH','DD','NDD','DDH','DW','HDW',
                    'LAux','CL','CW','CWH','CA','TUG','NCA','CCH','BC','BCH',
                    'DNL','DNW','DN','DNH','BB'

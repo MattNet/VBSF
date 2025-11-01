@@ -78,6 +78,17 @@ foreach ($gameFiles as $empireId => $file) {
   $empireName = $file->empire['empire'] ?? $empireId;
   $turn = intval($file->game['turn'] ?? 0);
   $file->events = $file->events ?? [];
+  echo "Searching file for empire '{$empireName}' for units.\n";
+# Build up locations of [enemy] units for blockade tests
+// create lookup tables
+
+# Build up intel reports of locations and units that can be seen
+// format yet undecided.
+}
+foreach ($gameFiles as $empireId => $file) {
+  $empireName = $file->empire['empire'] ?? $empireId;
+  $turn = intval($file->game['turn'] ?? 0);
+  $file->events = $file->events ?? [];
   echo "Processing file for empire '{$empireName}'\n";
 
 ###
@@ -89,7 +100,7 @@ foreach ($gameFiles as $empireId => $file) {
   });
 
   foreach ($combatOrders as $order) {
-    $type = $order['receiver'] ?? '';
+    $type = $order['type'] ?? '';
     $receiver = $order['receiver'] ?? '';
     $target = $order['target'] ?? '';
     list ($unitName, $location) = explode(' w/ ', $receiver);
@@ -155,11 +166,11 @@ foreach ($gameFiles as $empireId => $file) {
               foreach($fleetList as $fleets) {
                 $supplyShip = $file->fleetHasAbility($fleets, 'Supply');
                 if ($supplyShip === false ) continue; // skip non-supply ships
-                if (in_array(array("{$supplyShip} w/ {$ship['fleet']}",'Exhausted'), $$file->unitStates))
+                if (in_array(array("{$supplyShip} w/ {$fleets}",'Exhausted'), $file->unitStates))
                   continue;
-                $file->unitStates[] = ["{$supplyShip} w/ {$ship['fleet']}",'Exhausted'];
+                $file->unitStates[] = ["{$supplyShip} w/ {$fleets}",'Exhausted'];
                 $file->events[] = ['event' => "{$supplyShip} exhausted",'time' => $turn,
-                  'text' => "{$supplyShip} w/ {$ship['fleet']} is exhausted and cannot supply other units until re-supplied."
+                  'text' => "{$supplyShip} w/ {$fleets} is exhausted and cannot supply other units until re-supplied."
                 ];
               }
             }
@@ -266,8 +277,8 @@ foreach ($gameFiles as $empireId => $file) {
     $cost = $unit['cost'];
 
     // system lookup for construction capacity
-    if (!$constructionCapacity[$colonyName])
-      $constructionCapacity[$colonyName] = calculateConstructionCapacity($file, $colonyName);
+    if (!isset($constructionCapacity[$colonyName]))
+      [$constructionCapacity[$colonyName], $constructionMethod] = calculateConstructionCapacity($file, $colonyName);
 
     // Build unit at system or shipyard
     if ($type === "build_unit" || $type === "purchase_civ") {
@@ -288,6 +299,10 @@ foreach ($gameFiles as $empireId => $file) {
       }
 
       $cost = $unit['cost'];
+
+### TODO: If no shipyard or convoy, and if building a non-atmo/non-troop unit, double cost
+      if ($constructionMethod)
+
 
       // Cost check
       $availableFunds = $file->empire["totalIncome"] - $file->calculatePurchaseExpense();
@@ -311,7 +326,7 @@ foreach ($gameFiles as $empireId => $file) {
 
     // Remote Base Construction
     if ($type === "remote_build") {
-      $convoyName = $target;
+      list ($convoyName, $fleetLoc) = explode(' w/ ', $receiver);
       $cost = $unit['cost'];
 
       // Supply check
@@ -475,6 +490,7 @@ foreach ($gameFiles as $empireId => $file) {
 
     // Refits (Convert/Upgrade)
     if ($type === "convert") {
+      $oldUnitName = $reciever;
       $newUnit = $file->getUnitByName($target);
       $newUnitName = $newUnit['ship'];
       $cost = ceil($newUnit['cost'] * 0.25);
@@ -496,8 +512,8 @@ foreach ($gameFiles as $empireId => $file) {
       // Note the unit was converted, so to make the change in the new turn
       if (!isset($file->convertedUnits)) $file->convertedUnits = array();
       $file->convertedUnits[] = [
-          'old' => $oldUnit,
-          'new' => $newType
+          'old' => $oldUnitName,
+          'new' => $newUnitName
       ];
 
       // Document the change
@@ -1102,7 +1118,7 @@ foreach ($gameFiles as $empireId => $file) {
         if (!$convoyLocation) continue;
         // Find the convoy fleet and validate it's currently in an uninhabited system
         $convoyFleet = $file->getFleetByLocation($convoyLocation);
-        if (!isset($convoyFleet)) {
+        if (empty($convoyFleet)) {
           $errors[] = "Colonize failed: convoy at '{$convoyLocation}' not found.";
            continue;
         }
@@ -1110,7 +1126,7 @@ foreach ($gameFiles as $empireId => $file) {
         // Only colonize if target is uninhabited (population == 0 and owner == "")
         if ($targetColony && intval($targetColony['population']) === 0 && empty($targetColony['owner'])) {
           // Dismantle convoy - Mark as destroyed
-          $file->unitStates[] = ["Convoy w/ {$convoyFleet['name']}","Destroyed"];
+          $file->unitStates[] = ["Convoy w/ {$convoyFleet[0]['name']}","Destroyed"];
           // Create new colony entry or set owner/population etc.
           $targetColony['owner'] = $empireName;
           $targetColony['population'] = 1;
@@ -1158,7 +1174,7 @@ foreach ($gameFiles as $empireId => $file) {
 
           $file->events[] = [
             'event'=>"Colonized {$targetColony['name']}", 'time'=>$turn,
-            'text'=>"{$empireName} colonized {$targetColony['name']}. Convoy {$convoyFleet['name']} dismantled."
+            'text'=>"{$empireName} colonized {$targetColony['name']}. Convoy {$convoyFleet[0]['name']} dismantled."
           ];
         } else {
           $errors[] = "Colonize failed: target {$location} is not uninhabited or not found.";
@@ -1589,15 +1605,15 @@ foreach ($gameFiles as &$file) {
     // Verify route continuity
     $isContiguous = false;
     if (count($routeSystems) > 1) {
-      [$path, $count] = $game->findPath($routeSystems[0], $routeSystems[1], true);
+      [$path, $count] = $file->findPath($routeSystems[0], $routeSystems[1], true);
       if ($count == 1) $isContiguous = true;
     } else {
       $isContiguous = true; // set true if only one system on the route
     }    
     if (count($routeSystems) == 3) {
-      [$path, $count] = $game->findPath($routeSystems[0], $routeSystems[2], true);
+      [$path, $count] = $file->findPath($routeSystems[0], $routeSystems[2], true);
       if ($count == 1) $isContiguous = true;
-      [$path, $count] = $game->findPath($routeSystems[1], $routeSystems[2], true);
+      [$path, $count] = $file->findPath($routeSystems[1], $routeSystems[2], true);
       if ($count == 1) $isContiguous = true;
     }
     if (!$isContiguous) continue;
@@ -1607,7 +1623,7 @@ foreach ($gameFiles as &$file) {
       $usedSystems[$sysName] = true;
 
       // Validate ownership and treaties
-      $colony = $game->getColonyByName($sysName);
+      $colony = $file->getColonyByName($sysName);
       // colony is not in list
       if (!$colony) {
         unset($usedSystems[$sysName]); // remove the system from the list of trading systems
@@ -1622,7 +1638,7 @@ foreach ($gameFiles as &$file) {
       // Owned by self is implied
       if ($colony["owner"] !== $empireName) {
         $treatyOK = false;
-        foreach ($game->treaties as $treaty) {
+        foreach ($file->treaties as $treaty) {
           if ($treaty['empire'] === $colony["owner"])
             if (!atLeastPoliticalState($treaty['type'], 'Trade'))
               unset($usedSystems[$sysName]); // remove the system from the list of trading systems
@@ -1680,11 +1696,14 @@ function showErrors(array $errorArray): void
 # Determines the construction capacity of the named colony.
 #   Arguments: $name – colony to check, $file – the local GameData instance
 #   Output: Integer - Total construction capacity in EP
+#           string - One method of construction (shipyard|convoy|colony) in order of preference
 ###
 function calculateConstructionCapacity($file, $colonyName) {
+  $method = ""; // how the unit is constructed
+  // cached value for when this function is repeatedly called
   static $cache = array();
 
-  // Build a unique key; adjust if multiple empires share colony names
+  // Build a unique key
   $empire = $file->empire['empire'];
   $key = "{$empire}:{$colonyName}";
 
@@ -1693,30 +1712,34 @@ function calculateConstructionCapacity($file, $colonyName) {
     return $cache[$key];
 
   $capacity = 0;
-  $colony = $file->getColonyByName($colonyName);
-  if (!$colony) {
-    $cache[$key] = 0;
-    return 0;
-  }
+  $cache[$key] = 0;
 
-  // Base capacity: Population × RAW
-  $capacity += intval($colony['population']) * intval($colony['raw']);
+  $colony = $file->getColonyByName($colonyName);
+  if ($colony) {
+    // Base capacity: Population × RAW / 2
+    $capacity += intval($colony['population']) * intval($colony['raw']) / 2;
+    $method = "colony";
+  }
 
   // Shipyards: each adds 24 EPs
   $unitsAtColony = $file->getUnitsAtLocation($colonyName);
   foreach ($unitsAtColony as $uName) {
     $unit = $file->getUnitByName($uName);
     if (!$unit) continue;
-    if (strtolower($unit['design']) === 'shipyard')
-        $capacity += 24;
+    if (strtolower($unit['design']) === 'shipyard') {
+      $capacity += 24;
+      if (!$method) $method = "shipyard";
+    }
   }
 
-  // Convoys: each adds 10 EP
+  // Convoys: each adds 12 EP
   foreach ($unitsAtColony as $uName) {
     $unit = $file->getUnitByName($uName);
     if (!$unit) continue;
-    if (stripos($unit['notes'], 'Convoy') !== false)
-      $capacity += 10;
+    if (stripos($unit['notes'], 'Convoy') !== false) {
+      $capacity += 12;
+      if (!$method) $method = "shipyard";
+    }
   }
 
   // Store and return

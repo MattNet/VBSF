@@ -26,6 +26,7 @@ Build Game Data
 ***/
 // extractions from data file
 let colonyNames = [];
+let convoyUnits = [];
 let currentFleets = [];
 let currentUnits = [];
 let currentFlights = [];
@@ -161,6 +162,8 @@ Build Orders Lists
       if (found.notes.includes("Carrier")) unitsWithBasing.push(`${unit} w/ ${fleet.name}`);
       // The lists of fighter units
       if (/^(LF|HF|SHF|AB)/.test(found.design)) currentFlights.push(`${unit} w/ ${fleet.name}`);
+      // The lists of units that can carry fighters
+      if (found.notes.includes("Convoy")) convoyUnits.push(`${unit} w/ ${fleet.name}`);
     }
   }
   
@@ -249,7 +252,7 @@ Build Orders Lists
     mothball:      [ currentUnits, [], '', 'Mothball a unit', "pre" ],
     purchase_civ:  [ BuildableCivUnits, colonyNames, 'New fleet name', 'Purchase civilian unit at system', "pre" ],
     purchase_troop:[ buildableGround, colonyNames, 'Quantity', 'Purchase troop at system', "pre" ],
-    remote_build:  [ buildableBases, unitsWithCarry, '', 'Remote build unit', "pre" ],
+    remote_build:  [ buildableBases, convoyUnits, '', 'Remote build unit', "pre" ],
     repair:        [ unitsNeedingRepair, [], '', 'Repair unit', "pre" ],
     scrap:         [ currentUnits, [], '', 'Scrap a unit', "pre" ],
     unmothball:    [ unitsInMothballs, [], '', 'Unmothball a unit', "pre" ],
