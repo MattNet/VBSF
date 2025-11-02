@@ -175,7 +175,7 @@ foreach ($gameFiles as $empireId => $file) {
           $inSupply = true;
           // Exhaustion check
           if($supplyLine[0]['source'] == "fleet") {
-            $roll = rand(1, 6);
+            $roll = rand(1, 10);
             if ($roll <= 5) { // failed the exhaustion roll
               // find a ship to exhaust
               $location = $supplyLine[0]['paths'][0];
@@ -236,7 +236,7 @@ foreach ($gameFiles as $empireId => $file) {
   // Resolve attrition per system
   foreach ($systemCount as $system => $oosUnits) {
     $count = count($oosUnits);
-    $roll = rand(1, 6);
+    $roll = rand(1, 10);
 
     if ($roll <= $count) {
       // One OOS unit suffers attrition — select randomly
