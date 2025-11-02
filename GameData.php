@@ -23,6 +23,12 @@ declare(strict_types=1);
 #   Output: none
 #   Access: public
 
+# buildIndexes(): void
+#   Creates the lookup tables used by the lookup methods of the class
+#   Arguments: None
+#   Output: None
+#   Access Private
+
 # calculateSystemIncome(): int
 #   Calculates income for a colony based on population, RAW, and status notes (Opposition/Rebellion)
 #   Arguments: $name - colony name
@@ -154,13 +160,6 @@ declare(strict_types=1);
 
 # Misc property for reading/writing object to disk
 # string $fileName
-###
-
-###
-# TODO: Convert these methods from "Loop always" to "Loop Once, lookup always"
-# Make a private method that loops through the data once and builds a series of lookup tables. Convert the methods to use the lookup tables.
-# Invoke that private method only once, when there is a first-need for that data.
-# Do not invoke it as a matter-of-course during object construction, because sometimes the object is loaded only for the read/write routines.
 ###
 
 ###
@@ -299,10 +298,129 @@ class GameData
   }
 
 ###
+# Creates the lookup tables used by the lookup methods of the class
+#   Arguments: None
+#   Output: None
+# $this->index = array();
+#   ['coloniesByName'][$name]		= index of $this->colonies
+#   ['fleetsByLocation'][$location]	= array of indices of $this->fleets
+#   ['fleetsByName'][$name]		= index of $this->fleets
+#   ['fleetsHasAbility'][$name]		= array of ability traits by fleet name
+#   ['locationsHasAbility'][$name]	= array of $this->unitList[]['notes'] elements
+#   ['unitsAtLocation'][$location]	= array of $this->unitList[]['name'] elements
+#   ['unitsByName'][$name]		= index of $this->unitList
+###
+  private function buildIndexes(): void
+  {
+    $this->index = [];
+
+  # Colonies By Name
+    $this->index['coloniesByName'] = [];
+    foreach ($this->colonies as $i => $c) {
+      $this->index['coloniesByName'][$c['name']] = $i;
+    }
+
+  # Fleets By Location
+  # Fleets By Name
+    $this->index['fleetsByLocation'] = [];
+    $this->index['fleetsByName'] = [];
+    foreach ($this->fleets as $key => $f) {
+      $this->index['fleetsByLocation'][$f['location']][] = $key;
+      $this->index['fleetsByName'][$f['name']] = $key;
+    }
+  # Units By Name
+    $this->index['unitsByName'] = [];
+    foreach ($this->unitList as $key=>$u) {
+      $this->index['unitsByName'][$u['ship']] = $key;
+    }
+  # Fleet Has Ability
+    $this->index['fleetsHasAbility'] = [];
+    foreach ($this->fleets as $f) {
+      $traits = [];
+      foreach ($f['units'] as $u) {
+        [$qty, $name]= $this->parseUnitQuantity($u);
+        $index = $this->index['unitsByName'][$name];
+        $unitData = $this->unitList[$index];
+        if (!empty($unitData['notes'])) {
+          // Split comma-separated notes, trim spaces
+          $notes = array_map('trim', explode(',', $unitData['notes']));
+
+          // Strip any "(N)" suffix where N is a number
+          $notes = array_map(function ($note) {
+            return preg_replace('/\s*\(\d+\)$/', '', $note);
+          }, $notes);
+
+          $traits = array_merge($traits, $notes);
+        }
+      }
+      // Store unique traits per fleet
+      $this->index['fleetsHasAbility'][$f['name']] = array_values(array_unique($traits));
+    }
+  # Location Has Ability
+    $this->index['locationsHasAbility'] = [];
+    foreach ($this->colonies as $c) {
+      $traits = [];
+      foreach ($c['fixed'] as $u) {
+        [$qty, $name]= $this->parseUnitQuantity($u);
+        $index = $this->index['unitsByName'][$name];
+        $unitData = $this->unitList[$index];
+        if (!empty($unitData['notes'])) {
+          // Split comma-separated notes, trim spaces
+          $notes = array_map('trim', explode(',', $unitData['notes']));
+
+          // Strip any "(N)" suffix where N is a number
+          $notes = array_map(function ($note) {
+            return preg_replace('/\s*\(\d+\)$/', '', $note);
+          }, $notes);
+
+          $traits = array_merge($traits, $notes);
+        }
+      }
+      $fleetTraits = [];
+      if (!isset($this->index['fleetsByLocation'][$c['name']])) $this->index['fleetsByLocation'][$c['name']] = [];
+      foreach ($this->index['fleetsByLocation'][$c['name']] as $fleetIndex){
+        $f = $this->fleets[$fleetIndex];
+        $fleetTraits = array_merge($this->index['fleetsHasAbility'][$f['name']], $fleetTraits);
+      }
+      // Store unique traits per fleet
+      $this->index['locationsHasAbility'][$c['name']] = array_values(array_unique(array_merge($traits, $fleetTraits)));
+    }
+  # Units At Location
+    $this->index['unitsAtLocation'] = [];
+    foreach ($this->colonies as $c) {
+      if (!isset($this->index['unitsAtLocation'][$c['name']])) $this->index['unitsAtLocation'][$c['name']] = [];
+      foreach ($c['fixed'] as $u) {
+        [$qty, $name]= $this->parseUnitQuantity($u);
+        $this->index['unitsAtLocation'][$c['name']] = array_merge($this->index['unitsAtLocation'][$c['name']], array_fill(0, $qty, $name));
+      }
+    }
+    foreach ($this->fleets as $f) {
+      if (!isset($this->index['unitsAtLocation'][$f['location']])) $this->index['unitsAtLocation'][$f['location']] = [];
+      foreach ($f['units'] as $u) {
+        [$qty, $name]= $this->parseUnitQuantity($u);
+        $this->index['unitsAtLocation'][$f['location']] = array_merge($this->index['unitsAtLocation'][$f['location']], array_fill(0, $qty, $name));
+      }
+    }
+    // Note that unitsAtLocation() is counting unitsInMothballs. Is it supposed to?
+    // Examine where it is used. Determine if those steps care about mothballs
+    foreach ($this->unitsInMothballs as $f) {
+      if (!isset($this->index['unitsAtLocation'][$f['location']])) $this->index['unitsAtLocation'][$f['location']] = [];
+      foreach ($f['units'] as $u) {
+        [$qty, $name]= $this->parseUnitQuantity($u);
+        $this->index['unitsAtLocation'][$f['location']] = array_merge($this->index['unitsAtLocation'][$f['location']], array_fill(0, $qty, $name));
+      }
+    }
+
+  }
+
+###
 #   Calculates income for a colony based on population, RAW, and status notes (Opposition/Rebellion)
 #   Arguments: $name - colony name
 #   Output: integer
 ###
+# No Blockade check here
+# This output value may affect other rules outside of being blockaded.
+# In addition, this allows us to fund in-system items, despite the blockade
   public function calculateSystemIncome( $name ): int
   {
     $colony = $this->getColonyByName($name);
@@ -320,10 +438,6 @@ class GameData
       if (strpos($colony['notes'] ?? '', 'Martial Law') === false)
         $output = intdiv($output, 2);
     }
-    // No Blockade check here
-    // This value may affect other rules outside of being blockaded.
-    // In addition, this allows us to fund in-system items, despite the blockade
-
     return $output;
   }
 
@@ -332,6 +446,9 @@ class GameData
 #   Arguments: None
 #   Output: integer
 ###
+# No lookup table for this. It's value changes as we process the construction 
+# phase. This allows us to purchase everything up to a point where the player
+# runs out of funds.
   public function calculatePurchaseExpense(): int
   {
     $output = 0;
@@ -367,25 +484,10 @@ class GameData
 ###
   public function getUnitsAtLocation(string $location): array
   {
-    $entries = [];
-    $units = [];
-    foreach ($this->colonies as $colony) {
-      if ($colony['name'] === $location)
-        $entries = array_merge($entries, $colony['fixed']);
-    }
-    foreach ($this->fleets as $fleet) {
-      if ($fleet['location'] === $location)
-        $entries = array_merge($entries, $fleet['units']);
-    }
-    foreach ($this->unitsInMothballs as $fleet) {
-      if ($fleet['location'] === $location)
-        $entries = array_merge($entries, $fleet['units']);
-    }
-    foreach ($entries as $row) {
-      [$qty, $name]= $this->parseUnitQuantity($row);
-      $units = array_merge($units, array_fill(0, $qty, $name));
-    }
-    return $units;
+    if (! isset($this->index) || !isset($this->index['unitsAtLocation']))
+      $this->buildIndexes();
+    $i = $this->index['unitsAtLocation'][$location] ?? null;
+    return $i;
   }
 
 ###
@@ -395,10 +497,10 @@ class GameData
 ###
   public function getFleetByName(string $name): ?array
   {
-    foreach ($this->fleets as $fleet) {
-      if ($fleet['name'] === $name) return $fleet;
-    }
-    return null;
+    if (! isset($this->index) || !isset($this->index['fleetsByName']))
+      $this->buildIndexes();
+    $i = $this->index['fleetsByName'][$name] ?? null;
+    return $i === null ? null : $this->fleets[$i];
   }
 
 # getFleetByLocation(string $location): ?array
@@ -406,16 +508,20 @@ class GameData
 #   Arguments: $name – colony name
 #   Output: fleet array or null if not found
 #   Access: public
-public function getFleetByLocation(string $location): ?array
-{
-  $fleetCollection = [];
-  // Search for a fleet matching the given location
-  foreach ($this->fleets as $fleet) {
-    if (isset($fleet['location']) && strcasecmp($fleet['location'], $location) === 0)
-      $fleetCollection[] = $fleet;
+  public function getFleetByLocation(string $location): ?array
+  {
+    // $this->index['fleetsByLocation'][] is an array of indices to $this->fleets
+
+    if (! isset($this->index) || !isset($this->index['fleetsByLocation']))
+      $this->buildIndexes();
+    $i = $this->index['fleetsByLocation'][$location] ?? null;
+    if ($i == null) return null;
+    $fleetOut = [];
+    foreach ($i as $f) {
+      $fleetOut[] = $this->fleets[$f];
+    }
+    return $fleetOut;
   }
-  return $fleetCollection;
-}
 
 ###
 #   Returns a colony array by its name.
@@ -424,10 +530,10 @@ public function getFleetByLocation(string $location): ?array
 ###
   public function getColonyByName(string $name): ?array
   {
-    foreach ($this->colonies as $colony) {
-      if ($colony['name'] === $name) return $colony;
-    }
-    return null;
+    if (! isset($this->index) || !isset($this->index['coloniesByName']))
+      $this->buildIndexes();
+    $i = $this->index['coloniesByName'][$name] ?? null;
+    return $i === null ? null : $this->colonies[$i];
   }
 
 ###
@@ -437,10 +543,10 @@ public function getFleetByLocation(string $location): ?array
 ###
   public function getUnitByName(string $ship): ?array
   {
-    foreach ($this->unitList as $unit) {
-      if ($unit['ship'] === $ship) return $unit;
-    }
-    return null;
+    if (! isset($this->index) || !isset($this->index['unitsByName']))
+      $this->buildIndexes();
+    $i = $this->index['unitsByName'][$ship] ?? null;
+    return $i === null ? null : $this->unitList[$i];
   }
 
 ###
@@ -483,18 +589,15 @@ public function getFleetByLocation(string $location): ?array
 ###
 #   Determines if a fleet has a unit with a certain ability. e.g. is a scout fleet?
 #   Arguments: $fleet – fleet to check, $ability – the ability keyword to check
-#   Output: string - The unit name with this ability. Empty if none
+#   Output: boolean - Yes/no answer
 ###
-  public function fleetHasAbility(string $fleet, string $ability): string
+  public function fleetHasAbility(string $fleet, string $ability): bool
   {
-    $fleetObj = $this->getFleetbyName($fleet); // get fleet
-    foreach ($fleetObj["units"] as $unit) { // get each unit of the fleet
-      $unitData = $this->getUnitByName($unit); // get the named unit
-      if (empty($unitData["notes"])) continue;
-      if (str_contains(strtolower($unitData["notes"]), strtolower($ability))) // if the named unit has the ability, end here
-        return $unit;
-    }
-    return ''; // we didn't find the ability in the fleet
+    if (! isset($this->index) || !isset($this->index['fleetsHasAbility']))
+      $this->buildIndexes();
+    if (array_search($ability, $this->index['fleetsHasAbility'][$fleet]) !== false)
+     return true;
+    return false;
   }
 
 ###
@@ -521,6 +624,13 @@ public function getFleetByLocation(string $location): ?array
 ###
   public function locationHasAbility(string $location, string $ability): string
   {
+/*
+    if (! isset($this->index) || !isset($this->index['fleetsHasAbility']))
+      $this->buildIndexes();
+    if (array_search($ability, $this->index['fleetsHasAbility'][$name]) !== false)
+     return true;
+    return false;
+*/
     $units = $this->getUnitsAtLocation($location); // get units
     if (empty($units)) return '';
     foreach ($units as $u) { // get each unit of the fleet

@@ -27,6 +27,11 @@ $gameFiles = array();
 $targetGame = "";
 $targetTurn = 0;
 
+// lookup table of the various fleets. Used for blockade checks and Morale
+// Format is $EnemyFleetLookup[location][empire name][array of unit designations]
+// - Where 'empire name' is at GameData->empire['empire']
+// - Where 'unit designation' is at GameData->unitList[]['ship']
+$EnemyFleetLookup = [];
 ###
 # CLI argument parsing
 ###
@@ -80,7 +85,19 @@ foreach ($gameFiles as $empireId => $file) {
   $file->events = $file->events ?? [];
   echo "Searching file for empire '{$empireName}' for units.\n";
 # Build up locations of [enemy] units for blockade tests
-// create lookup tables
+  $empireName = $file->empire['empire'];
+  foreach ($file->fleets as $f) {
+    $location = $f['location'];
+    if (!isset($EnemyFleetLookup[$location])) $EnemyFleetLookup[$location] = [];
+    foreach ($f['units'] as $u) {
+      [$qty, $name]= $file->parseUnitQuantity($u);
+
+      if (!isset($EnemyFleetLookup[$location][$empireName]))
+        $EnemyFleetLookup[$location][$empireName] = array_fill(0, $qty, $name);
+      else
+        $EnemyFleetLookup[$location][$empireName] = array_merge($EnemyFleetLookup[$location][$empireName], array_fill(0, $qty, $name));
+    }
+  }
 
 # Build up intel reports of locations and units that can be seen
 // format yet undecided.
@@ -164,8 +181,16 @@ foreach ($gameFiles as $empireId => $file) {
               $location = $supplyLine[0]['paths'][0];
               $fleetList = $file->getFleetByLocation($location);
               foreach($fleetList as $fleets) {
-                $supplyShip = $file->fleetHasAbility($fleets, 'Supply');
-                if ($supplyShip === false ) continue; // skip non-supply ships
+                if ($file->fleetHasAbility($fleets, 'Supply') === false ) continue; // skip non-supply ships
+                // get the first unit with the 'Supply' trait
+                foreach ($fleetObj["units"] as $u) { // get each unit of the fleet
+                  $unitData = $this->getUnitByName($u); // get the named unit
+                  if (empty($unitData["notes"])) continue;
+                  if (str_contains(strtolower($unitData["notes"]), 'supply')) {
+                    $supplyShip = $u;
+                    break;
+                  }
+                }
                 if (in_array(array("{$supplyShip} w/ {$fleets}",'Exhausted'), $file->unitStates))
                   continue;
                 $file->unitStates[] = ["{$supplyShip} w/ {$fleets}",'Exhausted'];
@@ -300,9 +325,14 @@ foreach ($gameFiles as $empireId => $file) {
 
       $cost = $unit['cost'];
 
-### TODO: If no shipyard or convoy, and if building a non-atmo/non-troop unit, double cost
-      if ($constructionMethod)
+      // If no shipyard or convoy, and unit is not Atmospheric or Troop, double the cost
+      if ($constructionMethod === 'colony') {
+        $notes = strtolower($unit['notes'] ?? '');
+        $isAtmospheric = strpos($notes, 'atmospheric') !== false;
+        $isTroop = strpos($unit['design'], 'Ground Unit') === 0;
 
+        if (!$isAtmospheric && !$isTroop) $cost *= 2;
+      }
 
       // Cost check
       $availableFunds = $file->empire["totalIncome"] - $file->calculatePurchaseExpense();
@@ -1014,10 +1044,12 @@ foreach ($gameFiles as $empireId => $file) {
 
       // decide whether to roll a Morale Check:
       // Morale Checks are required if the system is in Opposition OR if any enemy units are currently present.
-### TODO
-//      $enemyPresent = checkEnemyUnitsInSystem($file, $colony['name']); // implement per CM knowledge of fleets
-//      $requiresMoraleCheck = (!$inGoodOrder) || $enemyPresent;
-      $requiresMoraleCheck = (!$inGoodOrder && $colony['owner'] === $file->empire['empire']);
+      $enemyPresent = false; // is the enemy present?
+      foreach ($EnemyFleetLookup[$location] as $empireName => $empireUnits ) {
+        // true if any enemy present has the treaty state is hostilities or war
+        if (!$file->atLeastPoliticalState($empireName,'Neutral')) $enemyPresent = true;
+      }
+      $requiresMoraleCheck = (!$inGoodOrder || $enemyPresent) && $colony['owner'] === $file->empire['empire'];
 
       if ($requiresMoraleCheck) {
         // Compose modifiers
@@ -1268,6 +1300,9 @@ foreach ($gameFiles as &$file) {
   }
 
 ### TODO: Perform ownership transfers (e.g. "gifting")
+// put unit in an array external to the present foreach($file)
+// remove the unit as if destroyed
+// After writing these files, open the files again so that we can put the gifted unit there.
 
 # Perform conversions per orders
   if (!isset($file->convertedUnits)) $file->convertedUnits = array();
