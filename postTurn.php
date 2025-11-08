@@ -44,35 +44,12 @@ if (!isset($argv[2])) {
 $targetGame = trim($argv[1]);
 $targetTurn = (int)$argv[2];
 
+
 ###
 # File retrieval:
-# Scan a directory for data files, attempt to extract the 'game' object and 'turn'
-# number from each file, and collect files that match a given game name and turn.
 # Data files are in $gameFiles[]
 ###
-// Validate search dir
-if (!is_dir($searchDir)) {
-  $errors[] = "Error: search directory '{$searchDir}' does not exist or is not a directory.\n";
-  showErrors($errors);
-}
-$dir = scandir($searchDir);
-// Examine each file. Keep the ones that match the criteria
-foreach ($dir as $file) {
-  if (strpos($file, '.') === 0) continue; // skip hidden files
-  if (strpos($file, '.js', -3) === false) continue; // file must end in '.js'
-
-  $fileCheck = new GameData($searchDir.$file);
-  if ($fileCheck->game["game"] != $targetGame) continue;
-  if ($fileCheck->game["turn"] != $targetTurn) continue;
-
-  $gameFiles[] = $fileCheck; // Keep file. It passed our tests
-  echo "Using gamefile '{$file}' for empire '{$fileCheck->empire["empire"]}'\n";
-  unset($fileCheck); // unload the game object if un-needed
-}
-if (empty($gameFiles)) {
-  $errors[] = "No game files found.\n";
-  showErrors($errors);
-}
+$gameFiles = fileRetrieval ($searchDir,$targetGame,$targetTurn);
 
 #####
 #
@@ -84,6 +61,7 @@ foreach ($gameFiles as $empireId => $file) {
   $turn = intval($file->game['turn'] ?? 0);
   $file->events = $file->events ?? [];
   echo "Searching file for empire '{$empireName}' for units.\n";
+
 # Build up locations of [enemy] units for blockade tests
   $empireName = $file->empire['empire'];
   foreach ($file->fleets as $f) {
@@ -175,7 +153,7 @@ foreach ($gameFiles as $empireId => $file) {
           $inSupply = true;
           // Exhaustion check
           if($supplyLine[0]['source'] == "fleet") {
-            $roll = rand(1, 10);
+            $roll = rollDie();
             if ($roll <= 5) { // failed the exhaustion roll
               // find a ship to exhaust
               $location = $supplyLine[0]['paths'][0];
@@ -184,9 +162,7 @@ foreach ($gameFiles as $empireId => $file) {
                 if ($file->fleetHasAbility($fleets, 'Supply') === false ) continue; // skip non-supply ships
                 // get the first unit with the 'Supply' trait
                 foreach ($fleetObj["units"] as $u) { // get each unit of the fleet
-                  $unitData = $this->getUnitByName($u); // get the named unit
-                  if (empty($unitData["notes"])) continue;
-                  if (str_contains(strtolower($unitData["notes"]), 'supply')) {
+                  if ($file->checkUnitNotes($u,'supply')) {
                     $supplyShip = $u;
                     break;
                   }
@@ -236,7 +212,7 @@ foreach ($gameFiles as $empireId => $file) {
   // Resolve attrition per system
   foreach ($systemCount as $system => $oosUnits) {
     $count = count($oosUnits);
-    $roll = rand(1, 10);
+    $roll = rollDie();
 
     if ($roll <= $count) {
       // One OOS unit suffers attrition — select randomly
@@ -306,7 +282,7 @@ foreach ($gameFiles as $empireId => $file) {
       [$constructionCapacity[$colonyName], $constructionMethod] = calculateConstructionCapacity($file, $colonyName);
 
     // Build unit at system or shipyard
-    if ($type === "build_unit" || $type === "purchase_civ") {
+    if ($type === "build_unit") {
 
       if (!$system || !$unit) {
         $errors[] = "Invalid build order: '{$unitName}' at '{$colonyName}'";
@@ -328,7 +304,7 @@ foreach ($gameFiles as $empireId => $file) {
       // If no shipyard or convoy, and unit is not Atmospheric or Troop, double the cost
       if ($constructionMethod === 'colony') {
         $notes = strtolower($unit['notes'] ?? '');
-        $isAtmospheric = strpos($notes, 'atmospheric') !== false;
+        $isAtmospheric = $file->checkUnitNotes($unit['ship'],'atmospheric') !== false;
         $isTroop = strpos($unit['design'], 'Ground Unit') === 0;
 
         if (!$isAtmospheric && !$isTroop) $cost *= 2;
@@ -354,17 +330,78 @@ foreach ($gameFiles as $empireId => $file) {
       continue;
     }
 
+    // Build convoy units
+    if ($type === "purchase_civ") {
+      if (!$system || !$unit) {
+        $errors[] = "Invalid build order: '{$unitName}' at '{$colonyName}'";
+        continue;
+      }
+      // skip if not buying a convoy
+      if (strtolower($unit['design']) !== "convoy") continue;
+
+      // Check system control and condition
+      if ($system['owner'] !== $file->empire['empire']) {
+        $errors[] = "{$colonyName} is not controlled by {$file->empire['empire']}; cannot purchase Convoys there.";
+        continue;
+      }
+      if ($file->checkColonyNotes($colonyName, 'rebellion') !== false) {
+        $errors[] = "{$colonyName} is in Rebellion; Convoys cannot be purchased.";
+        continue;
+      }
+      if ($file->checkColonyNotes($colonyName, 'opposition') !== false) {
+        $errors[] = "{$colonyName} is in Opposition; Convoys cannot be purchased.";
+        continue;
+      }
+
+      // Blockade or supply checks
+      $supplyLine = $file->traceSupplyLines($colonyName);
+      if ($file->checkBlockaded($colonyName)) {
+        $errors[] = "{$colonyName} is blockaded and cannot build {$unitName}.";
+        continue;
+      } elseif (count($supplyLine['paths']) > 0) {
+        $errors[] = "{$colonyName} attempted to build {$unitName}. Is out of supply.";
+        continue;
+      }
+
+      $cost = $unit['cost'];
+
+      // Cost check
+      $availableFunds = $file->empire["totalIncome"] - $file->calculatePurchaseExpense();
+      if ($availableFunds - $cost < 0) {
+        $errors[] = "{$colonyName} attempted to purchase {$unitName}. "
+                    . "Could not afford: Cost {$cost}, had {$availableFunds}.";
+        continue;
+      }
+      // Capacity check
+      // only one purchase_civ per colony
+      if (!isset($file->purchaseCiv)) $file->purchaseCiv = [];
+      if (($file->purchaseCiv[$colonyName] ?? false) == true) {
+        $errors[] = "{$colonyName} attempted to build {$unitName}. "
+                    . "Did not have the construction capacity: Cost {$cost}, had {$constructionCapacity[$colonyName]}.";
+        continue;
+      }
+
+      // Document the change
+      $file->purchases[] = ["cost" => $cost, "name" => $unitName];
+      $file->purchaseCiv[$colonyName] = true;
+      continue;
+    }
+
     // Remote Base Construction
     if ($type === "remote_build") {
       list ($convoyName, $fleetLoc) = explode(' w/ ', $receiver);
       $cost = $unit['cost'];
 
-      // Supply check
+      // Blockade or supply checks
       $supplyLine = $file->traceSupplyLines($fleetLoc);
-      if (empty($supplyLine)) {
+      if ($file->checkBlockaded($fleetLoc)) {
+        $errors[] = "{$convoyName} is blockaded and cannot build {$unitName}.";
+        continue;
+      } elseif (count($supplyLine['paths']) > 0) {
         $errors[] = "Remote {$convoyName} attempted to build {$unitName}. Is out of supply.";
         continue;
       }
+
       // Cost check
       $availableFunds = $file->empire["totalIncome"] - $file->calculatePurchaseExpense();
       if ($availableFunds - $cost < 0) {
@@ -388,61 +425,11 @@ foreach ($gameFiles as $empireId => $file) {
     // Partial Construction
 # Not Implemented
 
-    // Convoy Purchase
-    if ($type === "purchase_civ") {
-      // skip if not buying a convoy
-      if (strtolower($unit['design']) !== "convoy") continue;
-
-      $limit = 1;
-      $cost = 20;
-
-      // Check system control and condition
-      if ($system['owner'] !== $file->empire["name"]) {
-        $errors[] = "{$colonyName} is not controlled by {$file->empire["name"]}; cannot purchase Convoys there.";
-        continue;
-      }
-      if (str_contains(strtolower($system['notes']), 'rebellion') !== false) {
-        $errors[] = "{$colonyName} is in Rebellion; Convoys cannot be purchased.";
-        continue;
-      }
-      if (str_contains(strtolower($system['notes']), 'opposition') !== false) {
-        $errors[] = "{$colonyName} is in Opposition; Convoys cannot be purchased.";
-        continue;
-      }
-
-      // Check for Supply Source: Pop≥5 and Good Order or has Supply Depot
-      $isGoodOrder = ($system['morale'] >= ($system['population'] / 2));
-      $hasDepot = $file->locationHasAbility($colonyName, "Supply Depot");
-      $isSupplySource = ($system['population'] >= 5 && $isGoodOrder) || !empty($hasDepot);
-
-      if (!$isSupplySource) {
-        $errors[] = "{$colonyName} is not a valid supply source; cannot requisition Convoys here.";
-        continue;
-      }
-
-      // Purchase limit check
-      $existing = $file->countPurchases($colonyName, "convoy");
-      if ($existing >= $limit) {
-        $errors[] = "{$colonyName} exceeded Convoy purchase limit ({$limit} per turn).";
-        continue;
-      }
-      // Cost check
-      $availableFunds = $file->empire["totalIncome"] - $file->calculatePurchaseExpense();
-      if ($availableFunds - $cost < 0) {
-        $errors[] = "Remote {$convoyName} attempted to build {$unitName}. "
-                    . "Could not afford: Cost {$cost}, had {$availableFunds}.";
-        continue;
-      }
-
-      // Document the change
-      $file->purchases[] = ["cost" => $cost, "name" => $unitName];
-      continue;
-    }
     // Troop Purchase
     if ($type === "purchase_troop") {
       $cost = $unit['cost'];
-      if (str_contains(strtolower($system['notes']), 'opposition') !== false) $cost *= 2;
-      if (str_contains(strtolower($system['notes']), 'rebellion') !== false) {
+      if ($file->checkColonyNotes($colonyName, 'opposition') !== false) $cost *= 2;
+      if ($file->checkColonyNotes($colonyName, 'rebellion') !== false) {
         $errors[] = "{$colonyName} is in rebellion; cannot raise troops.";
         continue;
       }
@@ -471,12 +458,9 @@ foreach ($gameFiles as $empireId => $file) {
     if ($type === "repair") {
       // Determine the location of the unit
       // Find the fleet this unit belongs to
-      foreach ($file->unitsNeedingRepair as $entry) {
-        if (str_starts_with($entry, $unitName . " w/ ")) {
-          $fleetName = trim(substr($entry, strlen($unitName) + 4));
-          break;
-        }
-      }
+      $unitStateKey = isInState('unitsNeedingRepair', $unitName, '');
+      if ($unitStateKey !== false)
+        $fleetName = trim(substr($this->unitsNeedingRepair[$unitStateKey], strlen($unitName) + 4));
       if (!$fleetName) {
         $errors[] = "{$colonyName} attempted to repair {$unitName}. "
                     . "Could not find the repair entry of {$unitName}.";
@@ -729,7 +713,7 @@ foreach ($gameFiles as $empireId => $file) {
           $targetColony['capacity'] = $newCap;
 
           // roll 1d10 and on 8+ RAW increases by 1
-          $roll = rand(1,10);
+          $roll = $file->rollDie();
           if ($roll >= 8) {
             $targetColony['raw'] = max(1, intval($targetColony['raw']) + 1);
             $file->events[] = ["event"=>'System Improvement', "time"=>$turn,
@@ -1037,7 +1021,7 @@ foreach ($gameFiles as $empireId => $file) {
       if ($inGoodOrder) {
         // remove 'Opposition' string if present
         $colony['notes'] = str_replace('Opposition','', $colony['notes'] ?? '');
-      } else if (strpos($colony['notes'] ?? '', 'Opposition') === false) {
+      } else if ($file->checkColonyNotes($colony['name'], 'Opposition') === false) {
         // ensure Opposition note present
         $colony['notes'] .= (strlen($colony['notes']) > 2 ? ', ': '') . 'Opposition';
       }
@@ -1069,18 +1053,18 @@ foreach ($gameFiles as $empireId => $file) {
           }
         if ($troopCount >= $colony['population']) $mod += 1;
         // -1 Orbital Bombardment this turn? (need to check per-turn flags)
-        if (strpos($colony['notes'], 'Bombarded') !== false) $mod -= 1;
+        if ($file->checkColonyNotes($colony['name'], 'Bombarded') !== false) $mod -= 1;
         // -1 Economic Disruptions? (if flagged)
-        if (strpos($colony['notes'], 'Economic Disruptions') !== false) $mod -= 1;
+        if ($file->checkColonyNotes($colony['name'], 'Economic Disruptions') !== false) $mod -= 1;
         // -1 System Blockaded
         if (isset($colony['notes']) && $file->checkBlockaded($colony["name"])) $mod -= 1;
         // -1 Martial Law
-        if (isset($colony['notes']) && strpos($colony['notes'],'Martial Law') !== false) $mod -= 1;
+        if ($file->checkColonyNotes($colony['name'], 'Martial Law') !== false) $mod -= 1;
         // Empire trait modifiers (Steadfast, Quarrelsome)
         # Un-implemented
 
         // Roll d10 and look up Morale Check Table
-        $roll = rand(1,10);
+        $roll = $file->rollDie();
         $rollTotal = $roll + $mod;
         $oldMorale = $colony['morale'];
         // returns -2,-1,0,1,2 per VBAM table & modifiers
@@ -1098,7 +1082,7 @@ foreach ($gameFiles as $empireId => $file) {
         if ($morale >= ceil($pop / 2)) {
           // remove 'Opposition' string if present
           $colony['notes'] = str_replace('Opposition','', $colony['notes'] ?? '');
-        } else if (strpos($colony['notes'] ?? '', 'Opposition') === false) {
+        } else if ($file->checkColonyNotes($colony['name'], 'Opposition') === false) {
           // ensure Opposition note present
           $colony['notes'] .= (strlen($colony['notes']) > 2 ? ', ': '') . 'Opposition';
         }
@@ -1117,16 +1101,15 @@ foreach ($gameFiles as $empireId => $file) {
           // Do Rebellion check
           $mod = 0;
           // martial law makes rebellion more likely. VBAM notes: Martial Law gives -1 to morale checks and rebellion rolls.
-          if (strpos($colony['notes'] ?? '', 'Martial Law') !== false) $mod -= 1;
           // roll d10: 1-3 => rebellion
-          $roll = rand(1,10);
+          $roll = rollDie();
           $rollTotal = $roll + $mod;
           $rebellionOccurs = ($rollTotal <= 3);
           if ($rebellionOccurs) {
             // Place rebellion: add "Rebellion" to notes and spawn Rebel troops (example: 1d10 EP of raider units or fixed troops)
             $colony['notes'] = (strlen($colony['notes']) > 2 ? ', ': '') . ' Rebellion';
             // Example: spawn Raiders worth 3d10 EP (VBAM random events used similar values). Adapt per 4.10.5 rules.
-            $reRoll = rand(1,10) + rand(1,10) + rand(1,10); // 3d10 EP -> convert to units via CM rules
+            $reRoll = rollDie() + rollDie() + rollDie(); // 3d10 EP -> convert to units via CM rules
             $file->events[] = ['event'=>"Rebellion in {$colony['name']}", 'time'=>$turn,
                    'text'=>"{$colony['name']}: Rebellion occurred (roll {$roll} + mod {$mod} = {$rollTotal}). " .
                            "Rebel force magnitude ~{$reRoll} EP (CM convert to units)."];
@@ -1369,8 +1352,8 @@ foreach ($gameFiles as &$file) {
     $repairFound = false;
 
     // remove the repaired unit from the repair array
-    $key = array_search("{$unit} w/ {$location}", $file->unitsNeedingRepair, true);
-    if ($key === false) {
+    $key = isInState('unitsNeedingRepair', $unit, $location);
+    if ($key !== false) {
       $errors[] = "Attempted to repair unit '{$unit} w/ {$location}' but could not find in repair array";
       continue;
     }
@@ -1747,12 +1730,12 @@ function calculateConstructionCapacity($file, $colonyName) {
     return $cache[$key];
 
   $capacity = 0;
-  $cache[$key] = 0;
+  $cache[$key] = [];
 
   $colony = $file->getColonyByName($colonyName);
   if ($colony) {
     // Base capacity: Population × RAW / 2
-    $capacity += intval($colony['population']) * intval($colony['raw']) / 2;
+    $capacity += ceil($colony['population'] * $colony['raw'] / 2);
     $method = "colony";
   }
 
@@ -1762,6 +1745,8 @@ function calculateConstructionCapacity($file, $colonyName) {
     $unit = $file->getUnitByName($uName);
     if (!$unit) continue;
     if (strtolower($unit['design']) === 'shipyard') {
+      $stateKey = isInState('unitStates', $uName, $colonyName);
+      if ($stateKey !== false && $this->unitStates[$stateKey][1] == 'Exhausted') continue;
       $capacity += 24;
       if (!$method) $method = "shipyard";
     }
@@ -1772,14 +1757,49 @@ function calculateConstructionCapacity($file, $colonyName) {
     $unit = $file->getUnitByName($uName);
     if (!$unit) continue;
     if (stripos($unit['notes'], 'Convoy') !== false) {
+      $stateKey = isInState('unitStates', $uName, $colonyName);
+      if ($stateKey !== false && $this->unitStates[$stateKey][1] == 'Exhausted') continue;
       $capacity += 12;
-      if (!$method) $method = "shipyard";
+      if (!$method) $method = "convoy";
     }
   }
 
   // Store and return
-  $cache[$key] = $capacity;
-  return $capacity;
+  $cache[$key] = [$capacity, $method];
+  return [$capacity, $method];
 }
 
+
+###
+# File retrieval:
+# Scan a directory for data files, attempt to extract the 'game' object and 'turn'
+# number from each file, and collect files that match a given game name and turn.
+###
+function fileRetrieval (string $directory, string $game, int $turn) {
+  global $errors;
+  // Validate search dir
+  if (!is_dir($directory)) {
+    $errors[] = "Error: search directory '{$directory}' does not exist or is not a directory.\n";
+    showErrors($errors);
+  }
+  $dir = scandir($directory);
+  // Examine each file. Keep the ones that match the criteria
+  foreach ($dir as $file) {
+    if (strpos($file, '.') === 0) continue; // skip hidden files
+    if (pathinfo($file, PATHINFO_EXTENSION) !== "js") continue; // file must end in '.js'
+
+    $fileCheck = new GameData($directory.$file);
+    if ($fileCheck->game["game"] != $game) continue;
+    if ($fileCheck->game["turn"] != $turn) continue;
+
+    $fileList[] = $fileCheck; // Keep file. It passed our tests
+    echo "Using gamefile '{$file}' for empire '{$fileCheck->empire["empire"]}'\n";
+    unset($fileCheck); // unload the game object if un-needed
+  }
+  if (empty($fileList)) {
+    $errors[] = "No game files found.\n";
+    showErrors($errors);
+  }
+  return $fileList;
+}
 ?>

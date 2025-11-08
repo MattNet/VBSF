@@ -47,10 +47,23 @@ declare(strict_types=1);
 #   Output: boolean yes/no
 #   Access: public
 
+# checkColonyNotes(string $colonyName, string $note): bool
+#   Determines if the named colony has the given note
+#   Arguments: $name – colony name
+#              $note - the note to search for
+#   Output: boolean yes/no
+#   Access: public
+
+# checkUnitNotes(string $unitName, string $note): bool
+#   Determines if the named colony has the given note
+#   Arguments: $name – colony name
+#              $note - the note to search for
+#   Output: boolean yes/no
+
 # getUnitsAtLocation(string $location): array
 #   Returns all units present at a given location, including colonies, fleets, and mothballs.
 #   Arguments: $location – name of colony or sector
-#   Output: array of unit strings. Multiple unit strings if there is more than one quantity
+#   Output: array of unit strings. Multiple unit strings if there is more than one quantity. Unit strings are the same as $this->unitList[]['ship']
 #   Access: public
 
 # getFleetByName(string $name): ?array
@@ -60,7 +73,7 @@ declare(strict_types=1);
 #   Access: public
 
 # getFleetByLocation(string $location): ?array
-#   Returns the first fleet found in the fleet array by its location.
+#   Returns all fleets found in the fleet array by its location.
 #   Arguments: $name – colony name
 #   Output: fleet array or null if not found
 #   Access: public
@@ -137,6 +150,21 @@ declare(strict_types=1);
 #   Output: array [paths:array, source:string] - A collection of paths that satisfy supply. Source is 'colony' or 'supply ship'
 #   Access: public
 
+# rollDie(): int
+#   Rolls a single D10 die
+#   Arguments: None
+#   Output: Integer - A randome number from 1 to 10
+#   Access: public
+
+# isInState(string $stateArray, string $shipName, string $fleetName): ?int
+#   Determines if an entry is in the given unit-state-array. Returns the index to the array of the first matching entry found.
+#   unit-state-arrays are arrays who's unit string is in the format {unit name}+" w/ "+{fleet or colony name}
+#   Arguments: string - The unit state array to access. Either 'unitStates' or 'unitsNeedingRepair'
+#              string - The unit name to search for. Blank if unknown
+#              string - The fleet or colony name to search for. Blank if unknown
+#   Output: Integer - The index to the given array. False if an error or not found
+#   Access: public
+
 # Public properties, as defined by the data file specification:
 # array $colonies
 # array $empire
@@ -160,6 +188,17 @@ declare(strict_types=1);
 
 # Misc property for reading/writing object to disk
 # string $fileName
+
+# Private properties, used for temporary record keeping
+# $this->index = array();
+#   ['coloniesByName'][$name]		= index of $this->colonies
+#   ['fleetsByLocation'][$location]	= array of indices of $this->fleets
+#   ['fleetsByName'][$name]		= index of $this->fleets
+#   ['fleetsHasAbility'][$name]		= array of ability traits by fleet name
+#   ['locationsHasAbility'][$name]	= array of $this->unitList[]['notes'] elements
+#   ['unitsAtLocation'][$location]	= array of $this->unitList[]['ship'] elements
+#   ['unitsByName'][$name]		= index of $this->unitList
+#   ['fleetUnitWithAbility'][$name][$ability]	= a $this->unitList[]['ship'] element
 ###
 
 ###
@@ -242,6 +281,11 @@ class GameData
           $this->$key = $decoded;
       }
     }
+    // ensure that the important data-sheet keys will exist
+    foreach ($this->writeVars as $jsonKey) {
+      if (!isset($this->$jsonKey))
+        $this->$jsonKey = [];
+    }
   }
 
 ###
@@ -251,6 +295,7 @@ class GameData
 ###
   public function writeToFile(string $file = ""): void
   {
+    $tempFileName = substr(rtrim(strtr(base64_encode(random_bytes(3)), '+/', '-_' ),'=' ), 0, 4 );
     // copy data into $dataArray. Only include named keys in $this->writeVars
     $dataArray = array_filter(
         get_object_vars($this),
@@ -291,10 +336,14 @@ class GameData
       $file = $this->fileName;
     else // if the argument is given, treat that as our original filename
       $this->fileName = $file;
-    if (file_put_contents($file, $output) === false)
-      $this->errors[] = "Failed to write file: {$file}";
-    if (chmod($this->fileName,0777) === false )
-      $this->errors[] = "Failed to modify file '{$file}' to be written.";
+
+    // Write the file
+    if (file_put_contents($tempFileName, $output) === false)
+      $this->errors[] = "Failed to write file: {$tempFileName}";
+    if (chmod($tempFileName,0777) === false )
+      $this->errors[] = "Failed to modify file '{$tempFileName}' to be written.";
+    if (rename( $tempFileName, $this->fileName) === false)
+      $this->errors[] = "Failed to rename file '{$tempFileName}' to '{$this->fileName}'";
   }
 
 ###
@@ -307,8 +356,9 @@ class GameData
 #   ['fleetsByName'][$name]		= index of $this->fleets
 #   ['fleetsHasAbility'][$name]		= array of ability traits by fleet name
 #   ['locationsHasAbility'][$name]	= array of $this->unitList[]['notes'] elements
-#   ['unitsAtLocation'][$location]	= array of $this->unitList[]['name'] elements
+#   ['unitsAtLocation'][$location]	= array of $this->unitList[]['ship'] elements
 #   ['unitsByName'][$name]		= index of $this->unitList
+#   ['fleetUnitWithAbility'][$name][$ability]	= a $this->unitList[]['ship'] element
 ###
   private function buildIndexes(): void
   {
@@ -335,6 +385,7 @@ class GameData
     }
   # Fleet Has Ability
     $this->index['fleetsHasAbility'] = [];
+    $this->index['fleetUnitWithAbility'] = [];
     foreach ($this->fleets as $f) {
       $traits = [];
       foreach ($f['units'] as $u) {
@@ -351,6 +402,12 @@ class GameData
           }, $notes);
 
           $traits = array_merge($traits, $notes);
+
+          // write $this->index['fleetUnitWithAbility'] while we have this data queued
+          $this->index['fleetUnitWithAbility'][$f['name']] ??= [];
+          foreach ($notes as $unitTrait) {
+            $this->index['fleetUnitWithAbility'][$f['name']][$unitTrait] = $unitData['ship'];
+          }
         }
       }
       // Store unique traits per fleet
@@ -426,17 +483,17 @@ class GameData
     $colony = $this->getColonyByName($name);
     if (!$colony) {
       $this->errors[] = "Missing colony '{$name}' in calculateSystemIncome()";
-      return null;
+      return 0;
     }
     $output = $colony['population'] * $colony['raw'];
-    $notes = $colony['notes'] ?? '';
-    if (str_contains(strtolower($notes), 'rebellion'))
+    $name = $colony['name'] ?? '';
+    if ($this->checkColonyNotes($name, 'rebellion'))
       $output = 0;
-    elseif (str_contains(strtolower($notes), 'opposition')) {
+    elseif ($this->checkColonyNotes($name, 'opposition')) {
       // Martial law restores full productivity, at the cost of making it likely to rebel
       // So if not Martial Law but is in opposition, then reduce output
-      if (strpos($colony['notes'] ?? '', 'Martial Law') === false)
-        $output = intdiv($output, 2);
+      if ($this->checkColonyNotes($name, 'Martial Law') === false)
+        $output = ceil($output / 2);
     }
     return $output;
   }
@@ -463,16 +520,50 @@ class GameData
 #   Determines if the named colony is blockaded
 #   Arguments: $name – colony name
 #   Output: boolean yes/no
-#   Access: public
 ###
   function checkBlockaded(string $name): bool
   {
     $colony = $this->getColonyByName($name);
     if (!$colony) {
       $this->errors[] = "Failure to get colony {$name} in checkBlockaded().";
-      return null;
+      return true;
     }
-    if (str_contains(strtolower($colony['notes']), 'blockaded'))
+    if ($this->checkColonyNotes($name, 'blockaded'))
+      return true;
+    return false;
+  }
+
+###
+#   Determines if the named colony has the given note
+#   Arguments: $name – colony name
+#              $note - the note to search for
+#   Output: boolean yes/no
+###
+  function checkColonyNotes(string $colonyName, string $note): bool
+  {
+    $colony = $this->getColonyByName($colonyName);
+    if (!$colony) {
+      $this->errors[] = "Failure to get colony {$colonyName} in checkColonyNotes().";
+      return true;
+    }
+    if (strpos(strtolower($colony['notes']) ?? '', strtolower($note)) !== false)
+      return true;
+    return false;
+  }
+###
+#   Determines if the named colony has the given note
+#   Arguments: $name – colony name
+#              $note - the note to search for
+#   Output: boolean yes/no
+###
+  function checkUnitNotes(string $unitName, string $note): bool
+  {
+    $unit = $this->getUnitByName($unitName);
+    if (!$unit) {
+      $this->errors[] = "Failure to get unit {$unitName} in checkUnitNotes().";
+      return true;
+    }
+    if (strpos(strtolower($unit['notes']) ?? '', strtolower($note)) !== false)
       return true;
     return false;
   }
@@ -480,13 +571,13 @@ class GameData
 ###
 #   Returns all units present at a given location, including colonies, fleets, and mothballs.
 #   Arguments: $location – name of colony or sector
-#   Output: array of unit strings. Multiple unit strings if there is more than one quantity
+#   Output: array of unit strings. Multiple unit strings if there is more than one quantity. Unit strings are the same as $this->unitList[]['ship']
 ###
   public function getUnitsAtLocation(string $location): array
   {
     if (! isset($this->index) || !isset($this->index['unitsAtLocation']))
       $this->buildIndexes();
-    $i = $this->index['unitsAtLocation'][$location] ?? null;
+    $i = $this->index['unitsAtLocation'][$location] ?? '';
     return $i;
   }
 
@@ -601,6 +692,20 @@ class GameData
   }
 
 ###
+#   Finds and returns a fleet unit with a certain ability. e.g. find a scout in fleet
+#   Arguments: $fleetName – fleet to check, $ability – the ability keyword to check
+#   Output: string - The unit designator that has the ability
+###
+  public function fleetUnitWithAbility(string $fleet, string $ability): bool
+  {
+    if (! isset($this->index) || !isset($this->index['fleetUnitWithAbility']))
+      $this->buildIndexes();
+    if (!isset($this->index['fleetUnitWithAbility'][$fleet]) || !isset($this->index['fleetUnitWithAbility'][$fleet][$ability]))
+     return false;
+    return $this->index['fleetUnitWithAbility'][$fleet][$ability];
+  }
+
+###
 #   Returns any errors encountered during file read/write or decoding.
 #   Arguments: none. Optionally erase the errors if true
 #   Output: array of error messages
@@ -624,18 +729,11 @@ class GameData
 ###
   public function locationHasAbility(string $location, string $ability): string
   {
-/*
-    if (! isset($this->index) || !isset($this->index['fleetsHasAbility']))
-      $this->buildIndexes();
-    if (array_search($ability, $this->index['fleetsHasAbility'][$name]) !== false)
-     return true;
-    return false;
-*/
     $units = $this->getUnitsAtLocation($location); // get units
     if (empty($units)) return '';
     foreach ($units as $u) { // get each unit of the fleet
       $unitData = $this->getUnitByName($u); // get the named unit
-      if (str_contains(strtolower($unitData["notes"]), strtolower($ability))) // if the named unit has the ability, end here
+      if ($this->checkUnitNotes($u, $ability)) // if the named unit has the ability, end here
         return $u;
     }
     return ''; // we didn't find the ability in the location
@@ -655,16 +753,24 @@ class GameData
       $units = array_merge($colony['fixed'] ?? []);
       foreach ($units as $u) {
         [$qty, $name] = $this->parseUnitQuantity($u);
-        if (in_array("{$name} w/ {$colony['name']}", $this->unitsNeedingRepair))
-          $repair[] = "{$name} w/ {$colony['name']}";
+        $unitStateKey = $this->isInState('unitsNeedingRepair', $name, $colony['name']);
+        if ($unitStateKey !== false)
+          $repair[] = $this->unitsNeedingRepair[$unitStateKey];
+        $unitStateKey = $this->isInState('unitStates', $name, $colony['name']);
+        if ($unitStateKey !== false)
+          $states[] = $this->unitStates[$unitStateKey];
       }
     }
     foreach ($this->fleets as $fleet) {
       $units = $fleet['units'] ?? [];
       foreach ($units as $u) {
         [$qty, $name] = $this->parseUnitQuantity($u);
-        if (in_array("{$name} w/ {$fleet['name']}", $this->unitsNeedingRepair))
-          $repair[] = "{$name} w/ {$fleet['name']}";
+        $unitStateKey = $this->isInState('unitsNeedingRepair', $name, $fleet['name']);
+        if ($unitStateKey !== false)
+          $repair[] = $this->unitsNeedingRepair[$unitStateKey];
+        $unitStateKey = $this->isInState('unitStates', $name, $fleet['name']);
+        if ($unitStateKey !== false)
+          $states[] = $this->unitStates[$unitStateKey];
       }
     }
     $this->unitsNeedingRepair = array_unique($repair);
@@ -711,7 +817,6 @@ class GameData
 #   Arguments: $shipDesign – string Current design type
 #              $designCheck - string Design type to check against
 #   Output: boolean yes/no
-#   Access: public
 ###
   public function atLeastShipSize(string $shipDesign, string $designCheck): bool
   {
@@ -736,7 +841,6 @@ class GameData
 #   Arguments: $start – string The loction to check the supply status on
 #              $distance - integer An optional amount of hops to trace 
 #   Output: array [paths:array, source:string] - A collection of paths that satisfy supply. Source is 'colony' or 'supply ship'
-#   Access: public
 ###
   public function traceSupplyLines(string $start, int $distance=3): ?array
   {
@@ -758,15 +862,13 @@ class GameData
     }
     // Any unit with "Supply" in its notes can resupply units in the same location that cannot otherwise trace supply.
     foreach ($this->fleets as $fleet) {
-      $supplyShip = $this->fleetHasAbility($fleet['name'], 'Supply');
+      if (!$this->fleetHasAbility($fleet['name'], 'Supply')) continue;
+      $supplyShip = $this->fleetUnitWithAbility($fleet['name'], 'Supply');
       if ($supplyShip !== '') {
         $isExhausted = false;
-        foreach ($this->unitStates as $state) {
-          if (in_array(array("{$unitName} w/ {$fleet['name']}",'Exhausted'), $state)) {
-            $isExhausted = true;
-            break;
-          }
-        }
+        $unitStateKey = $this->isInState("unitStates",$supplyShip,$fleet['name']);
+        if ($unitStateKey !== false && $this->unitStates[$unitStateKey][1] === 'Exhausted')
+          $isExhausted = true;
         // Skip fleet if its supply unit is exhausted
         if ($isExhausted) continue;
 
@@ -788,5 +890,50 @@ class GameData
         $output[] = ['paths'=>$paths,'source'=>$place[1]];
     }
     return $output;
+  }
+
+###
+# rollDie(): int
+#   Rolls a single D10 die
+#   Arguments: None
+#   Output: Integer - A random number from 1 to 10
+###
+  public function rollDie(): int
+  {
+    return mt_rand(1,10);
+  }
+
+###
+# isInState(string $stateArray, string $shipName, string $fleetName): ?int
+#   Determines if an entry is in the given unit-state-array. Returns the index to the array of the first matching entry found.
+#   unit-state-arrays are arrays who's unit string is in the format {unit name}+" w/ "+{fleet or colony name}
+#   Arguments: string - The unit state array to access. Either 'unitStates' or 'unitsNeedingRepair'
+#              string - The unit name to search for. Blank if unknown
+#              string - The fleet or colony name to search for. Blank if unknown
+#   Output: Integer - The index to the given array. False if an error or not found
+###
+  public function isInState(string $stateArray, string $shipName, string $fleetName): bool|int
+  {
+    if ($shipName == '' && $fleetName == '')
+      return false;
+    if (strtolower($stateArray) == "unitstates")
+      foreach ($this->unitStates as $key => $state) {
+        if ($shipName == '' && strpos($state[0]," w/ {$fleetName}") !== false)
+          return $key;
+        if ($fleetName == '' && strpos($state[0],"{$shipName} w/ ") === 0)
+          return $key;
+        if ($shipName !== '' && $fleetName !== '' && $state[0] == "{$shipName} w/ {$fleetName}")
+          return $key;
+      }
+    if (strtolower($stateArray) == "unitsneedingrepair")
+      foreach ($this->unitsNeedingRepair as $key => $state) {
+        if ($shipName == '' && strpos($state," w/ {$fleetName}") !== false)
+          return $key;
+        if ($fleetName == '' && strpos($state,"{$shipName} w/ ") === 0)
+          return $key;
+        if ($shipName !== '' && $fleetName !== '' && $state == "{$shipName} w/ {$fleetName}")
+          return $key;
+      }
+    return false;
   }
 }
