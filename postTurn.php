@@ -60,13 +60,15 @@ foreach ($gameFiles as $empireId => $file) {
   $empireName = $file->empire['empire'] ?? $empireId;
   $turn = intval($file->game['turn'] ?? 0);
   $file->events = $file->events ?? [];
-  echo "Searching file for empire '{$empireName}' for units.\n";
+  echo "Searching file of empire '{$empireName}' for units.\n";
 
 # Build up locations of [enemy] units for blockade tests
+# Implement when we implement intel reports
   $empireName = $file->empire['empire'];
   foreach ($file->fleets as $f) {
     $location = $f['location'];
     if (!isset($EnemyFleetLookup[$location])) $EnemyFleetLookup[$location] = [];
+/*
     foreach ($f['units'] as $u) {
       [$qty, $name]= $file->parseUnitQuantity($u);
 
@@ -75,6 +77,7 @@ foreach ($gameFiles as $empireId => $file) {
       else
         $EnemyFleetLookup[$location][$empireName] = array_merge($EnemyFleetLookup[$location][$empireName], array_fill(0, $qty, $name));
     }
+*/
   }
 
 # Build up intel reports of locations and units that can be seen
@@ -1016,7 +1019,6 @@ foreach ($gameFiles as $empireId => $file) {
       $morale = intval($colony['morale']);
       $inGoodOrder = ($morale >= ceil($pop / 2));
       $previousNotes = $colony['notes'] ?? '';
-
       // set notes accordingly
       if ($inGoodOrder) {
         // remove 'Opposition' string if present
@@ -1030,6 +1032,7 @@ foreach ($gameFiles as $empireId => $file) {
       // Morale Checks are required if the system is in Opposition OR if any enemy units are currently present.
       $enemyPresent = false; // is the enemy present?
       foreach ($EnemyFleetLookup[$location] as $empireName => $empireUnits ) {
+        if ($empireName === $file->empire['empire']) continue;
         // true if any enemy present has the treaty state is hostilities or war
         if (!$file->atLeastPoliticalState($empireName,'Neutral')) $enemyPresent = true;
       }
@@ -1776,7 +1779,7 @@ function calculateConstructionCapacity($file, $colonyName) {
 # number from each file, and collect files that match a given game name and turn.
 ###
 function fileRetrieval (string $directory, string $game, int $turn) {
-  global $errors;
+  global $errors, $searchDir;
   // Validate search dir
   if (!is_dir($directory)) {
     $errors[] = "Error: search directory '{$directory}' does not exist or is not a directory.\n";
@@ -1791,6 +1794,7 @@ function fileRetrieval (string $directory, string $game, int $turn) {
     $fileCheck = new GameData($directory.$file);
     if ($fileCheck->game["game"] != $game) continue;
     if ($fileCheck->game["turn"] != $turn) continue;
+    if ($fileCheck->game["turnSegment"] != 'post') continue;
 
     $fileList[] = $fileCheck; // Keep file. It passed our tests
     echo "Using gamefile '{$file}' for empire '{$fileCheck->empire["empire"]}'\n";
