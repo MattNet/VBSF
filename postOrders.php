@@ -69,7 +69,7 @@ foreach ($gameFiles as $empireId => $file) {
   $empireName = $file->empire['empire'] ?? $empireId;
   $turn = intval($file->game['turn'] ?? 0);
   $file->events = $file->events ?? [];
-  echo "Processing file for empire '{$empireName}'\n";
+  echo "Processing Intel Phase for empire '{$empireName}'\n";
 
 ###
 # Intel Phase
@@ -335,6 +335,679 @@ foreach ($globalModQueue as $idx => $mod) {
 ###
 # Movement Phase
 ###
+foreach ($gameFiles as $empireId => $file) {
+  $empireName = $file->empire['empire'] ?? $empireId;
+  $turn = intval($file->game['turn'] ?? 0);
+  $file->events = $file->events ?? [];
+  echo "Processing Move Phase for empire '{$empireName}'\n";
+
+  $deferredWrites = [];      // holds ['empire'=>string,'changes'=>[...]]
+  $movementErrors = [];     // collect pre-check errors
+  $movementEvents = [];     // events produced by this phase
+  $executionQueue = [];     // queue of validated actions to execute
+
+  $movementOrders = array_values(array_filter($file->orders ?? [], function($o) {
+    return in_array($o['type'] ?? '', ['move','explore_lane','load','unload','flight','start_trade','stop_trade','convoy_raid','long_range']);
+  }));
+
+  # VALIDATION PASS
+  foreach ($movementOrders as $ordIdx => $ord) {
+    $otype = $ord['type'] ?? '';
+    $receiver = $ord['receiver'] ?? [];
+    $target = $ord['target'] ?? [];
+    $note = $ord['note'] ?? '';
+
+    switch ($otype) {
+    case 'move':
+      $fleetName = $receiver;
+      $fromLoc = $file->getFleetByName($fleetName)['location'];
+      $toLoc = $target;
+
+      if (!$fleetName || !$toLoc) {
+        $movementErrors[] = "ERR_MOVE_BAD_PARAMS: Move order missing fleet or destination.";
+        $file->events[] = [ 'event' => 'Movement Order Invalid','time' => $turn,
+          'text'  => "Move order missing fleet or destination."];
+        break;
+      }
+      if (!isset($file->getFleetByName($fleetName))) {
+        $movementErrors[] = "ERR_MOVE_FLEET_UNKNOWN: Fleet '{$fleetName}' not found.";
+        $file->events[] = ['event' => 'Movement Order Invalid', 'time' => $turn,
+          'text'  => "Fleet '{$fleetName}' not found."];
+        break;
+      }
+
+      $pathResult = $file->findPath($fromLoc, $toLoc);
+      if (!$pathResult || empty($pathResult['path']) || !isset($pathResult['distance'])) {
+        $movementErrors[] = "ERR_PATH_NOT_FOUND: Cannot reach {$toLoc} from {$fromLoc}.";
+        $movementEvents[] = ['event' => 'Move Failed','time'  => $turn,
+          'text'  => "Cannot reach {$toLoc} from {$fromLoc}."];
+        break;
+      }
+
+      $isCivilianFleet = false;
+      $hasEscort = false;
+      foreach ($fleet['units'] ?? [] as $u) {
+        [$q,$design] = $file->parseUnitQuantity($u);
+        // fixed units cannot move
+        if ($file->checkUnitNotes($unitdef, 'Fixed') !== false) {
+          $file->events[] = ['event' => 'Movement Order Invalid', 'time' => $turn,
+            'text'  => "Fleet '{$fleetName}' contains units that cannot move." ];
+          break 2;
+        }
+        if ($file->checkUnitNotes($unitdef, 'Convoy') !== false || $file->checkUnitNotes($unitdef, 'Civilian') !== false)
+          $isCivilianFleet = true;
+        if ($file->atLeastShipSize($design,'CL')) $hasEscort = true;
+      }
+
+      // Extract path details
+      $pathArray   = $pathResult['path'];
+      $pathDistance = intval($pathResult['distance']);
+
+      // Rule: VBAM multi-jump limit = 3 jumps max
+      if ($pathDistance > 3) {
+        $movementErrors[] = "ERR_TOO_FAR: Multi-jump path {$fromLoc} to {$toLoc} requires {$pathDistance} jumps (max 3).";
+        $movementEvents[] = ['event' => 'Move Failed', 'time'  => $turn,
+          'text'  => "{$pathDistance} jumps ({$toLoc} from {$fromLoc}) exceeds VBAM 3-jump movement limit."];
+        break;
+      }
+
+      // All multi-move jumps must be via Major lanes
+      // if a single hop, lane can be minor or restricted.
+      // if a colony ship, cannot be restricted unless $file->atLeastShipSize({escort},'CL')
+      $legalJump = true;
+      for ($i = 0; $i < count($pathArray) - 1; $i++) {
+        $a = $pathArray[$i];
+        $b = $pathArray[$i+1];
+        $laneStatus = $file->getLinkStatus($a, $b);
+        // Multi-lane hop
+        if (count($pathArray) > 1) {
+          if ($laneStatus !== 'Major') {
+            // multi-hop through Minor or Restricted is illegal
+            $legalJump = false;
+            $movementErrors[] = "Multi-jump path includes {$laneStatus} lane {$a} to {$b}.";
+            break;
+          }
+          continue;
+        }
+        // Single hop through Minor or Major is always allowed.
+        if ($laneStatus === 'Major' || $laneStatus === 'Minor')
+          continue;
+        // Single-hop through RESTRICTED: Military OK, Civilian (convoy) requires escort
+        if ($laneStatus === 'Restricted') {
+          // Military fleets may always traverse restricted lanes
+          if (!$isCivilianFleet)
+            continue;
+          // If convoy lacks escort, movement is illegal
+          if (!$hasEscort) {
+            $legalJump = false;
+            $movementErrors[] =
+              "ERR_RESTRICTED_NO_ESCORT: Convoy cannot cross Restricted lane {$a} to {$b} without CL+ escort.";
+            break;
+          }
+          // Escorted convoy is legal
+          continue;
+        }
+      } // end foreach pathArray
+
+      if (!$legalJump) {
+        $movementErrors[] = "ERR_NON_MAJOR_LANE: Multi-jump path includes non-Major lanes ({$fromLoc} → {$toLoc}).";
+        $file->events[] = ['event' => 'Move Failed','time'  => $turn,
+          'text'  => "Path of {$toLoc} from {$fromLoc} uses at least one non-Major lane, multi-jump not allowed."];
+        break;
+      }
+
+      // If we reach here, movement is allowed
+      $executionQueue[] = [
+        'type'  => $otype,
+        'fleet' => $fleetName,
+        'from'  => $fromLoc,
+        'to'    => $toLoc,
+        'path'  => $pathArray,
+        'order' => $ord
+      ];
+      break;
+    case 'explore_lane':
+      $fleetName = $receiver;
+      $fromLoc = $file->getFleetByName($fleetName)['location'];
+      if (!$fleetName) {
+        $movementErrors[] = 'ERR_EXPLORE_BAD_PARAMS: Order receiver not given';
+        break;
+      }
+      if (!$fromLoc) {
+        $movementErrors[] = "ERR_EXPLORE_FLEET_UNKNOWN: {$fleetName}";
+        break;
+      }
+###
+// Need to check if there are any unexplored lanes in this system
+      $linkStatus = $file->getLinkStatus($fromLoc,$toLoc);
+      if ($linkStatus === false || $linkStatus !== 'Unexplored') {
+        $movementEvents[] = ['event'=>'Explore Failed','time'=>$file->game['turn'] ?? '','text'=>"ERR_EXPLORE_NO_UNEXPLORED_LANE: {$fromLoc}"];
+        break;
+      }
+###
+      // Only scout fleets may explore
+      $fleet = $file->getFleetByName($fleetName);
+      $hasScout = false;
+      foreach ($fleet['units'] ?? [] as $u) {
+        [$q,$design] = $file->parseUnitQuantity($u);
+        if ($file->checkUnitNotes($design, 'Scout') !== false) { $hasScout = true; break; }
+      }
+      if (!$hasScout) {
+        $file->events[] = ['event'=>'Explore Failed','time'=>$turn,
+                           'text'=>"{$fleetName} must have scout units to explore."];
+        break;
+      }
+      // queue exploration (resolution later; may require die roll)
+      $executionQueue[] = [
+        'type'  => $otype,
+        'fleet' => $fleetName,
+        'from'  => $fromLoc,
+        'to'    => '',
+        'path'  => '',
+        'order' => $ord
+      ];
+      break;
+
+    case 'load':
+    case 'unload':
+    case 'flight':
+      // Manage basing / carriage orders.
+      // For load/unload: receiver contains carrier fleet name; target contains unit name; note contains qty
+      $carrierFleet = $receiver[0] ?? null;
+      $unitName = $target ?? null;
+      $unitQty = $note ?? 1;
+      if (!$carrierFleet || !$unitName) {
+        $movementEvents[] = ['event'=>'Load/Unload Failed','time'=>$turn,
+                         'text'=>"Unknown carrier fleet or unit name in load/unload/flight order"];
+        break;
+      }
+      if (!isset($file->getFleetByName($carrierFleet))) {
+        $movementEvents[] = ['event'=>'Load/Unload Failed','time'=>$turn,
+                        'text'=>"Carrier fleet '{$carrierFleet}' was not found in load/unload/flight order."];
+        break;
+      }
+      // We will validate capacity at execution time using unitList entries.
+      $executionQueue[] = [
+        'type'  => $otype,
+        'fleet' => $carrierFleet,
+        'from'  => $fromLoc,
+        'to'    => $unitSpec,
+        'path'  => $qty,
+        'order' => $ord
+      ];
+      break;
+
+    case 'start_trade':
+    case 'stop_trade':
+      // Convoys assigned to trade ledger - queue for execution
+      $convoyFleet = $receiver[0] ?? null;
+      if (!$convoyFleet || !isset($file->getFleetByName($convoyFleet))) {
+        $movementEvents[] = ['event'=>'Trade Failed','time'=>$turn,
+                        'text'=>"Convoy fleet '{$convoyFleet}' was not found in start/stop trade order."];
+        break;
+      }
+      $executionQueue[] = [
+        'type'  => $otype,
+        'fleet' => $convoyFleet,
+        'from'  => '',
+        'to'    => '',
+        'path'  => '',
+        'order' => $ord
+      ];
+      break;
+
+    case 'convoy_raid':
+      // receiver: raiding fleet name, target: system to raid
+      $raider = $receiver[0] ?? null;
+      $raidTarget = $target[0] ?? null;
+      if (!$raider || !$raidTarget) {
+        $movementEvents[] = ['event'=>'Raid Failed','time'=>$turn,
+                         'text'=>"Unknown raiding fleet or raid target in convoy raid order"];
+        break;
+      }
+      if (!isset($file->getFleetByName($raider))) {
+        $movementEvents[] = ['event'=>'Raid Failed','time'=>$turn,
+                         'text'=>"Raiding fleet '{$raider}' was not found in convoy raid order."];
+        break;
+      }
+### TODO Ensure that the raiding fleet is adjacent to the target
+      $executionQueue[] = [
+        'type'  => $otype,
+        'fleet' => $raider,
+        'from'  => '',
+        'to'    => $raidTarget,
+        'path'  => '',
+        'order' => $ord
+      ];
+      break;
+
+    case 'long_range':
+      // Long range scan; queue and resolve (creates intel events)
+      $scanner = $receiver[0] ?? null;
+      $scanTarget = $target[0] ?? null;
+      if (!$scanner || !$scanTarget) {
+        $movementEvents[] = ['event'=>'Scan Failed','time'=>$turn,
+                         'text'=>"Unknown scanning fleet or scan target in long-range order"];
+        break;
+      }
+      $executionQueue[] = [
+        'type'  => $otype,
+        'fleet' => $scanner,
+        'from'  => '',
+        'to'    => $scanTarget,
+        'path'  => '',
+        'order' => $ord
+      ];
+      break;
+
+    default:
+      // ignore unknown movement orders
+      break;
+  } // end switch
+} // end pre-validation pass
+
+/*
+  === SUB-PHASE: EXECUTION PASS ===
+  Execute in conservative, traceable order:
+    1) explore_lane
+    2) move
+    3) load/unload/flight
+    4) convoy_raid
+    5) start_trade/stop_trade
+    6) long_range
+*/
+
+usort($executionQueue, function($a,$b){
+  $priority = ['explore_lane'=>10,'move'=>20,'load'=>30,'unload'=>30,'flight'=>30,'convoy_raid'=>40,'start_trade'=>50,'stop_trade'=>50,'long_range'=>60];
+  return ($priority[$a['type']] ?? 99) <=> ($priority[$b['type']] ?? 99);
+});
+
+foreach ($executionQueue as $action) {
+  switch ($action['type']) {
+    case 'explore_lane':
+      $fleetName = $action['fleet'];
+      $from = $action['from'];
+      $to = $action['to'];
+      $roll = $file->rollDie();
+    // NOT IMPLEMENTED: Empire Trait modifiers to roll. (HOOK)
+      $modified = $roll; // placeholder for any modifiers
+      $successThreshold = 8; // conservative default; real table could differ (rulebook references)
+      if ($modified >= $successThreshold) {
+        // convert lane from Unexplored to Restricted
+        foreach ($file->mapConnections as $mi => $conn) {
+          [$a,$b,$status] = $conn;
+          if ((($a === $from && $b === $to) || ($a === $to && $b === $from)) && $status === 'Unexplored') {
+            $file->mapConnections[$mi][2] = 'Restricted';
+            $movementEvents[] = [ 'event'=>'Explore Success','time'=>$turn,
+              'text'=>"{$fleetName} explored {$from}<->{$to} (roll={$roll}). The lane is now 'Restricted'."
+            ];
+            break;
+          }
+        }
+        // also move fleet across the lane (explore moves them)
+        foreach ($file->fleets as $fi => $fleet) {
+          if ($fleet['name'] !== $fleetName) continue;
+          $file->fleets[$fi]['location'] = $to;
+          break;
+        }
+      } else {
+        $movementEvents[] = [ 'event'=>'Explore Fail', 'time'=>$turn,
+          'text'=>"{$action['fleet']} failed exploration from {$from} to {$to} (roll={$roll})."
+        ];
+      }
+      break;
+
+    case 'move':
+      $fleetName = $action['fleet'];
+      $old = $fleet['location'] ?? '';
+      $dest = $action['to'];
+      // Move fleet: update location in current sheet
+      foreach ($file->fleets as $fi => $fleet) {
+        if ($fleet['name'] !== $fleetName) continue;
+        $file->fleets[$fi]['location'] = $dest;
+        break;
+      }
+      $movementEvents[] = [
+        'event'=>'Fleet Moved', 'time'=>$turn,
+        'text'=>"{$fleetName} moved from {$old} to {$dest}. Path: " . implode(' -> ', $action['path'])
+      ];
+
+      // If movement may affect other empires (e.g., entering enemy system) prepare deferred write: create encounter flag
+      // Defer adding a Combat Phase encounter entry to other empires' sheets by recording intent here.
+      // We record a deferred write event for any other empire with colonies/units at $dest to be processed after writes.
+      foreach ($file->otherEmpires as $otherEmpireName) {
+        // Add a deferred change to notify other empire of encounter (they'll create a Combat encounter entry in their sheet).
+        $deferredWrites[] = [
+          'empire'=>$otherEmpireName,
+          'changes'=>[
+            [
+              'action'=>'flag_encounter',
+              'system'=>$dest,
+              'intruderFleet'=>$fleetName,
+              'intruderEmpire'=>$file->empire['empire']
+            ]
+          ],
+          'reason'=>"Intruder {$fleetName} moved into {$dest}"
+        ];
+      }
+      break;
+
+    case 'load':
+      $carrierFleet = $action['fleet'];
+      $unitSpec = $action['unit'];
+      // Determine where units currently are: try colony at carrier location first, then other fleets
+      $carrierIdx = $file->getFleetByName($carrierFleet);
+      $carrierLoc = $carrierIdx['location'];
+      $unitFound = false;
+      // Attempt to remove from colony fixed units
+      $col = $file->getColonyByName($carrierLoc);
+      if ($col) {
+        // Try removing from colony fixed list via GameData->removeUnitsFromColony if defined
+        $removed = $file->removeUnitsFromColony($carrierLoc, $unitSpec);
+        if ($removed) $unitFound = true;
+      }
+      // If unit not found at colony, attempt to remove from other fleets at same location
+      if (!$unitFound) {
+        foreach ($file->fleets as $fi => $f) {
+          if ($f['location'] !== $carrierLoc) continue;
+          if ($f['name'] === $carrierFleet) continue;
+          $removed = $file->removeUnitsFromFleet($f['name'],$unitSpec);
+          if ($removed) { $unitFound = true; break; }
+        }
+      }
+      if (!$unitFound) { // if still not found after looking at colonies...
+        $movementEvents[] = ['event'=>'Load Failed','time'=>$file->game['turn'] ?? '','text'=>"ERR_LOAD_NO_UNIT: Could not find {$unitSpec} near {$carrierFleet} to load."];
+        break;
+      }
+      // Add to carrier fleet
+      $file->addUnitsToFleet($carrierFleet, $unitSpec);
+      break;
+
+    case 'unload':
+      $carrierFleet = $action['fleet'];
+      $unitSpec = $action['unit'];
+      $carrierIdx = $file->getFleetByName($carrierFleet);
+      $loc = $carrierIdx['location'];
+      // Remove from fleet
+      $removed = $file->removeUnitsFromFleet($carrierFleet, $unitSpec);
+      if (!$removed) {
+        $errors[] = "ERR_UNLOAD_NOT_ON_FLEET: {$unitSpec} not on {$carrierFleet}.";
+        break;
+      }
+      // Add to colony fixed at location
+      $file->addUnitsToColony($loc, $unitSpec);
+      break;
+
+    case 'flight':
+      // Assign fighters to basing ships/bases in fleet/colony. For simplicity we record an event,
+      // a full bay-count enforcement is performed here in conservative fashion.
+      $fleetName = $action['fleet'];
+      $unitSpec = $action['unit'];
+      // We expect unitSpec to be a fighter design or a list; simply ensure carrier has capacity.
+      $carrierIdx = $file->getFleetByName($fleetName);
+      $carrierUnits = $file->fleets[$carrierIdx]['units'] ?? [];
+      // Count carrier bay capacity by summing Carrier(X) notes on fleet units
+      $totalBays = 0;
+      foreach ($carrierUnits as $u) {
+        [$q,$design] = $file->parseUnitQuantity($u);
+        $ud = $file->getUnitByName($design);
+        if ($ud && preg_match('/Carrier\((\d+)\)/i', $ud['notes'] ?? '', $m)) {
+          $totalBays += intval($m[1]) * $q;
+        }
+      }
+      // Count currently based fighters in this fleet
+      $fighterCount = 0;
+      foreach ($carrierUnits as $u) {
+        [$q,$design] = $file->parseUnitQuantity($u);
+        $ud = $file->getUnitByName($design);
+        if ($ud && in_array($ud['design'] ?? '', ['LF','HF','SHF'], true)) $fighterCount += $q;
+      }
+      // Desired load quantity
+      [$wantQty,$wantDesign] = $file->parseUnitQuantity($unitSpec);
+      if (($fighterCount + $wantQty) > $totalBays) {
+        $movementEvents[] = ['event'=>'Flight Failed','time'=>$file->game['turn'] ?? '','text'=>"ERR_FLIGHT_CAPACITY_EXCEEDED: {$fleetName} capacity {$totalBays}, requested additional {$wantQty}."];
+        break;
+      }
+      // Otherwise add fighters to fleet (assumes they were already removed from colony/fleet by load)
+      if (method_exists($file,'addUnitsToFleet')) $file->addUnitsToFleet($fleetName, $unitSpec);
+      else $file->fleets[$carrierIdx]['units'][] = $unitSpec;
+      $movementEvents[] = ['event'=>'Flight OK','time'=>$file->game['turn'] ?? '','text'=>"FLIGHT_OK: Added {$unitSpec} to {$fleetName}."];
+      break;
+
+    case 'convoy_raid':
+      $raider = $action['fleet'];
+      $targetSystem = $action['target'];
+      // Find convoys in target system across all empires (scan current file and schedule deferred check for other empires)
+      $convoysFound = [];
+      // This empire's convoys:
+      foreach ($file->fleets as $f) {
+        if ($f['location'] === $targetSystem) {
+          foreach ($f['units'] ?? [] as $u) {
+            [$q,$d] = $file->parseUnitQuantity($u);
+            $unitDef = $file->getUnitByName($d) ?? null;
+            if ($unitDef && stripos($unitDef['notes'] ?? '', 'Convoy') !== false)
+              $convoysFound[] = ['empire'=>$file->empire['empire'],'fleet'=>$f['name'],'qty'=>$q];
+          }
+        }
+      }
+      // Add deferred writes to other empires so they can check and add combat entries if their convoys are targeted
+      foreach ($file->otherEmpires as $other) {
+        $deferredWrites[] = [
+          'empire'=>$other,
+          'changes'=>[
+            ['action'=>'check_convoys_for_raid','system'=>$targetSystem,'raider'=>$raider,'raider_empire'=>$file->empire['empire']]
+          ],
+          'reason'=>"Convoy raid by {$raider} at {$targetSystem}"
+        ];
+      }
+      // For our own sheet, record event of raid attempt
+      $movementEvents[] = ['event'=>'Convoy Raid','time'=>$turn,
+                       'text'=>"{$raider} attempted raid at {$targetSystem}. Deferred checks created for other empires."];
+      break;
+
+    case 'start_trade':
+      $convoyFleet = $action['fleet'];
+      $fi = $file->getFleetByName($convoyFleet);
+      // Mark location to "Trade" and set notes as route if provided
+      $fi['location'] = 'Trade';
+      $fi['notes'] = $action['order']['note'] ?? ($file->fleets[$fi]['notes'] ?? '');
+      $movementEvents[] = ['event'=>'Trade Start','time'=>$turn,
+                       'text'=>"{$convoyFleet} entered Trade service."];
+      break;
+
+    case 'stop_trade':
+      $convoyFleet = $action['fleet'];
+      $fi = $file->getFleetByName($convoyFleet);
+      // Remove from Trade; place at one of the route colonies if provided else leave at 'Trade' but mark event
+      $routeNote = $fi['notes'] ?? '';
+      $dest = 'Unknown';
+      if (!empty($routeNote)) {
+        $parts = array_map('trim', explode(',', $routeNote));
+        $dest = $parts[0] ?? 'Unknown';
+      }
+      $fi['location'] = $dest;
+      if ($dest == "Unknown")
+        $errors[] = "Unknown destination to stop trade of fleet $convoyFleet, fleet notes {$parts[0]}";
+      $movementEvents[] = ['event'=>'Trade Stop','time'=>$turn,
+                       'text'=>"TRADE_STOP: {$convoyFleet} left Trade and placed at {$dest}."];
+      break;
+
+    case 'long_range':
+      // Create intel event for player
+      $scanner = $action['fleet'];
+      $scanTarget = $action['target'];
+      // For correctness, simulate a scan success roll or deterministic reveal depending on presence.
+      $movementEvents[] = [
+        'event'=>'LongRangeScan',
+        'time'=>$file->game['turn'] ?? '',
+        'text'=>"LONG_RANGE: {$scanner} performed long-range scan of {$scanTarget}."
+      ];
+      // Potentially add deferred writes to owners of scanTarget (inform them they were scanned) if needed:
+      foreach ($file->otherEmpires as $other) {
+        $deferredWrites[] = [
+          'empire'=>$other,
+          'changes'=>[['action'=>'notify_scanned','system'=>$scanTarget,'scanner'=>$scanner,'by'=>$file->empire['empire']]],
+          'reason'=>"Long range scan by {$scanner} at {$scanTarget}"
+        ];
+      }
+      break;
+
+    default:
+      // Unknown action — ignore but record event
+      $movementEvents[] = ['event'=>'Movement Unknown','time'=>$file->game['turn'] ?? '','text'=>"IGNORED_ACTION: " . json_encode($action)];
+      break;
+  } // end switch action
+} // end executionQueue loop
+
+/*
+  === SUB-PHASE: POST-MOVE VALIDATIONS ===
+  - Ensure carried units remain legal (fighters vs carriers, troop/garrison limits).
+  - Flag Out-of-Supply candidates (Supply Phase will handle final marking).
+  - Record where Empire Traits would adjust results (NOT IMPLEMENTED).
+*/
+/*
+foreach ($file->fleets as $fi => $fleet) {
+  // Fighters must be based to carriers/tenders; if not, attempt to unbase to colony
+  $fighterCount = 0;
+  $carrierBays = 0;
+  foreach ($fleet['units'] as $u) {
+    [$q,$d] = $file->parseUnitQuantity($u);
+    $ud = $file->getUnitByName($d);
+    if ($ud && in_array($ud['design'] ?? '', ['LF','HF','SHF'], true)) $fighterCount += $q;
+    if ($ud && preg_match('/Carrier\((\d+)\)/i', $ud['notes'] ?? '', $m)) $carrierBays += intval($m[1]) * $q;
+  }
+  if ($fighterCount > $carrierBays) {
+    // Attempt to move excess fighters to colony at fleet's location
+    $excess = $fighterCount - $carrierBays;
+    $moved = 0;
+    foreach ($file->fleets[$fi]['units'] as $uIdx => $uVal) {
+      [$q,$d] = $file->parseUnitQuantity($uVal);
+      $ud = $file->getUnitByName($d);
+      if ($ud && in_array($ud['design'] ?? '', ['LF','HF','SHF'], true)) {
+        $moveQty = min($excess - $moved, $q);
+        $unitStr = ($moveQty > 1 ? "{$moveQty}x{$d}" : $d);
+        // remove from fleet
+        $file->removeUnitsFromFleet($fleet['name'],$unitStr);
+        // add to colony
+        $file->addUnitsToColony($fleet['location'],$unitStr);
+        $moved += $moveQty;
+        $movementEvents[] = [
+          'event'=>'Unbased Fighters',
+          'time'=>$file->game['turn'] ?? '',
+          'text'=>"UNBASE: {$moveQty} {$d} moved from fleet {$fleet['name']} to colony {$fleet['location']} due to insufficient carrier bays."
+        ];
+        if ($moved >= $excess) break;
+      }
+    }
+  }
+
+  // Garrison checks: if troops are unloaded to colony beyond population or capacity, record event
+  // NOTE: Empire Traits that change garrison limits would be applied here. NOT IMPLEMENTED.
+  $col = $file->getColonyByName($fleet['location']);
+  if ($col) {
+    $garrisonUnits = array_filter($col['fixed'] ?? [], function($u) use ($file){ [$q,$d]=$file->parseUnitQuantity($u); $ud=$file->getUnitByName($d); return ($ud && ($ud['design'] ?? '') === 'Ground Unit');});
+    $garrisonCount = 0;
+    foreach ($garrisonUnits as $g) { [$q,$d]=$file->parseUnitQuantity($g); $garrisonCount += $q; }
+    if ($garrisonCount > intval($col['population'])) {
+      $movementEvents[] = [
+        'event'=>'Garrison Overflow',
+        'time'=>$file->game['turn'] ?? '',
+        'text'=>"GARRISON_OVERFLOW: Colony {$col['name']} has {$garrisonCount} troops vs population {$col['population']}. Excess troops must be trimmed (not automated)."
+      ];
+    }
+  }
+}
+
+// Append movement events and any errors to $file->events for traceability
+if (!empty($movementEvents)) {
+  foreach ($movementEvents as $ev) $file->events[] = $ev;
+}
+if (!empty($movementErrors)) {
+  foreach ($movementErrors as $errTxt) $file->events[] = ['event'=>'Movement Error','time'=>$file->game['turn'] ?? '','text'=>$errTxt];
+}
+
+// Save current data sheet now that local modifications are complete
+$file->writeToFile();
+$errors = array_merge($errors, $file->getErrors());
+*/
+/*
+  Apply deferred writes to other empires' data sheets AFTER current sheet saved.
+  - We find the matching GameData object in $gameFiles and apply the recorded
+    'changes' inline, then save that sheet.
+  - Each deferred change is an associative array describing the action.
+*/
+/*
+if (!empty($deferredWrites)) {
+  foreach ($deferredWrites as $dw) {
+    $targetEmpire = $dw['empire'] ?? null;
+    $changes = $dw['changes'] ?? [];
+    // locate target GameData in $gameFiles
+    foreach ($gameFiles as $otherFile) {
+      if (($otherFile->empire['empire'] ?? '') !== $targetEmpire) continue;
+      // apply each change
+      foreach ($changes as $chg) {
+        switch ($chg['action'] ?? '') {
+          case 'flag_encounter':
+            $otherFile->events[] = [
+              'event'=>'Encounter Flagged',
+              'time'=>$otherFile->game['turn'] ?? '',
+              'text'=>"ENCOUNTER_FLAG: Intruder {$chg['intruderFleet']} ({$chg['intruderEmpire']}) moved into {$chg['system']}. Combat will be resolved in Combat Phase."
+            ];
+            break;
+          case 'check_convoys_for_raid':
+            // If this otherFile has convoys at system, flag a convoy raid encounter
+            $sys = $chg['system'];
+            $foundConvoys = [];
+            foreach ($otherFile->fleets as $ff) {
+              if ($ff['location'] !== $sys) continue;
+              foreach ($ff['units'] ?? [] as $u) {
+                [$q,$d] = $otherFile->parseUnitQuantity($u);
+                $ud = $otherFile->getUnitByName($d);
+                if ($ud && stripos($ud['notes'] ?? '', 'Convoy') !== false) {
+                  $foundConvoys[] = $ff['name'];
+                }
+              }
+            }
+            if (empty($foundConvoys)) {
+              $otherFile->events[] = [
+                'event'=>'Convoy Raid Failed',
+                'time'=>$otherFile->game['turn'] ?? '',
+                'text'=>"CONVOY_RAID_NONE: Raider {$chg['raider']} attempted raid at {$sys} but found no convoys."
+              ];
+            } else {
+              // Flag for Combat Phase / convoy raid resolution
+              $otherFile->events[] = [
+                'event'=>'Convoy Raid Alert',
+                'time'=>$otherFile->game['turn'] ?? '',
+                'text'=>"CONVOY_RAID_ALERT: {$chg['raider']} ({$chg['raider_empire']}) is raiding {$sys}. Convoys present: " . implode(', ',$foundConvoys)
+              ];
+            }
+            break;
+          case 'notify_scanned':
+            $otherFile->events[] = [
+              'event'=>'Scanned',
+              'time'=>$otherFile->game['turn'] ?? '',
+              'text'=>"SCANNED: {$chg['scanner']} ({$file->empire['empire']}) scanned {$chg['system']}."
+            ];
+            break;
+          default:
+            // generic log
+            $otherFile->events[] = [
+              'event'=>'Deferred Write',
+              'time'=>$otherFile->game['turn'] ?? '',
+              'text'=>"DEFERRED: {$dw['reason']} (raw: " . json_encode($chg) . ")"
+            ];
+            break;
+        }
+      } // end foreach change
+      // save the other empire's sheet after applying all changes for this deferred write entry
+      $otherFile->writeToFile();
+      $errors = array_merge($errors, $otherFile->getErrors());
+      break; // matched target empire; proceed to next deferred write
+    } // end search for otherFile
+  } // end foreach deferredWrites
+} // end if deferredWrites
+*/
 
 ###
 # Diplomacy Phase
@@ -389,7 +1062,6 @@ foreach ($gameFiles as &$file) {
   $file->writeToFile($searchDir.$newFile.".js"); // Also updates the $file->fileName
   unset($file);
 }
-
 ###
 # Economics Phase
 ###
@@ -420,8 +1092,34 @@ function showErrors(array $errorArray): void
 ###
 ### TODO Handle the results of the intel operation
 function intelOpResults (string $mission, string $target) {
-
-
+  global $errors;
+  switch (strtolower($mission)) {
+  case "civilian":
+    break;
+  case "counter-insurgency":
+    break;
+  case "counterintel":
+    break;
+  case "espionage":
+    break;
+  case "fortification":
+    break;
+  case "industrial":
+    break;
+  case "insurgency":
+    break;
+  case "piracy":
+    break;
+  case "population":
+    break;
+  case "sabotage":
+    break;
+  case "tech":
+    break;
+  default:
+    $errors[] = "Covert operation '{$mission}' does not exist. Unable to perform.";
+    break;
+  }
 }
 
 ###

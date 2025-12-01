@@ -55,7 +55,7 @@ declare(strict_types=1);
 #   Access: public
 
 # checkUnitNotes(string $unitName, string $note): bool
-#   Determines if the named colony has the given note
+#   Determines if the named unit has the given note
 #   Arguments: $name – colony name
 #              $note - the note to search for
 #   Output: boolean yes/no
@@ -95,6 +95,7 @@ declare(strict_types=1);
 #   Arguments: $start – starting system, $end – ending system, $excludeRestricted – ignore restricted links if true
 #   Output: array, where 'path' is the list of systems and 'distance' is the number of links
 #   Access: public
+# Example out: ["path" => ["Frigga","Olympus","Priam"], "distance" => 2]
 
 # fleetHasAbility(string $fleet, string $ability): string
 #   Determines if a fleet has a unit with a certain ability. e.g. is a scout fleet?
@@ -164,6 +165,37 @@ declare(strict_types=1);
 #              string - The fleet or colony name to search for. Blank if unknown
 #   Output: Integer - The index to the given array. False if an error or not found
 #   Access: public
+
+# getLinkStatus($a, $b): bool|string
+#   Get the map connection status between two systems. Returns false if they aren't neighboring
+#   Arguments: String - Colony name
+#              String - Neighboring colony name
+#   Output: String - Connection status or false
+#   Access: public
+
+# addUnitsToFleet (string $fleetName, string $unitString): void
+#   Add units (string entries like "3xAvenger" or "Avenger") to a fleet. Merges quantities when designs match. 
+#   Arguments: String - Fleet name
+#              String - Unit name (possibly with quantity. e.g. "3xDD")
+#   Output: None
+
+# removeUnitsFromFleet (string $fleetName, string $unitString): bool
+#   Remove specific quantity of design from fleet. returns true if removed, false if insufficient
+#   Arguments: String - Fleet name
+#              String - Unit name (possibly with quantity. e.g. "3xDD")
+#   Output: True if successful. False if not
+
+# addUnitsToColony (string $colonyName, string $unitString): void
+#   Add units (string entries like "3xAvenger" or "Avenger") to a colony. Merges quantities when designs match. 
+#   Arguments: String - Colony name
+#              String - Unit name (possibly with quantity. e.g. "3xDD")
+#   Output: None
+
+# removeUnitsFromColony (string $colonyName, string $unitString): bool
+#   Remove specific quantity of design from a colony. returns true if removed, false if insufficient
+#   Arguments: String - Colony name
+#              String - Unit name (possibly with quantity. e.g. "3xDD")
+#   Output: True if successful. False if not
 
 # Public properties, as defined by the data file specification:
 # array $colonies
@@ -822,9 +854,20 @@ class GameData
   {
     // sorted by size. "New" hull versions considered larger than standard versions.
     // "War" versions considered smaller than "Heavy" versions: CWs considered smaller than CAs
-    $hullOrder = [ 'BOOM','FT','SAux','POL','FF','NFF','FFW','FFH','DD','NDD','DDH','DW','HDW',
+/*
+    $hullOrder = [ 'LF','MF','HF','SHF','AB','BOOM','FT',
+                   'SAux','POL','FF','NFF','FFW','FFH','DD','NDD','DDH','DW','HDW',
                    'LAux','CL','CW','CWH','CA','TUG','NCA','CCH','BC','BCH',
                    'DNL','DNW','DN','DNH','BB'
+                 ];
+    // VBAM Hulls only
+    $hullOrder = [ 'LF','MF','HF','SHF','AB','CT','FF','DD','CL','CW','CA','BC','BB','DN','SD','TN'];
+*/
+    // Both lists, combined. Note that VBAM puts a 'DN' as larger than a 'BB', which is switched in SFB. The SFB version is used here.
+    $hullOrder = [ 'LF','MF','HF','SHF','AB','BOOM','FT',
+                   'CT','SAux','POL','FF','NFF','FFW','FFH','DD','NDD','DDH','DW','HDW',
+                   'LAux','CL','CW','CWH','CA','TUG','NCA','CCH','BC','BCH',
+                   'DNL','DNW','DN','DNH','BB','SD','TN'
                  ];
     $designIdx = array_search($shipDesign, $hullOrder);
     $checkIdx = array_search($designCheck, $hullOrder);
@@ -934,6 +977,134 @@ class GameData
         if ($shipName !== '' && $fleetName !== '' && $state == "{$shipName} w/ {$fleetName}")
           return $key;
       }
+    return false;
+  }
+
+###
+# getLinkStatus($a, $b): bool|string
+#   Get the map connection status between two systems. Returns false if they aren't neighboring
+#   Arguments: String - Colony name
+#              String - Neighboring colony name
+#   Output: String - Connection status  or false
+###
+  public function getLinkStatus($a, $b): bool|string
+  {
+    foreach ($this->mapConnections as $conn) {
+      [$from, $to, $status] = $conn;
+      if (($from === $a && $to === $b) || ($from === $b && $to === $a)) return ucFirst($status);
+    }
+    return false;
+  }
+
+###
+# addUnitsToFleet (string $fleetName, string $unitString): void
+#   Add units (string entries like "3xAvenger" or "Avenger") to a fleet. Merges quantities when designs match. 
+#   Arguments: String - Fleet name
+#              String - Unit name (possibly with quantity. e.g. "3xDD")
+#   Output: None
+###
+  public function addUnitsToFleet (string $fleetName, string $unitString): void
+  {
+    [$qty, $design] = $this->parseUnitQuantity($unitString);
+    $fleetIndex = $this->index['fleetsByName'][$fleetName] ?? null;
+    if (!$fleetIndex) {
+      $errors[] = "Could not find '{$fleetName}' in addUnitsToFleet.";
+      return;
+    }
+    // attempt to merge with existing unit entry
+    foreach ($this->fleets[$fleetIndex]['units'] as $idx => $entry) {
+      [$eQty, $eDesign] = $this->parseUnitQuantity($entry);
+      if ($eDesign === $design) {
+        $this->fleets[$fleetIndex]['units'][$idx] = ($eQty + $qty) . 'x' . $design;
+        return;
+      }
+    }
+    // not found, append
+    if ($qty === 1) $this->fleets[$fleetIndex]['units'][] = $design;
+    else $this->fleets[$fleetIndex]['units'][] = $qty . 'x' . $design;
+  }
+
+###
+# removeUnitsFromFleet (string $fleetName, string $unitString): bool
+#   Remove specific quantity of design from a fleet. returns true if removed, false if insufficient
+#   Arguments: String - Fleet name
+#              String - Unit name (possibly with quantity. e.g. "3xDD")
+#   Output: True if successful. False if not
+###
+  public function removeUnitsFromFleet (string $fleetName, string $unitString): bool
+  {
+    [$reqQty, $design] = $file->parseUnitQuantity($unitString);
+    $fleetIndex = $this->index['fleetsByName'][$fleetName] ?? null;
+    if (!$fleetIndex) {
+      $errors[] = "Could not find '{$fleetName}' in removeUnitsFromFleet.";
+      return false;
+    }
+    foreach ($this->fleets[$fleetIndex]['units'] as $idx => $entry) {
+      [$eQty, $eDesign] = $file->parseUnitQuantity($entry);
+      if ($eDesign === $design) {
+        if ($eQty < $reqQty) return false; // not enough
+        $newQty = $eQty - $reqQty;
+        if ($newQty === 0) array_splice($this->fleets[$fleetIndex]['units'], $idx, 1);
+        else $this->fleets[$fleetIndex]['units'][$idx] = $newQty . 'x' . $design;
+        return true;
+      }
+    }
+    return false;
+  }
+
+###
+# addUnitsToColony (string $colonyName, string $unitString): void
+#   Add units (string entries like "3xAvenger" or "Avenger") to a colony. Merges quantities when designs match. 
+#   Arguments: String - Colony name
+#              String - Unit name (possibly with quantity. e.g. "3xDD")
+#   Output: None
+###
+  public function addUnitsToColony (string $colonyName, string $unitString): void
+  {
+    [$qty, $design] = $this->parseUnitQuantity($unitString);
+    $colonyIndex = $this->index['coloniesByName'][$colonyName] ?? null;
+    if (!$colonyIndex) {
+      $errors[] = "Could not find '{$colonyName}' in addUnitsToColony.";
+      return;
+    }
+    // attempt to merge with existing unit entry
+    foreach ($this->colonies[$colonyIndex]['fixed'] as $idx => $entry) {
+      [$eQty, $eDesign] = $this->parseUnitQuantity($entry);
+      if ($eDesign === $design) {
+        $this->colonies[$colonyIndex]['fixed'][$idx] = ($eQty + $qty) . 'x' . $design;
+        return;
+      }
+    }
+    // not found, append
+    if ($qty === 1) $this->colonies[$colonyIndex]['fixed'][] = $design;
+    else $this->colonies[$colonyIndex]['fixed'][] = $qty . 'x' . $design;
+  }
+
+###
+# removeUnitsFromColony (string $colonyName, string $unitString): bool
+#   Remove specific quantity of design from a colony. returns true if removed, false if insufficient
+#   Arguments: String - Colony name
+#              String - Unit name (possibly with quantity. e.g. "3xDD")
+#   Output: True if successful. False if not
+###
+  public function removeUnitsFromColony (string $colonyName, string $unitString): bool
+  {
+    [$reqQty, $design] = $file->parseUnitQuantity($unitString);
+    $colonyIndex = $this->index['coloniesByName'][$colonyName] ?? null;
+    if (!$colonyIndex) {
+      $errors[] = "Could not find '{$colonyName}' in removeUnitsFromColony.";
+      return false;
+    }
+    foreach ($this->colonies[$colonyIndex]['fixed'] as $idx => $entry) {
+      [$eQty, $eDesign] = $file->parseUnitQuantity($entry);
+      if ($eDesign === $design) {
+        if ($eQty < $reqQty) return false; // not enough
+        $newQty = $eQty - $reqQty;
+        if ($newQty === 0) array_splice($this->colonies[$colonyIndex]['fixed'], $idx, 1);
+        else $this->colonies[$colonyIndex]['fixed'][$idx] = $newQty . 'x' . $design;
+        return true;
+      }
+    }
     return false;
   }
 }
