@@ -20,6 +20,9 @@ declare the reusable colors
   --summary-color-bottom: dodgerblue;
   --summary-color-text: white;
   --summary-color-top: steelblue;
+  --treaty-angry-color: black;
+  --treaty-neutral-color: black;
+  --treaty-nice-color: black;
   --zebra-stripe-color:#CCC;
 }
 
@@ -164,7 +167,7 @@ declare the large sections of the page
 /* need a smaller font-size or else the width is larger than the window */
    font-size: smaller;
 }
-.systems tr:nth-child(even) {
+.zebra tr:nth-child(even) {
   background: var(--zebra-stripe-color);
 }
 .treaties {

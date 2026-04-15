@@ -4,12 +4,15 @@ This file provides specific code used to generate the client-side interface. It 
 
 const filePath = (document.location.origin==="null"||document.location.origin===null?"":document.location.origin)+document.location.pathname+"?data=";
 
+const obsoleteTime = 50; // units older than (year - this) are excluded from the drop-downs
+
 // names of the themes to allow the player to select 
 const themeNames = [
                    { name: "Default", file: ""},
                    { name: "Federation", file: "federation"},
                    { name: "Frax", file: "frax"},
                    { name: "Gorn", file: "gorn"},
+                   { name: "Hydran", file: "hydran"},
                    { name: "Klingon", file: "klingon"},
                    { name: "Kzinti", file: "kzinti"},
                    { name: "Peladine", file: "peladine"},
@@ -33,8 +36,10 @@ let currentFlights = [];
 let buildableShips = [];
 let buildableGround = [];
 let buildableFlights = [];
-let BuildableCivUnits = [];
+let buildableCivUnits = [];
 let buildableBases = [];
+let incomingTreaties = [];
+let mothballList = [];
 let otherSystems = [];
 let repairUnits = [];
 let unitsWithBasing = [];
@@ -166,7 +171,7 @@ Build Orders Lists
       if (found.notes.includes("Convoy")) convoyUnits.push(`${unit} w/ ${fleet.name}`);
     }
   }
-  
+
 // Buildable Units
   for (const u of unitList) {
     // Determine tech eligibility
@@ -174,7 +179,7 @@ Build Orders Lists
 
     if (game.techAdvancement) {
       // Optional Rule: Historical Tech Advancement
-      if (u.yis <= empire.techYear && u.yis >= empire.techYear - 50) eligible = true;
+      if (u.yis <= empire.techYear && u.yis >= empire.techYear - obsoleteTime) eligible = true;
     } else {
       // Standard Rules: Research-based advancement
       if (u.researched === true) eligible = true;
@@ -190,7 +195,7 @@ Build Orders Lists
       buildableFlights.push(u.ship);
     } else if (u.design.includes("Convoy")) 
     { // List of convoy units, because ship design contains 'Convoy'
-      BuildableCivUnits.push(u.ship);
+      buildableCivUnits.push(u.ship);
     } else if (u.notes.includes("Fixed")) 
     { // List of bases, because specials contain 'Fixed'
       buildableBases.push(u.ship);
@@ -207,6 +212,18 @@ Build Orders Lists
     return [unit, fleet];
   });
 
+// Treaties
+  for (const t of offeredTreaties) {
+    incomingTreaties.push(`${t[1]} w/ ${t[0]}`);
+  }
+
+// Mothballs
+  for (const mothball of unitsInMothballs) {
+    for (const unit of mothball.units) {
+      mothballList.push(`${unit.ship} w/ ${mothball.location}`);
+    }
+  }
+
 // Sort lists
   buildableShips.sort();
   buildableFlights.sort();
@@ -214,7 +231,7 @@ Build Orders Lists
 
 // Build lists into super-lists
   allBuildableUnits = JsonConcatArrays(buildableShips, buildableFlights, buildableBases);
-  allLoadableUnits = buildableGround;
+  allLoadableUnits = JsonConcatArrays(buildableGround, buildableFlights);
   allMovablePlaces = JsonConcatArrays(colonyNames, otherSystems, unknownMovementPlaces);
   allKnownPlaces = JsonConcatArrays(colonyNames, otherSystems);
   allBasablePlaces = JsonConcatArrays(unitsWithBasing, colonyNames);
@@ -223,7 +240,6 @@ Build Orders Lists
   orderTable = {
     header_fleet:  [ "Fleet Deployment" ],
     add_fleet:     [ currentUnits, [], 'New Fleet Name', 'Add to Fleet', "pre" ],
-    flight:        [ currentFlights, allBasablePlaces, '', 'Assign flights', "pre" ],
     name_fleet:    [ currentFleets, [], 'New fleet name', 'Rename a fleet', "pre" ],
 
     header_intel:  [ "Intelligence Orders" ],
@@ -233,6 +249,7 @@ Build Orders Lists
     header_move:   [ "Movement Orders" ],
     convoy_raid:   [ currentFleets, allMovablePlaces, '', 'Convoy Raid', "pre" ],
     explore_lane:  [ currentFleets, [], '', 'Explore Jump-Lane', "pre" ],
+    flight:        [ allBasablePlaces, currentFlights, '', 'Assign flights', "pre" ],
     move:          [ currentFleets, allMovablePlaces, '', 'Move fleet', "pre" ],
     load:          [ unitsWithCarry, allLoadableUnits, 'Amount to Load', 'Load units', "pre" ],
     long_range:    [ currentFleets, allMovablePlaces, '', 'Long-Range Scan', "pre" ],
@@ -243,19 +260,19 @@ Build Orders Lists
     header_diplomatic: [ "Diplomatic Orders" ],
     hostile_check: [ otherEmpires, [], '', 'Declare War', "pre" ],
     diplo_check:   [ otherEmpires, [], '', 'Offer a treaty', "pre" ],
-    sign_treaty:   [ offeredTreaties, otherEmpires, '', 'Sign a treaty', "post" ],
+    sign_treaty:   [ incomingTreaties, otherEmpires, '', 'Sign a treaty', "post" ],
     sneak_attack:  [ currentFleets, [], '', 'Sneak Attack', "pre" ],
 
     header_construction: [ "Construction orders" ],
     build_unit:    [ allBuildableUnits, colonyNames, 'New fleet name', 'Build unit at system', "pre" ],
     convert:       [ currentUnits, buildableShips, '', 'Convert/Refit Unit', "pre" ],
     mothball:      [ currentUnits, [], '', 'Mothball a unit', "pre" ],
-    purchase_civ:  [ BuildableCivUnits, colonyNames, 'New fleet name', 'Purchase civilian unit at system', "pre" ],
+    purchase_civ:  [ buildableCivUnits, colonyNames, 'New fleet name', 'Purchase civilian unit at system', "pre" ],
     purchase_troop:[ buildableGround, colonyNames, 'Quantity', 'Purchase troop at system', "pre" ],
     remote_build:  [ buildableBases, convoyUnits, '', 'Remote build unit', "pre" ],
     repair:        [ unitsNeedingRepair, [], '', 'Repair unit', "pre" ],
     scrap:         [ currentUnits, [], '', 'Scrap a unit', "pre" ],
-    unmothball:    [ unitsInMothballs, [], '', 'Unmothball a unit', "pre" ],
+    unmothball:    [ mothballList, [], '', 'Unmothball a unit', "pre" ],
 
     header_investment: [ "Investment Orders" ],
     colonize:      [ otherSystems, [], '', 'Colonize system', "pre" ],
@@ -706,7 +723,7 @@ One-Liners
   document.getElementById("researchInvested").textContent = empire.researchInvested;
   document.getElementById("nextEPs").textContent = newRound(empire.nextEPs, 2);
   document.getElementById("maxTechCost").textContent = Math.round(empire.systemIncome / 2);
-  document.getElementById("techAdvCost").textContent = Math.round(empire.systemIncome * 4);
+  document.getElementById("techAdvCost").textContent = Math.round(empire.systemIncome * 2);
 
 /***
 Write Errors

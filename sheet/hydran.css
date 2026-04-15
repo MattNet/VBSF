@@ -1,0 +1,26 @@
+:root {
+  --body-color: #000;
+  --button-color-bottom: #363;
+  --button-color-text: white;
+  --button-color-top: #363;
+  --card-background-color: #464;
+  --card-border-color: #686;
+  --card-text-color: white;
+  --error-text-color: crimson;
+  --footer-text-color: white;
+  --header-image: url('./hydran_back.png');
+  --heading-color-bottom: #7B7;
+  --heading-color-text: white;
+  --heading-color-top: #585;
+  --summary-color-bottom: #9B9;
+  --summary-color-text: white;
+  --summary-color-top: #686;
+  --treaty-angry-color: black;
+  --treaty-neutral-color: black;
+  --treaty-nice-color: black;
+  --zebra-stripe-color:#151;
+}
+
+.header {
+  min-height: 200px;
+}

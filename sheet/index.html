@@ -66,8 +66,8 @@ document.addEventListener("DOMContentLoaded", function() {
     <tr><td>Game Month</td><td id='gameMonth'></td></tr>
     </table>
 
-    <span class='button'><a href='#' target='_BLANK'>Campaign Rules</a></span>
-    <span class='button'><a href='#' id='UnitListDoc' target='_BLANK'>List of Units</a></span>
+    <span class='button'><a href='../docs/vbsf_rules.html' target='_BLANK'>Campaign Rules</a></span>
+    <span class='button'><a href='../docs/vbsf_units.html' id='UnitListDoc' target='_BLANK'>List of Units</a></span>
 
     <h3>Economics</h3>
     <table>
@@ -104,7 +104,7 @@ document.addEventListener("DOMContentLoaded", function() {
 
   <div class='economy'>
     <h3>Maintenance</h3>
-    <table id='maintData'>
+    <table id='maintData' class='zebra'>
     </table>
     <h3>Purchases</h3>
     <table id='purchaseData'>
@@ -126,7 +126,7 @@ document.addEventListener("DOMContentLoaded", function() {
 
   <div class='systems'>
     <h3>System Assets</h3>
-    <table style='margin:auto;'><thead>
+    <table style='margin:auto;' class='zebra'><thead>
     <tr><th>System Name</td><th class="sysTableType">Planet Type</th><th>Capacity</th><th>Raw</th><th>Pop</th><th>Morale</th><th>Intel</th><th>Fort</th><th>Output</th><th class="sysTableNotes">Special Notes</th><th class="sysTableFixed">Fixed Units</th></tr>
     </thead><tbody id='systemData'>
     </tbody></table>
