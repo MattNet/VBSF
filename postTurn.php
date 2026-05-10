@@ -1277,6 +1277,9 @@ foreach ($gameFiles as &$file) {
   $file->purchases = [];
   // Empty events
   $file->events = [];
+  // Empty construction
+  // *TODO* If doing extended construction, then do not blindly empty this.
+  $file->underConstruction = [];
 
   // Collect destroyed units
   $destroyedUnits = [];
