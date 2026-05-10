@@ -176,18 +176,31 @@ svg.selectAll("line.connection")
        return "lightgray";
    })
    .attr("stroke-width", d => {
-       if (d[2] === "Restricted") return 2;
-       if (d[2] === "Major") return 3;
-       if (d[2] === "Minor") return 2;
-       if (d[2] === "Unexplored") return 2;
+       if (d[2] === "Restricted") return 3;
+       if (d[2] === "Major") return 4;
+       if (d[2] === "Minor") return 3;
+       if (d[2] === "Unexplored") return 3;
        return 1;
    })
    .attr("stroke-dasharray", d => {
        if (d[2] === "Unexplored") return "6,4";
        return null;
    })
-   .attr("stroke-opacity", 0.9);
-
+   .attr("stroke-opacity", 0.9)
+   .on("mouseover", function(event, d) {
+     tooltip.style("opacity", 1);
+     d3.select(this).style("stroke-opacity", 1);
+   })
+   .on("mousemove", function(event, d) {
+     tooltip
+       .html(d[2])   // <-- interconnect type (e.g. "Major", "Restricted")
+       .style("left", (event.pageX + 20) + "px")
+       .style("top", (event.pageY) + "px");
+   })
+   .on("mouseleave", function(event, d) {
+     tooltip.style("opacity", 0);
+     d3.select(this).style("stroke-opacity", 0.9);
+   });
 // Helper: shift line endpoints inwards by `offset` pixels
 function offsetLine(x1, y1, x2, y2, offset) {
   // short-circuit if no offset
