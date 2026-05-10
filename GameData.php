@@ -451,6 +451,10 @@ class GameData
       $traits = [];
       foreach ($c['fixed'] as $u) {
         [$qty, $name]= $this->parseUnitQuantity($u);
+        if (!isset($this->index['unitsByName'][$name])) {
+          echo "Fixed unit '$name' does not exist in unit list";
+          continue;
+        }
         $index = $this->index['unitsByName'][$name];
         $unitData = $this->unitList[$index];
         if (!empty($unitData['notes'])) {

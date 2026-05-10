@@ -44,7 +44,6 @@ if (!isset($argv[2])) {
 $targetGame = trim($argv[1]);
 $targetTurn = (int)$argv[2];
 
-
 ###
 # File retrieval:
 # Data files are in $gameFiles[]
@@ -261,7 +260,7 @@ foreach ($gameFiles as $empireId => $file) {
 
   foreach ($constructionOrders as $order) {
     $type = $order['type'];
-    $receiver = $order['receiver'] ?? '';
+    $receiver = $order['reciever'] ?? '';
     $target = $order['target'] ?? '';
     $note = $order['note'] ?? '';
 
@@ -270,12 +269,12 @@ foreach ($gameFiles as $empireId => $file) {
     $unitName = $receiver;
     $unit = $file->getUnitByName($unitName);
     if (!$unit) {
-      $errors[] = "Invalid purchase order for {$unit} (no such unit).";
+      $errors[] = "Invalid purchase order for '{$unit}' (no such unit).";
       continue;
     }
     $system = $file->getColonyByName($colonyName);
     if (!$system) {
-      $errors[] = "Invalid purchase order at {$colonyName} (no such system).";
+      $errors[] = "Invalid purchase order at '{$colonyName}' (no such system).";
       continue;
     }
     $cost = $unit['cost'];
@@ -284,7 +283,7 @@ foreach ($gameFiles as $empireId => $file) {
     if (!isset($constructionCapacity[$colonyName]))
       [$constructionCapacity[$colonyName], $constructionMethod] = calculateConstructionCapacity($file, $colonyName);
 
-    // Build unit at system or shipyard
+  // Build unit at system or shipyard
     if ($type === "build_unit") {
 
       if (!$system || !$unit) {
@@ -297,9 +296,13 @@ foreach ($gameFiles as $empireId => $file) {
       if ($file->checkBlockaded($colonyName)) {
         $errors[] = "{$colonyName} is blockaded and cannot build.";
         continue;
-      } elseif (count($supplyLine['paths']) > 0) {
-        $errors[] = "{$colonyName} is out of supply and cannot build.";
-        continue;
+      } else {
+        foreach ($supplyLine as $line) {
+          if (count($line['paths']) == 0) { // if there are no paths to the system
+            $errors[] = "{$colonyName} is out of supply and cannot build.";
+            continue;
+          }
+        }
       }
 
       $cost = $unit['cost'];
@@ -329,11 +332,12 @@ foreach ($gameFiles as $empireId => $file) {
 
       // Document the change
       $file->purchases[] = ["cost" => $cost, "name" => $unitName];
+      $file->underConstruction[] = ["location" => $colonyName, "unit" => $unitName];
       $constructionCapacity[$colonyName] -= $cost;
       continue;
     }
 
-    // Build convoy units
+  // Build convoy units
     if ($type === "purchase_civ") {
       if (!$system || !$unit) {
         $errors[] = "Invalid build order: '{$unitName}' at '{$colonyName}'";
@@ -386,11 +390,12 @@ foreach ($gameFiles as $empireId => $file) {
 
       // Document the change
       $file->purchases[] = ["cost" => $cost, "name" => $unitName];
+      $file->underConstruction[] = ["location" => $colonyName, "unit" => $unitName];
       $file->purchaseCiv[$colonyName] = true;
       continue;
     }
 
-    // Remote Base Construction
+  // Remote Base Construction
     if ($type === "remote_build") {
       list ($convoyName, $fleetLoc) = explode(' w/ ', $receiver);
       $cost = $unit['cost'];
@@ -421,14 +426,15 @@ foreach ($gameFiles as $empireId => $file) {
 
       // Document the change
       $file->purchases[] = ["cost" => $cost, "name" => $unitName];
+      $file->underConstruction[] = ["location" => $fleetLoc, "unit" => $unitName];
       $constructionCapacity[$colonyName] -= $cost;
       continue;
     }
 
-    // Partial Construction
+  // Partial Construction
 # Not Implemented
 
-    // Troop Purchase
+  // Troop Purchase
     if ($type === "purchase_troop") {
       $cost = $unit['cost'];
       if ($file->checkColonyNotes($colonyName, 'opposition') !== false) $cost *= 2;
@@ -453,11 +459,12 @@ foreach ($gameFiles as $empireId => $file) {
 
       // Document the change
       $file->purchases[] = ["cost" => $cost, "name" => $unitName];
+      $file->underConstruction[] = ["location" => $colonyName, "unit" => $unitName];
       $constructionCapacity[$colonyName] -= $cost;
       continue;
     }
 
-    // Repair Orders
+  // Repair Orders
     if ($type === "repair") {
       // Determine the location of the unit
       // Find the fleet this unit belongs to
@@ -501,11 +508,12 @@ foreach ($gameFiles as $empireId => $file) {
 
       // Document the change
       $file->purchases[] = ["cost" => $cost, "name" => "Repair {$unitName} w/ {$location}"];
+      $file->underConstruction[] = ["location" => $location, "unit" => $unitName];
       $constructionCapacity[$colonyName] -= $cost;
       continue;
     }
 
-    // Refits (Convert/Upgrade)
+  // Refits (Convert/Upgrade)
     if ($type === "convert") {
       $oldUnitName = $reciever;
       $newUnit = $file->getUnitByName($target);
@@ -535,22 +543,24 @@ foreach ($gameFiles as $empireId => $file) {
 
       // Document the change
       $file->purchases[] = ["cost" => $cost, "name" => "Convert $unitName to {$newUnitName}"];
+      $file->underConstruction[] = ["location" => $colonyName, "unit" => $unitName];
       $constructionCapacity[$colonyName] -= $cost;
       continue;
     }
 
-    // Scrapping
+  // Scrapping
     if ($type === "scrap") {
       $cost = floor($unit['cost'] * 0.5) * -1;
       $file->empire["miscIncome"] -= $cost;
 
       // Document the change
       $file->purchases[] = ["cost" => $cost, "name" => "Scrap $unitName"];
+      $file->underConstruction[] = ["location" => $colonyName, "unit" => $unitName];
       $file->unitStates[] = [$unitName,"Destroyed"];
       continue;
     }
 
-    // Mothballing and Unmothballing
+  // Mothballing and Unmothballing
     if ($type === "mothball") {
       $capacityCost = ceil($unit['cost'] * 0.25);
 
@@ -593,6 +603,7 @@ foreach ($gameFiles as $empireId => $file) {
 
       // Document the change
       $file->purchases[] = ["cost" => 0, "name" => "Mothball $unitName"];
+      $file->underConstruction[] = ["location" => $colonyName, "unit" => $unitName];
       $constructionCapacity[$colonyName] -= $cost;
       continue;
     }
@@ -605,6 +616,7 @@ foreach ($gameFiles as $empireId => $file) {
   $useHistorical = !empty($file->game['techAdvancement']);
   // Establish Tech Advancement Cost (TAC)
   $techAdvCost = $file->empire['systemIncome'] * 2;
+  $maxTech = $file->empire['systemIncome'] / 2;
 
   // Need a minimum TAC. Will usually only find this on the 
   // first turn. This allows the calculated stats to be 0 
@@ -612,24 +624,29 @@ foreach ($gameFiles as $empireId => $file) {
   if (!$file->empire['systemIncome'])
     $techAdvCost = 2; // This is equal to raw 1, pop 1 income.
 
+  // filter out the tech-related orders
   $researchOrders = array_filter($file->orders ?? [], function($o){
      return in_array($o['type'] ?? '', ['research','research_new']);
   });
 
-  // Handle "Invest into research" orders
-  foreach ($researchOrders as $order) {
-    if ($order['type'] === 'research')
-      $file->empire['researchInvested'] += intval($order['note']);
-  }
-
-  // Handle "Research Target" orders
   $researchTarget = null;
   foreach ($researchOrders as $order) {
-      if ($order['type'] === 'research_new')
-        $researchTarget = [
-          'action' => strtolower(trim($order['receiver'])),
-          'unit' => trim($order['target'])
-        ];
+    // Handle "Invest into research" orders
+    if ($order['type'] === 'research') {
+      // limit tech spent to the max per-turn-tech
+      $techSpent = intval($order['note']);
+      if ($techSpent > $maxTech) $techSpent = $maxTech;
+
+      $file->empire['researchInvested'] += $techSpent;
+      // Add a purchase line, to show the use of EPs
+      $file->purchases[] = array("cost"=>$techSpent, "name"=>"Research");
+    }
+    // Handle "Research Target" orders
+    if ($order['type'] === 'research_new')
+      $researchTarget = [
+        'action' => strtolower(trim($order['receiver'])),
+        'unit' => trim($order['target'])
+      ];
   }
 
   // Apply research advancement
@@ -1014,6 +1031,7 @@ foreach ($gameFiles as $empireId => $file) {
     // - Then perform Morale Checks for: systems in Opposition OR systems with any enemy units present (VBAM 4.10.4.4).
     // - Apply modifiers: Good Order, Frontier world, martial law, bombardment, blockaded, empire traits, full garrison, etc. See table.
     foreach ($file->colonies as &$colony) {
+      $location = $colony["name"];
       // compute Good Order vs Opposition
       $pop = intval($colony['population']);
       $morale = intval($colony['morale']);
@@ -1031,10 +1049,12 @@ foreach ($gameFiles as $empireId => $file) {
       // decide whether to roll a Morale Check:
       // Morale Checks are required if the system is in Opposition OR if any enemy units are currently present.
       $enemyPresent = false; // is the enemy present?
-      foreach ($EnemyFleetLookup[$location] as $empireName => $empireUnits ) {
-        if ($empireName === $file->empire['empire']) continue;
-        // true if any enemy present has the treaty state is hostilities or war
-        if (!$file->atLeastPoliticalState($empireName,'Neutral')) $enemyPresent = true;
+      if (isset($EnemyFleetLookup) && isset($EnemyFleetLookup[$location])) {
+        foreach ($EnemyFleetLookup[$location] as $empireName => $empireUnits ) {
+          if ($empireName === $file->empire['empire']) continue;
+          // true if any enemy present has the treaty state is hostilities or war
+          if (!$file->atLeastPoliticalState($empireName,'Neutral')) $enemyPresent = true;
+        }
       }
       $requiresMoraleCheck = (!$inGoodOrder || $enemyPresent) && $colony['owner'] === $file->empire['empire'];
 
@@ -1748,10 +1768,10 @@ function calculateConstructionCapacity($file, $colonyName) {
     $unit = $file->getUnitByName($uName);
     if (!$unit) continue;
     if (strtolower($unit['design']) === 'shipyard') {
-      $stateKey = isInState('unitStates', $uName, $colonyName);
+      $stateKey = $file->isInState('unitStates', $uName, $colonyName);
       if ($stateKey !== false && $this->unitStates[$stateKey][1] == 'Exhausted') continue;
       $capacity += 24;
-      if (!$method) $method = "shipyard";
+      $method = "shipyard";
     }
   }
 
@@ -1760,7 +1780,7 @@ function calculateConstructionCapacity($file, $colonyName) {
     $unit = $file->getUnitByName($uName);
     if (!$unit) continue;
     if (stripos($unit['notes'], 'Convoy') !== false) {
-      $stateKey = isInState('unitStates', $uName, $colonyName);
+      $stateKey = $file->isInState('unitStates', $uName, $colonyName);
       if ($stateKey !== false && $this->unitStates[$stateKey][1] == 'Exhausted') continue;
       $capacity += 12;
       if (!$method) $method = "convoy";
