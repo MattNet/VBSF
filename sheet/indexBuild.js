@@ -21,8 +21,6 @@ const themeNames = [
                    { name: "Tholian", file: "tholian"},
                    { name: "Vudar", file: "vudar"}
                    ];
-// The prefix name for each permenant order input 
-const namePrefix = 'OrderEntry';
 
 /***
 Build Game Data
@@ -434,7 +432,8 @@ Maintenance
     let unitMaintCost = 0;
     if (index == -1) return "";
     const unit = unitList[index];
-    unitMaintCost = Math.ceil(count * unit.cost * 0.1);
+    unitMaintCost = Math.ceil(count * unit.cost * 0.1) * 
+      (unit.notes.indexOf('urdensome') !== -1?2:1); // double maintenance cost if it has the 'Burdensome' trait
     totalMaintExpense += unitMaintCost;
     return `<tr><td>${designation}</td><td>x${count}</td><td>${unitMaintCost}</td></tr>`;
   }).join("");
