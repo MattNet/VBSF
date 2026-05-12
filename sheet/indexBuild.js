@@ -432,12 +432,15 @@ Maintenance
     let unitMaintCost = 0;
     if (index == -1) return "";
     const unit = unitList[index];
-    unitMaintCost = Math.ceil(count * unit.cost * 0.1) * 
-      (unit.notes.indexOf('urdensome') !== -1?2:1); // double maintenance cost if it has the 'Burdensome' trait
+    unitMaintCost = count * unit.cost * 0.1 *
+      (unit.notes.indexOf('urdensome') !== -1?2:1);
+    unitMaintCost = newRound(unitMaintCost,2);
     totalMaintExpense += unitMaintCost;
     return `<tr><td>${designation}</td><td>x${count}</td><td>${unitMaintCost}</td></tr>`;
   }).join("");
 
+  console.log("Total unit maintenance costs "+newRound(totalMaintExpense,2)+" before rounding");
+  totalMaintExpense = Math.ceil(totalMaintExpense);
   if (empire.maintExpense == 0)
     empire.maintExpense = totalMaintExpense;
   if (empire.maintExpense != totalMaintExpense)

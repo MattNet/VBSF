@@ -1281,6 +1281,8 @@ foreach ($gameFiles as &$file) {
   // *TODO* If doing extended construction, then do not blindly empty this.
   $file->underConstruction = [];
 
+//*TODO* Put constructed units in the fleets they came from
+
   // Collect destroyed units
   $destroyedUnits = [];
   foreach ($file->unitStates as $key => $state) {
@@ -1623,10 +1625,8 @@ foreach ($gameFiles as &$file) {
   }
 
   // Calculate maintenance expense
-  foreach ($unitCounts as $type => $info) {
-    $typeMaint = ceil($info['count'] * $info['cost'] * 0.1);
-    $maintenance += $typeMaint;
-  }
+  foreach ($unitCounts as $type => $info)
+    $maintenance += $info['count'] * $info['cost'] * 0.1;
 
   // Look for Trade fleets
   foreach ($file->fleets as $fleet) {
@@ -1706,7 +1706,7 @@ foreach ($gameFiles as &$file) {
   # Trade income phase
   $file->empire['tradeIncome'] = $totalTradeIncome;
   # Maintenance Expense phase
-  $file->empire['maintExpense'] = $maintenance;
+  $file->empire['maintExpense'] = round($maintenance,2);
   # Misc Income/Expense phase
   $file->empire['miscIncome'] = $miscIncome;
   $file->empire['miscExpense'] = $miscExpenses;
